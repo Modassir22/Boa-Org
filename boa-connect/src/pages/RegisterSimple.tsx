@@ -150,7 +150,6 @@ export default function RegisterSimple() {
                       value={formData.first_name} 
                       onChange={(e) => handleChange('first_name', e.target.value)} 
                       required 
-                      minLength={2}
                       maxLength={50}
                     />
                   </div>
@@ -161,7 +160,6 @@ export default function RegisterSimple() {
                       value={formData.surname} 
                       onChange={(e) => handleChange('surname', e.target.value)} 
                       required 
-                      minLength={2}
                       maxLength={50}
                     />
                   </div>
@@ -215,7 +213,6 @@ export default function RegisterSimple() {
                       value={formData.house} 
                       onChange={(e) => handleChange('house', e.target.value)} 
                       required 
-                      minLength={1}
                     />
                   </div>
 
@@ -225,7 +222,6 @@ export default function RegisterSimple() {
                       value={formData.street} 
                       onChange={(e) => handleChange('street', e.target.value)} 
                       required 
-                      minLength={2}
                     />
                   </div>
 
@@ -235,7 +231,6 @@ export default function RegisterSimple() {
                       value={formData.city} 
                       onChange={(e) => handleChange('city', e.target.value)} 
                       required 
-                      minLength={2}
                     />
                   </div>
 
@@ -283,7 +278,7 @@ export default function RegisterSimple() {
                         onChange={(e) => handleChange('password', e.target.value)}
                         className="pr-10"
                         required
-                        minLength={8}
+                        placeholder="Minimum 8 characters"
                       />
                       <button
                         type="button"
@@ -304,7 +299,7 @@ export default function RegisterSimple() {
                         onChange={(e) => handleChange('confirmPassword', e.target.value)}
                         className="pr-10"
                         required
-                        minLength={8}
+                        placeholder="Re-enter password"
                       />
                       <button
                         type="button"

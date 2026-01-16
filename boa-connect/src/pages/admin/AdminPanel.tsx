@@ -18,11 +18,27 @@ import CommitteeMembersTab from './tabs/CommitteeMembersTab';
 import { CertificationTab } from './tabs/CertificationTab';
 import UpcomingEventsTab from './tabs/UpcomingEventsTab';
 import { ContactInfoTab } from './tabs/ContactInfoTab';
+import { SiteConfigTab } from './tabs/SiteConfigTab';
+import { OfflineFormsTab } from './tabs/OfflineFormsTab';
+import { GalleryTab } from './tabs/GalleryTab';
+import MembershipCategoriesTab from './tabs/MembershipCategoriesTab';
+import ResourcesTab from './tabs/ResourcesTab';
+import AllPaymentsTab from './tabs/AllPaymentsTab';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('statistics');
+
+  useEffect(() => {
+    // Set page title for admin panel
+    document.title = 'Admin Panel - Bihar Ophthalmic Association';
+    
+    // Restore original title when component unmounts
+    return () => {
+      document.title = 'Bihar Ophthalmic Association';
+    };
+  }, []);
 
   useEffect(() => {
     // Check if admin is logged in
@@ -132,10 +148,16 @@ export default function AdminPanel() {
         {activeTab === 'registrations' && <RegistrationsTab />}
         {activeTab === 'users' && <UsersTab />}
         {activeTab === 'offline-users' && <OfflineUsersTab />}
+        {activeTab === 'all-payments' && <AllPaymentsTab />}
         {activeTab === 'committee' && <CommitteeMembersTab />}
         {activeTab === 'certification' && <CertificationTab />}
         {activeTab === 'upcoming' && <UpcomingEventsTab />}
+        {activeTab === 'gallery' && <GalleryTab />}
+        {activeTab === 'membership-categories' && <MembershipCategoriesTab />}
+        {activeTab === 'resources' && <ResourcesTab />}
         {activeTab === 'contact' && <ContactInfoTab />}
+        {activeTab === 'site-config' && <SiteConfigTab />}
+        {activeTab === 'offline-forms' && <OfflineFormsTab />}
       </div>
     </AdminLayout>
   );

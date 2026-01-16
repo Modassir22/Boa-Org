@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Lock, ArrowRight, Shield } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -15,6 +15,16 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    // Set page title for admin login
+    document.title = 'Admin Login - Bihar Ophthalmic Association';
+    
+    // Restore original title when component unmounts
+    return () => {
+      document.title = 'Bihar Ophthalmic Association';
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

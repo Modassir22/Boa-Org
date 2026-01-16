@@ -15,6 +15,9 @@ import SeminarDetail from "./pages/SeminarDetail";
 import SeminarRegistration from "./pages/SeminarRegistration";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Gallery from "./pages/Gallery";
+import Membership from "./pages/Membership";
+import Resources from "./pages/Resources";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPanel from "./pages/admin/AdminPanel";
 import AdminProfile from "./pages/admin/AdminProfile";
@@ -22,6 +25,8 @@ import OfflineFormSettings from "./pages/admin/OfflineFormSettings";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import TestConfig from "./pages/TestConfig";
+import MembershipForm from "./pages/MembershipForm";
 
 const queryClient = new QueryClient();
 
@@ -53,13 +58,18 @@ const App = () => (
           <Route path="/seminars" element={<Seminars />} />
           <Route path="/seminar/:id" element={<SeminarDetail />} />
           <Route path="/seminar/:id/register" element={<SeminarRegistration />} />
+          <Route path="/membership" element={<Membership />} />
+          <Route path="/membership-form" element={<MembershipForm />} />
+          <Route path="/resources" element={<Resources />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/offline-form" element={<OfflineFormSettings />} />
           <Route path="/admin/*" element={<AdminPanel />} />
+          <Route path="/test-config" element={<TestConfig />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<NotFound />} />

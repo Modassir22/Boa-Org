@@ -1,89 +1,69 @@
-import { Eye, Target, Heart, BookOpen, Award, Users } from 'lucide-react';
-
-const features = [
-  {
-    icon: Eye,
-    title: 'Vision Excellence',
-    description: 'Promoting the highest standards in ophthalmology practice across Bihar since 1975.'
-  },
-  {
-    icon: Target,
-    title: 'Research & Innovation',
-    description: 'Supporting cutting-edge research in eye care and advancing vision science in Eastern India.'
-  },
-  {
-    icon: Heart,
-    title: 'Community Outreach',
-    description: 'Organizing free eye camps and awareness programs for underserved communities across Bihar.'
-  },
-  {
-    icon: BookOpen,
-    title: 'Medical Education',
-    description: 'Providing CME programs, workshops, and conferences for continuous professional development.'
-  },
-  {
-    icon: Award,
-    title: 'Government Recognized',
-    description: 'Registered under Societies Registration Act 21, 1860. Registration No: S000403, Certificate No: S22104.'
-  },
-  {
-    icon: Users,
-    title: 'Professional Network',
-    description: 'Connecting ophthalmologists across Bihar for knowledge sharing and collaborative patient care.'
-  }
-];
+import { Link } from 'react-router-dom';
+import { ArrowRight, Award, Users, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export function AboutSection() {
   return (
-    <section className="py-20 bg-card">
+    <section className="gov-section">
       <div className="container">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            About Ophthalmic Association of Bihar
-          </h2>
-          <p className="text-lg text-muted-foreground mb-4">
-            The Ophthalmic Association of Bihar (BOA) is a premier professional organization dedicated to 
-            advancing eye care and ophthalmology practice across Bihar state.
-          </p>
-          <p className="text-base text-muted-foreground">
-            <strong>Registered Office:</strong> Ved Vani, East Shivpuri, Chitkohara Bypass Road, 
-            Po-Anishabad, Patna - 800002, Bihar
-          </p>
-        </div>
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Content */}
+          <div className="space-y-6">
+            <div className="gov-badge">
+              <Award className="h-4 w-4 mr-2 inline" />
+              Established 1975
+            </div>
+            
+            <h2 className="gov-section-title">
+              About Ophthalmic Association of Bihar
+            </h2>
+            
+            <p className="text-lg leading-relaxed" style={{color: '#616E7C'}}>
+              The Ophthalmic Association of Bihar (BOA) stands as a premier professional organization dedicated to advancing the field of ophthalmology and eye care across Bihar state. Registered under the Societies Registration Act 21, 1860, we have been serving the ophthalmology community for decades.
+            </p>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {features.map((feature, index) => (
-            <div
-              key={feature.title}
-              className="group p-6 rounded-2xl bg-background border border-border hover:border-primary/50 hover:shadow-card transition-all duration-300 animate-fade-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <feature.icon className="h-6 w-6 text-primary-foreground" />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="gov-card p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded flex-shrink-0" style={{background: '#E3F2FD'}}>
+                    <Target className="h-5 w-5" style={{color: '#0B3C5D'}} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1" style={{color: '#1F2933'}}>Our Mission</h3>
+                    <p className="text-sm" style={{color: '#616E7C'}}>Advancing eye care excellence through education and research</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {feature.description}
-              </p>
+              
+              <div className="gov-card p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded flex-shrink-0" style={{background: '#E8F5E9'}}>
+                    <Users className="h-5 w-5" style={{color: '#2E7D32'}} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1" style={{color: '#1F2933'}}>Our Community</h3>
+                    <p className="text-sm" style={{color: '#616E7C'}}>Connecting ophthalmologists across Bihar</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="bg-accent/30 rounded-2xl p-8 border border-border">
-          <div className="grid md:grid-cols-3 gap-6 text-center">
-            <div>
-              <p className="text-3xl font-bold text-primary mb-2">50+</p>
-              <p className="text-sm text-muted-foreground">Years of Service</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-primary mb-2">500+</p>
-              <p className="text-sm text-muted-foreground">Active Members</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-primary mb-2">100+</p>
-              <p className="text-sm text-muted-foreground">Annual Events</p>
+            <Link to="/about">
+              <button className="bg-white border-2 px-5 py-2.5 rounded font-medium hover:bg-gray-50 transition-colors" style={{color: '#0B3C5D', borderColor: '#0B3C5D'}}>
+                Learn More About Us
+                <ArrowRight className="ml-2 h-4 w-4 inline" />
+              </button>
+            </Link>
+          </div>
+
+          {/* Image/Visual */}
+          <div className="relative">
+            <div className="aspect-[4/3] rounded overflow-hidden shadow-md border border-gray-200">
+              <img 
+                src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80" 
+                alt="BOA Conference"
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
         </div>

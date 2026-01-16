@@ -84,79 +84,82 @@ ${data.seminar.offline_form_html}
   return (
     <Layout>
       {/* Hero Section */}
-        <div className="container ml-[310px] text-start max-w-3xl mt-2">
-          <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl gradient-primary mb-6">
-            <Bell className="h-4 w-4 text-primary-foreground" />
+      <section className="py-12 md:py-16" style={{background: '#F9FAFB'}}>
+        <div className="container max-w-3xl text-center">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-xl mb-6" style={{background: '#0B3C5D'}}>
+            <Bell className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-xl md:text-3xl font-bold text-foreground mb-4">
+          <h1 className="text-3xl md:text-4xl font-semibold mb-4" style={{color: '#1F2933'}}>
             Notifications
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg" style={{color: '#616E7C'}}>
             Stay updated with our latest seminars and events
           </p>
         </div>
+      </section>
 
       {/* Notifications List */}
-      <section className="py-16">
-        <div className="container max-w-4xl">
+      <section className="py-12 md:py-16">
+        <div className="container max-w-4xl px-4">
           {notifications.length === 0 ? (
             <div className="text-center py-12">
-              <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">No Active Notifications</h3>
-              <p className="text-muted-foreground">
+              <Bell className="h-16 w-16 mx-auto mb-4 opacity-50" style={{color: '#616E7C'}} />
+              <h3 className="text-xl font-semibold mb-2" style={{color: '#1F2933'}}>No Active Notifications</h3>
+              <p style={{color: '#616E7C'}}>
                 There are no active seminars or events at the moment. Check back soon!
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-elevated transition-all duration-300 p-6"
+                  className="gov-card p-6 relative"
                 >
                   {/* Active Badge */}
                   <div className="absolute top-4 right-4">
-                    <Badge className="gradient-gold text-secondary-foreground border-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-secondary-foreground mr-1.5 animate-pulse" />
+                    <span className="gov-badge-accent">
+                      <span className="w-1.5 h-1.5 rounded-full mr-1.5" style={{background: '#C9A227'}} />
                       Active
-                    </Badge>
+                    </span>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
-                      <Calendar className="h-6 w-6 text-primary-foreground" />
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center" style={{background: '#0B3C5D'}}>
+                      <Calendar className="h-6 w-6 text-white" />
                     </div>
 
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-foreground mb-2 pr-20">
+                    <div className="flex-1 w-full">
+                      <h3 className="text-xl font-semibold mb-2 pr-16" style={{color: '#1F2933'}}>
                         {notification.title}
                       </h3>
-                      <p className="text-muted-foreground mb-4">
+                      <p className="mb-4" style={{color: '#616E7C'}}>
                         {notification.message}
                       </p>
 
                       {notification.seminar_id && (
-                        <div className="flex gap-2">
-                          <Link to={`/seminar/${notification.seminar_id}/register`}>
-                            <Button className="gradient-primary text-primary-foreground">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Link to={`/seminar/${notification.seminar_id}/register`} className="flex-1 sm:flex-initial">
+                            <button className="gov-button-primary w-full sm:w-auto">
                               Register Now
-                              <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
+                              <ArrowRight className="ml-2 h-4 w-4 inline" />
+                            </button>
                           </Link>
-                          <Button 
-                            variant="outline"
+                          <button 
+                            className="bg-white border-2 px-5 py-2.5 rounded font-medium hover:bg-gray-50 transition-colors w-full sm:w-auto"
+                            style={{color: '#0B3C5D', borderColor: '#0B3C5D'}}
                             onClick={() => handleDownloadForm(notification.seminar_id, notification.title)}
                           >
-                            <Download className="mr-2 h-4 w-4" />
+                            <Download className="mr-2 h-4 w-4 inline" />
                             Download Offline Form
-                          </Button>
+                          </button>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
+                  <div className="mt-4 pt-4 border-t" style={{borderColor: '#E5E7EB'}}>
+                    <p className="text-xs" style={{color: '#616E7C'}}>
                       Posted on {new Date(notification.created_at).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'long',

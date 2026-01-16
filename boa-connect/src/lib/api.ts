@@ -266,6 +266,44 @@ export const adminAPI = {
     const response = await adminApi.put('/admin/contact-info', data);
     return response.data;
   },
+
+  // Membership Form Config
+  getMembershipFormConfig: async () => {
+    const response = await adminApi.get('/admin/membership-form-config');
+    return response.data;
+  },
+  updateMembershipFormConfig: async (data: any) => {
+    const response = await adminApi.put('/admin/membership-form-config', data);
+    return response.data;
+  },
+
+  // Offline Forms Config
+  getOfflineFormsConfig: async () => {
+    const response = await adminApi.get('/admin/offline-forms-config');
+    return response.data;
+  },
+  updateOfflineFormsConfig: async (data: any) => {
+    const response = await adminApi.put('/admin/offline-forms-config', data);
+    return response.data;
+  },
+
+  // Gallery Management
+  getGalleryItems: async () => {
+    const response = await adminApi.get('/admin/gallery');
+    return response.data;
+  },
+  createGalleryItem: async (data: any) => {
+    const response = await adminApi.post('/admin/gallery', data);
+    return response.data;
+  },
+  updateGalleryItem: async (id: number, data: any) => {
+    const response = await adminApi.put(`/admin/gallery/${id}`, data);
+    return response.data;
+  },
+  deleteGalleryItem: async (id: number) => {
+    const response = await adminApi.delete(`/admin/gallery/${id}`);
+    return response.data;
+  },
 };
 
 export default api;

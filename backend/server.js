@@ -58,6 +58,11 @@ try {
   app.use('/api/admin', adminRoutes);
   console.log('✓ Admin routes loaded');
 
+  // Payment routes
+  const paymentRoutes = require('./routes/payment.routes');
+  app.use('/api/payment', paymentRoutes);
+  console.log('✓ Payment routes loaded');
+
   // Public committee members route
   app.get('/api/committee-members', async (req, res) => {
     try {
@@ -113,6 +118,177 @@ try {
       res.json({ success: true, contactInfo: contactInfo[0] || null });
     } catch (error) {
       res.status(500).json({ success: false, message: 'Failed to fetch contact info' });
+    }
+  });
+
+  // Public site config route
+  app.get('/api/site-config', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const [config] = await promisePool.query('SELECT * FROM site_config LIMIT 1');
+      res.json({ 
+        success: true, 
+        config: config[0] || {
+          favicon_url: '',
+          logo_url: '',
+          hero_circle_image_url: '',
+          site_title: 'Bihar Ophthalmic Association',
+          site_description: ''
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to fetch site config' });
+    }
+  });
+
+  // Public membership form config route
+  app.get('/api/membership-form-config', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const [config] = await promisePool.query('SELECT * FROM membership_form_config LIMIT 1');
+      res.json({ 
+        success: true, 
+        config: config[0] || {
+          form_html: '',
+          offline_form_html: ''
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to fetch membership form config' });
+    }
+  });
+
+  // Public offline forms config route
+  app.get('/api/offline-forms-config', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const [config] = await promisePool.query('SELECT * FROM offline_forms_config LIMIT 1');
+      res.json({ 
+        success: true, 
+        config: config[0] || {
+          membership_form_html: '',
+          seminar_form_html: ''
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to fetch offline forms config' });
+    }
+  });
+
+  // Public stats route
+  app.get('/api/stats', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      
+      // Get total members count
+      const [memberCount] = await promisePool.query('SELECT COUNT(*) as count FROM users WHERE role = "member"');
+      
+      // Get seminars count
+      const [seminarCount] = await promisePool.query('SELECT COUNT(*) as count FROM seminars');
+      
+      // Calculate years of service (assuming founded in 1975)
+      const foundedYear = 1975;
+      const currentYear = new Date().getFullYear();
+      const yearsOfService = currentYear - foundedYear;
+      
+      // Bihar has 38 districts
+      const districtsCovered = 38;
+      
+      res.json({ 
+        success: true, 
+        stats: {
+          total_members: memberCount[0].count,
+          years_of_service: yearsOfService,
+          seminars_conducted: seminarCount[0].count,
+          districts_covered: districtsCovered
+        }
+      });
+    } catch (error) {
+      console.error('Stats error:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch stats' });
+    }
+  });
+
+  // Public membership categories route
+  app.get('/api/membership-categories', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      
+      const [categories] = await promisePool.query(
+        'SELECT * FROM membership_categories WHERE is_active = TRUE ORDER BY display_order, id'
+      );
+      
+      // Parse features JSON string to array
+      const parsedCategories = categories.map(cat => ({
+        ...cat,
+        features: JSON.parse(cat.features)
+      }));
+      
+      res.json({ success: true, categories: parsedCategories });
+    } catch (error) {
+      console.error('Membership categories error:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch membership categories' });
+    }
+  });
+
+  // Public gallery route
+  app.get('/api/gallery', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const limit = req.query.limit ? parseInt(req.query.limit) : 100;
+      
+      const [items] = await promisePool.query(
+        'SELECT * FROM gallery WHERE is_active = TRUE ORDER BY display_order, created_at DESC LIMIT ?',
+        [limit]
+      );
+      
+      res.json({ success: true, items });
+    } catch (error) {
+      console.error('Gallery error:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch gallery items' });
+    }
+  });
+
+  // Public resources route
+  app.get('/api/resources', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const category = req.query.category;
+      
+      let query = 'SELECT * FROM resources WHERE is_active = TRUE';
+      let params = [];
+      
+      if (category && category !== 'all') {
+        query += ' AND category = ?';
+        params.push(category);
+      }
+      
+      query += ' ORDER BY display_order, created_at DESC';
+      
+      const [resources] = await promisePool.query(query, params);
+      
+      res.json({ success: true, resources });
+    } catch (error) {
+      console.error('Resources error:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch resources' });
+    }
+  });
+
+  // Increment resource download count
+  app.post('/api/resources/:id/download', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const { id } = req.params;
+      
+      await promisePool.query(
+        'UPDATE resources SET downloads_count = downloads_count + 1 WHERE id = ?',
+        [id]
+      );
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Download count error:', error);
+      res.status(500).json({ success: false, message: 'Failed to update download count' });
     }
   });
   

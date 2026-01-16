@@ -278,6 +278,299 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+// Get user details with membership, bookings, and payments
+exports.getUserDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get membership details
+    const [membership] = await promisePool.query(
+      `SELECT mr.*, mc.title as category_title, mc.price as category_price
+       FROM membership_registrations mr
+       LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+       WHERE mr.email IN (SELECT email FROM users WHERE id = ?)
+       ORDER BY mr.created_at DESC
+       LIMIT 1`,
+      [id]
+    );
+
+    // Get seminar bookings with payment info
+    const [bookings] = await promisePool.query(
+      `SELECT r.*, s.name as seminar_name, s.start_date as seminar_start_date, 
+              s.end_date as seminar_end_date, dc.name as delegate_category,
+              r.amount as total_amount
+       FROM registrations r
+       LEFT JOIN seminars s ON r.seminar_id = s.id
+       LEFT JOIN delegate_categories dc ON r.category_id = dc.id
+       WHERE r.user_id = ?
+       ORDER BY r.created_at DESC`,
+      [id]
+    );
+
+    // Get all payments (from registrations + membership)
+    const payments = [];
+    
+    // Add seminar registration payments
+    bookings.forEach(booking => {
+      payments.push({
+        id: `reg_${booking.id}`,
+        amount: booking.amount,
+        payment_type: `Seminar Registration - ${booking.seminar_name}`,
+        payment_method: booking.payment_method || 'N/A',
+        transaction_id: booking.transaction_id,
+        status: booking.status,
+        created_at: booking.payment_date || booking.created_at
+      });
+    });
+
+    // Add membership payment if exists
+    if (membership.length > 0 && membership[0].payment_status) {
+      payments.push({
+        id: `mem_${membership[0].id}`,
+        amount: membership[0].category_price || 0,
+        payment_type: `Membership - ${membership[0].membership_type}`,
+        payment_method: 'Online',
+        transaction_id: membership[0].transaction_id,
+        status: membership[0].payment_status === 'completed' ? 'completed' : 'pending',
+        created_at: membership[0].created_at
+      });
+    }
+
+    // Sort payments by date
+    payments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json({
+      success: true,
+      details: {
+        membership: membership[0] || null,
+        bookings: bookings || [],
+        payments: payments || []
+      }
+    });
+  } catch (error) {
+    console.error('Get user details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user details',
+      error: error.message
+    });
+  }
+};
+
+// Export single user details to Excel
+exports.exportUserDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ExcelJS = require('exceljs');
+
+    // Get user info
+    const [users] = await promisePool.query(
+      `SELECT u.*, a.house, a.street, a.city, a.state, a.country, a.pin_code
+       FROM users u
+       LEFT JOIN addresses a ON u.id = a.user_id
+       WHERE u.id = ?`,
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = users[0];
+    delete user.password;
+
+    // Get membership
+    const [membership] = await promisePool.query(
+      `SELECT mr.*, mc.title as category_title, mc.price as category_price
+       FROM membership_registrations mr
+       LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+       WHERE mr.email = ?`,
+      [user.email]
+    );
+
+    // Get bookings
+    const [bookings] = await promisePool.query(
+      `SELECT r.*, s.name as seminar_name, s.start_date, s.end_date, 
+              dc.name as delegate_category
+       FROM registrations r
+       LEFT JOIN seminars s ON r.seminar_id = s.id
+       LEFT JOIN delegate_categories dc ON r.category_id = dc.id
+       WHERE r.user_id = ?`,
+      [id]
+    );
+
+    // Prepare payments data
+    const payments = [];
+    
+    // Add seminar payments
+    bookings.forEach(booking => {
+      payments.push({
+        transaction_id: booking.transaction_id || 'N/A',
+        amount: booking.amount,
+        type: `Seminar - ${booking.seminar_name}`,
+        method: booking.payment_method || 'N/A',
+        status: booking.status,
+        date: booking.payment_date || booking.created_at
+      });
+    });
+
+    // Add membership payment
+    if (membership.length > 0) {
+      payments.push({
+        transaction_id: membership[0].transaction_id || 'N/A',
+        amount: membership[0].category_price || 0,
+        type: `Membership - ${membership[0].membership_type}`,
+        method: 'Online',
+        status: membership[0].payment_status || 'pending',
+        date: membership[0].created_at
+      });
+    }
+
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    
+    // User Info Sheet
+    const userSheet = workbook.addWorksheet('User Info');
+    userSheet.columns = [
+      { header: 'Field', key: 'field', width: 20 },
+      { header: 'Value', key: 'value', width: 40 }
+    ];
+    userSheet.addRows([
+      { field: 'Name', value: `${user.title} ${user.first_name} ${user.surname}` },
+      { field: 'Email', value: user.email },
+      { field: 'Mobile', value: user.mobile },
+      { field: 'DOB', value: user.dob },
+      { field: 'Address', value: `${user.house || ''} ${user.street || ''}, ${user.city || ''}, ${user.state || ''} ${user.pin_code || ''}` },
+      { field: 'Membership No', value: user.membership_no || 'N/A' },
+      { field: 'Registration Date', value: user.created_at }
+    ]);
+
+    // Membership Sheet
+    if (membership.length > 0) {
+      const membershipSheet = workbook.addWorksheet('Membership');
+      membershipSheet.columns = [
+        { header: 'Membership No', key: 'membership_no', width: 20 },
+        { header: 'Category', key: 'category', width: 20 },
+        { header: 'Amount Paid', key: 'amount', width: 15 },
+        { header: 'Date', key: 'date', width: 15 }
+      ];
+      membershipSheet.addRows(membership.map(m => ({
+        membership_no: m.membership_no,
+        category: m.category_title,
+        amount: m.amount_paid,
+        date: m.created_at
+      })));
+    }
+
+    // Bookings Sheet
+    if (bookings.length > 0) {
+      const bookingsSheet = workbook.addWorksheet('Seminar Bookings');
+      bookingsSheet.columns = [
+        { header: 'Seminar', key: 'seminar', width: 30 },
+        { header: 'Category', key: 'category', width: 20 },
+        { header: 'Amount', key: 'amount', width: 15 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Date', key: 'date', width: 15 }
+      ];
+      bookingsSheet.addRows(bookings.map(b => ({
+        seminar: b.seminar_name,
+        category: b.delegate_category,
+        amount: b.amount,
+        status: b.status,
+        date: b.created_at
+      })));
+    }
+
+    // Payments Sheet
+    if (payments.length > 0) {
+      const paymentsSheet = workbook.addWorksheet('Payments');
+      paymentsSheet.columns = [
+        { header: 'Transaction ID', key: 'transaction_id', width: 25 },
+        { header: 'Amount', key: 'amount', width: 15 },
+        { header: 'Type', key: 'type', width: 30 },
+        { header: 'Method', key: 'method', width: 15 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Date', key: 'date', width: 15 }
+      ];
+      paymentsSheet.addRows(payments);
+    }
+
+    // Send file
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=user_${id}_details.xlsx`);
+    
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Export user details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export user details',
+      error: error.message
+    });
+  }
+};
+
+// Export all users to Excel
+exports.exportAllUsers = async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+
+    // Get all users
+    const [users] = await promisePool.query(
+      `SELECT u.*, a.house, a.street, a.city, a.state, a.country, a.pin_code
+       FROM users u
+       LEFT JOIN addresses a ON u.id = a.user_id
+       ORDER BY u.created_at DESC`
+    );
+
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('All Users');
+
+    worksheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Mobile', key: 'mobile', width: 15 },
+      { header: 'DOB', key: 'dob', width: 15 },
+      { header: 'City', key: 'city', width: 20 },
+      { header: 'State', key: 'state', width: 20 },
+      { header: 'Membership No', key: 'membership_no', width: 20 },
+      { header: 'Role', key: 'role', width: 15 },
+      { header: 'Registration Date', key: 'created_at', width: 20 }
+    ];
+
+    worksheet.addRows(users.map(user => ({
+      id: user.id,
+      name: `${user.title} ${user.first_name} ${user.surname}`,
+      email: user.email,
+      mobile: user.mobile,
+      dob: user.dob,
+      city: user.city || 'N/A',
+      state: user.state || 'N/A',
+      membership_no: user.membership_no || 'N/A',
+      role: user.role,
+      created_at: user.created_at
+    })));
+
+    // Send file
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=all_users_${Date.now()}.xlsx`);
+    
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Export all users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export users',
+      error: error.message
+    });
+  }
+};
+
+
 // ============ REGISTRATIONS CRUD ============
 
 // Get all registrations (admin)
@@ -1444,12 +1737,12 @@ exports.getAllUpcomingEvents = async (req, res) => {
 // Create upcoming event
 exports.createUpcomingEvent = async (req, res) => {
   try {
-    const { image_url, link_url, display_order } = req.body;
+    const { title, description, location, start_date, end_date, image_url, link_url, display_order } = req.body;
 
     const [result] = await promisePool.query(
-      `INSERT INTO upcoming_events (image_url, link_url, display_order, is_active)
-       VALUES (?, ?, ?, TRUE)`,
-      [image_url, link_url || '', display_order || 0]
+      `INSERT INTO upcoming_events (title, description, location, start_date, end_date, image_url, link_url, display_order, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+      [title || '', description || '', location || '', start_date || null, end_date || null, image_url, link_url || '', display_order || 0]
     );
 
     res.status(201).json({
@@ -1471,7 +1764,7 @@ exports.createUpcomingEvent = async (req, res) => {
 exports.updateUpcomingEvent = async (req, res) => {
   try {
     const { id } = req.params;
-    const { image_url, link_url, display_order, is_active } = req.body;
+    const { title, description, location, start_date, end_date, image_url, link_url, display_order, is_active } = req.body;
 
     // Get old image URL before updating
     const [oldEvent] = await promisePool.query(
@@ -1487,9 +1780,11 @@ exports.updateUpcomingEvent = async (req, res) => {
 
     await promisePool.query(
       `UPDATE upcoming_events 
-       SET image_url = ?, link_url = ?, display_order = ?, is_active = ?
+       SET title = ?, description = ?, location = ?, start_date = ?, end_date = ?, 
+           image_url = ?, link_url = ?, display_order = ?, is_active = ?
        WHERE id = ?`,
-      [image_url, link_url, display_order, is_active, id]
+      [title || '', description || '', location || '', start_date || null, end_date || null, 
+       image_url, link_url, display_order, is_active, id]
     );
 
     res.json({
@@ -1611,6 +1906,1141 @@ exports.updateContactInfo = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update contact info',
+      error: error.message
+    });
+  }
+};
+
+
+// ============ SITE CONFIGURATION ============
+
+// Get site configuration
+exports.getSiteConfig = async (req, res) => {
+  try {
+    const [config] = await promisePool.query('SELECT * FROM site_config LIMIT 1');
+    
+    res.json({
+      success: true,
+      config: config[0] || {
+        favicon_url: '',
+        logo_url: '',
+        hero_circle_image_url: '',
+        site_title: 'Bihar Ophthalmic Association',
+        site_description: ''
+      }
+    });
+  } catch (error) {
+    console.error('Get site config error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch site configuration',
+      error: error.message
+    });
+  }
+};
+
+// Update site configuration
+exports.updateSiteConfig = async (req, res) => {
+  try {
+    const { favicon_url, logo_url, hero_circle_image_url, site_title, site_description } = req.body;
+
+    // Check if config exists
+    const [existing] = await promisePool.query('SELECT id FROM site_config LIMIT 1');
+
+    if (existing.length > 0) {
+      // Update existing
+      await promisePool.query(
+        `UPDATE site_config SET 
+         favicon_url = ?, 
+         logo_url = ?, 
+         hero_circle_image_url = ?,
+         site_title = ?,
+         site_description = ?
+         WHERE id = ?`,
+        [favicon_url, logo_url, hero_circle_image_url, site_title, site_description, existing[0].id]
+      );
+    } else {
+      // Insert new
+      await promisePool.query(
+        `INSERT INTO site_config (favicon_url, logo_url, hero_circle_image_url, site_title, site_description)
+         VALUES (?, ?, ?, ?, ?)`,
+        [favicon_url, logo_url, hero_circle_image_url, site_title, site_description]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Site configuration updated successfully'
+    });
+  } catch (error) {
+    console.error('Update site config error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update site configuration',
+      error: error.message
+    });
+  }
+};
+
+// ============ MEMBERSHIP FORM CONFIGURATION ============
+
+// Get membership form configuration
+exports.getMembershipFormConfig = async (req, res) => {
+  try {
+    const [config] = await promisePool.query('SELECT * FROM membership_form_config LIMIT 1');
+    
+    res.json({
+      success: true,
+      config: config[0] || {
+        form_html: '',
+        offline_form_html: ''
+      }
+    });
+  } catch (error) {
+    console.error('Get membership form config error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch membership form configuration',
+      error: error.message
+    });
+  }
+};
+
+// Update membership form configuration
+exports.updateMembershipFormConfig = async (req, res) => {
+  try {
+    const { form_html, offline_form_html } = req.body;
+
+    // Check if config exists
+    const [existing] = await promisePool.query('SELECT id FROM membership_form_config LIMIT 1');
+
+    if (existing.length > 0) {
+      // Update existing
+      await promisePool.query(
+        `UPDATE membership_form_config SET 
+         form_html = ?, 
+         offline_form_html = ?
+         WHERE id = ?`,
+        [form_html || '', offline_form_html || '', existing[0].id]
+      );
+    } else {
+      // Insert new
+      await promisePool.query(
+        `INSERT INTO membership_form_config (form_html, offline_form_html)
+         VALUES (?, ?)`,
+        [form_html || '', offline_form_html || '']
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Membership form configuration updated successfully'
+    });
+  } catch (error) {
+    console.error('Update membership form config error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update membership form configuration',
+      error: error.message
+    });
+  }
+};
+
+// ============ OFFLINE FORMS CONFIGURATION ============
+
+// Get offline forms configuration
+exports.getOfflineFormsConfig = async (req, res) => {
+  try {
+    const [config] = await promisePool.query('SELECT * FROM offline_forms_config LIMIT 1');
+    
+    res.json({
+      success: true,
+      config: config[0] || {
+        membership_form_html: '',
+        seminar_form_html: ''
+      }
+    });
+  } catch (error) {
+    console.error('Get offline forms config error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch offline forms configuration',
+      error: error.message
+    });
+  }
+};
+
+// Update offline forms configuration
+exports.updateOfflineFormsConfig = async (req, res) => {
+  try {
+    const { membership_form_html, seminar_form_html } = req.body;
+
+    // Check if config exists
+    const [existing] = await promisePool.query('SELECT id FROM offline_forms_config LIMIT 1');
+
+    if (existing.length > 0) {
+      // Update existing
+      await promisePool.query(
+        `UPDATE offline_forms_config SET 
+         membership_form_html = ?, 
+         seminar_form_html = ?
+         WHERE id = ?`,
+        [membership_form_html || '', seminar_form_html || '', existing[0].id]
+      );
+    } else {
+      // Insert new
+      await promisePool.query(
+        `INSERT INTO offline_forms_config (membership_form_html, seminar_form_html)
+         VALUES (?, ?)`,
+        [membership_form_html || '', seminar_form_html || '']
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Offline forms configuration updated successfully'
+    });
+  } catch (error) {
+    console.error('Update offline forms config error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update offline forms configuration',
+      error: error.message
+    });
+  }
+};
+
+// ============ GALLERY MANAGEMENT ============
+
+// Get all gallery items
+exports.getGalleryItems = async (req, res) => {
+  try {
+    const [items] = await promisePool.query(
+      'SELECT * FROM gallery ORDER BY display_order, created_at DESC'
+    );
+
+    res.json({
+      success: true,
+      items
+    });
+  } catch (error) {
+    console.error('Get gallery items error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch gallery items',
+      error: error.message
+    });
+  }
+};
+
+// Create gallery item
+exports.createGalleryItem = async (req, res) => {
+  try {
+    const { title, description, url, type, display_order, is_active } = req.body;
+
+    const [result] = await promisePool.query(
+      `INSERT INTO gallery (title, description, url, type, display_order, is_active)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [title, description || '', url, type || 'image', display_order || 0, is_active !== false]
+    );
+
+    res.json({
+      success: true,
+      message: 'Gallery item created successfully',
+      itemId: result.insertId
+    });
+  } catch (error) {
+    console.error('Create gallery item error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create gallery item',
+      error: error.message
+    });
+  }
+};
+
+// Update gallery item
+exports.updateGalleryItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, url, type, display_order, is_active } = req.body;
+
+    await promisePool.query(
+      `UPDATE gallery SET 
+       title = ?, description = ?, url = ?, type = ?, 
+       display_order = ?, is_active = ?
+       WHERE id = ?`,
+      [title, description || '', url, type || 'image', display_order || 0, is_active !== false, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Gallery item updated successfully'
+    });
+  } catch (error) {
+    console.error('Update gallery item error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update gallery item',
+      error: error.message
+    });
+  }
+};
+
+// Delete gallery item
+exports.deleteGalleryItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query('DELETE FROM gallery WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'Gallery item deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete gallery item error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete gallery item',
+      error: error.message
+    });
+  }
+};
+
+// ============ MEMBERSHIP CATEGORIES MANAGEMENT ============
+
+// Get all membership categories
+exports.getMembershipCategories = async (req, res) => {
+  try {
+    const [categories] = await promisePool.query(
+      'SELECT * FROM membership_categories ORDER BY display_order, id'
+    );
+
+    // Parse features JSON
+    const parsedCategories = categories.map(cat => ({
+      ...cat,
+      features: JSON.parse(cat.features)
+    }));
+
+    res.json({
+      success: true,
+      categories: parsedCategories
+    });
+  } catch (error) {
+    console.error('Get membership categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch membership categories',
+      error: error.message
+    });
+  }
+};
+
+// Create membership category
+exports.createMembershipCategory = async (req, res) => {
+  try {
+    const { title, icon, category, price, duration, features, is_recommended, display_order, is_active } = req.body;
+
+    const featuresJson = JSON.stringify(features);
+
+    const [result] = await promisePool.query(
+      `INSERT INTO membership_categories (title, icon, category, price, duration, features, is_recommended, display_order, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, icon || 'Briefcase', category || 'passout_fee', price, duration, featuresJson, is_recommended !== false, display_order || 0, is_active !== false]
+    );
+
+    res.json({
+      success: true,
+      message: 'Membership category created successfully',
+      categoryId: result.insertId
+    });
+  } catch (error) {
+    console.error('Create membership category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create membership category',
+      error: error.message
+    });
+  }
+};
+
+// Update membership category
+exports.updateMembershipCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, icon, category, price, duration, features, is_recommended, display_order, is_active } = req.body;
+
+    const updates = [];
+    const values = [];
+
+    if (title !== undefined) {
+      updates.push('title = ?');
+      values.push(title);
+    }
+    if (icon !== undefined) {
+      updates.push('icon = ?');
+      values.push(icon);
+    }
+    if (category !== undefined) {
+      updates.push('category = ?');
+      values.push(category);
+    }
+    if (price !== undefined) {
+      updates.push('price = ?');
+      values.push(price);
+    }
+    if (duration !== undefined) {
+      updates.push('duration = ?');
+      values.push(duration);
+    }
+    if (features !== undefined) {
+      updates.push('features = ?');
+      values.push(JSON.stringify(features));
+    }
+    if (is_recommended !== undefined) {
+      updates.push('is_recommended = ?');
+      values.push(is_recommended ? 1 : 0);
+    }
+    if (display_order !== undefined) {
+      updates.push('display_order = ?');
+      values.push(display_order);
+    }
+    if (is_active !== undefined) {
+      updates.push('is_active = ?');
+      values.push(is_active ? 1 : 0);
+    }
+
+    values.push(id);
+
+    await promisePool.query(
+      `UPDATE membership_categories SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    res.json({
+      success: true,
+      message: 'Membership category updated successfully'
+    });
+  } catch (error) {
+    console.error('Update membership category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update membership category',
+      error: error.message
+    });
+  }
+};
+
+// Delete membership category
+exports.deleteMembershipCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query('DELETE FROM membership_categories WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'Membership category deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete membership category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete membership category',
+      error: error.message
+    });
+  }
+};
+
+// ==================== RESOURCES MANAGEMENT ====================
+
+// Get all resources
+exports.getResources = async (req, res) => {
+  try {
+    const category = req.query.category;
+    
+    let query = 'SELECT * FROM resources';
+    let params = [];
+    
+    if (category && category !== 'all') {
+      query += ' WHERE category = ?';
+      params.push(category);
+    }
+    
+    query += ' ORDER BY display_order, created_at DESC';
+    
+    const [resources] = await promisePool.query(query, params);
+    
+    res.json({
+      success: true,
+      resources
+    });
+  } catch (error) {
+    console.error('Get resources error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch resources',
+      error: error.message
+    });
+  }
+};
+
+// Create resource
+exports.createResource = async (req, res) => {
+  try {
+    const { title, description, category, file_url, file_type, file_size, is_active } = req.body;
+    
+    // Get max display_order
+    const [maxOrder] = await promisePool.query(
+      'SELECT MAX(display_order) as max_order FROM resources'
+    );
+    const display_order = (maxOrder[0].max_order || 0) + 1;
+    
+    const [result] = await promisePool.query(
+      `INSERT INTO resources (title, description, category, file_url, file_type, file_size, is_active, display_order) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, description, category, file_url, file_type, file_size, is_active ? 1 : 0, display_order]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Resource created successfully',
+      resourceId: result.insertId
+    });
+  } catch (error) {
+    console.error('Create resource error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create resource',
+      error: error.message
+    });
+  }
+};
+
+// Update resource
+exports.updateResource = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, category, file_url, file_type, file_size, is_active } = req.body;
+    
+    const updates = [];
+    const values = [];
+    
+    if (title !== undefined) {
+      updates.push('title = ?');
+      values.push(title);
+    }
+    if (description !== undefined) {
+      updates.push('description = ?');
+      values.push(description);
+    }
+    if (category !== undefined) {
+      updates.push('category = ?');
+      values.push(category);
+    }
+    if (file_url !== undefined) {
+      updates.push('file_url = ?');
+      values.push(file_url);
+    }
+    if (file_type !== undefined) {
+      updates.push('file_type = ?');
+      values.push(file_type);
+    }
+    if (file_size !== undefined) {
+      updates.push('file_size = ?');
+      values.push(file_size);
+    }
+    if (is_active !== undefined) {
+      updates.push('is_active = ?');
+      values.push(is_active ? 1 : 0);
+    }
+    
+    values.push(id);
+    
+    await promisePool.query(
+      `UPDATE resources SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+    
+    res.json({
+      success: true,
+      message: 'Resource updated successfully'
+    });
+  } catch (error) {
+    console.error('Update resource error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update resource',
+      error: error.message
+    });
+  }
+};
+
+// Delete resource
+exports.deleteResource = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await promisePool.query('DELETE FROM resources WHERE id = ?', [id]);
+    
+    res.json({
+      success: true,
+      message: 'Resource deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete resource error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete resource',
+      error: error.message
+    });
+  }
+};
+
+
+// ==================== ALL PAYMENTS ====================
+
+// Get latest payments (last 10)
+exports.getLatestPayments = async (req, res) => {
+  try {
+    const payments = [];
+    
+    // Get latest seminar payments
+    const [seminarPayments] = await promisePool.query(
+      `SELECT r.id, r.amount, r.status, r.payment_method, r.transaction_id, 
+              r.payment_date, r.created_at,
+              u.title, u.first_name, u.surname, u.email,
+              s.name as seminar_name
+       FROM registrations r
+       LEFT JOIN users u ON r.user_id = u.id
+       LEFT JOIN seminars s ON r.seminar_id = s.id
+       ORDER BY r.created_at DESC
+       LIMIT 5`
+    );
+
+    seminarPayments.forEach(p => {
+      payments.push({
+        id: `sem_${p.id}`,
+        user_name: `${p.title} ${p.first_name} ${p.surname}`,
+        user_email: p.email,
+        payment_type: 'seminar',
+        payment_for: p.seminar_name,
+        amount: parseFloat(p.amount),
+        status: p.status,
+        created_at: p.payment_date || p.created_at
+      });
+    });
+
+    // Get latest membership payments
+    const [membershipPayments] = await promisePool.query(
+      `SELECT mr.id, mr.name, mr.email, mr.membership_type, mr.payment_status, 
+              mr.created_at, mc.price
+       FROM membership_registrations mr
+       LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+       ORDER BY mr.created_at DESC
+       LIMIT 5`
+    );
+
+    membershipPayments.forEach(p => {
+      payments.push({
+        id: `mem_${p.id}`,
+        user_name: p.name,
+        user_email: p.email,
+        payment_type: 'membership',
+        payment_for: `${p.membership_type} Membership`,
+        amount: parseFloat(p.price || 0),
+        status: p.payment_status === 'completed' ? 'completed' : 'pending',
+        created_at: p.created_at
+      });
+    });
+
+    // Sort by date and take top 10
+    payments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const latestPayments = payments.slice(0, 10);
+
+    res.json({
+      success: true,
+      payments: latestPayments
+    });
+  } catch (error) {
+    console.error('Get latest payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch latest payments',
+      error: error.message
+    });
+  }
+};
+
+// Get single payment details
+exports.getPaymentDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [type, paymentId] = id.split('_');
+    
+    let paymentData = null;
+    
+    if (type === 'sem') {
+      const [payments] = await promisePool.query(
+        `SELECT r.*, u.title, u.first_name, u.surname, u.email, u.mobile,
+                s.name as seminar_name, s.start_date, s.end_date, s.location,
+                dc.name as delegate_category
+         FROM registrations r
+         LEFT JOIN users u ON r.user_id = u.id
+         LEFT JOIN seminars s ON r.seminar_id = s.id
+         LEFT JOIN delegate_categories dc ON r.category_id = dc.id
+         WHERE r.id = ?`,
+        [paymentId]
+      );
+      
+      if (payments.length > 0) {
+        const p = payments[0];
+        paymentData = {
+          user_name: `${p.title} ${p.first_name} ${p.surname}`,
+          user_email: p.email,
+          user_mobile: p.mobile,
+          payment_type: 'seminar',
+          payment_for: p.seminar_name,
+          amount: parseFloat(p.amount),
+          status: p.status,
+          transaction_id: p.transaction_id,
+          payment_method: p.payment_method,
+          created_at: p.payment_date || p.created_at,
+          details: {
+            registration_no: p.registration_no,
+            seminar_location: p.location,
+            start_date: p.start_date,
+            end_date: p.end_date,
+            delegate_category: p.delegate_category
+          }
+        };
+      }
+    } else if (type === 'mem') {
+      const [payments] = await promisePool.query(
+        `SELECT mr.*, mc.price, mc.category
+         FROM membership_registrations mr
+         LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+         WHERE mr.id = ?`,
+        [paymentId]
+      );
+      
+      if (payments.length > 0) {
+        const p = payments[0];
+        paymentData = {
+          user_name: p.name,
+          user_email: p.email,
+          user_mobile: p.mobile,
+          payment_type: 'membership',
+          payment_for: `${p.membership_type} Membership`,
+          amount: parseFloat(p.price || 0),
+          status: p.payment_status === 'completed' ? 'completed' : 'pending',
+          transaction_id: p.transaction_id,
+          payment_method: 'Online',
+          created_at: p.created_at,
+          details: {
+            membership_type: p.membership_type,
+            category: p.category,
+            qualification: p.qualification,
+            institution: p.institution
+          }
+        };
+      }
+    }
+    
+    if (!paymentData) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    res.json({
+      success: true,
+      payment: paymentData
+    });
+  } catch (error) {
+    console.error('Get payment details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payment details',
+      error: error.message
+    });
+  }
+};
+
+// Get all payments (membership + seminar registrations)
+exports.getAllPayments = async (req, res) => {
+  try {
+    const payments = [];
+    
+    // Get seminar registration payments
+    const [seminarPayments] = await promisePool.query(
+      `SELECT r.id, r.registration_no, r.user_id, r.amount, r.status, 
+              r.payment_method, r.transaction_id, r.payment_date, r.created_at,
+              u.title, u.first_name, u.surname, u.email, u.mobile,
+              s.name as seminar_name, s.start_date, s.end_date,
+              dc.name as delegate_category
+       FROM registrations r
+       LEFT JOIN users u ON r.user_id = u.id
+       LEFT JOIN seminars s ON r.seminar_id = s.id
+       LEFT JOIN delegate_categories dc ON r.category_id = dc.id
+       ORDER BY r.created_at DESC`
+    );
+
+    // Add seminar payments to array
+    seminarPayments.forEach(payment => {
+      payments.push({
+        id: `sem_${payment.id}`,
+        user_id: payment.user_id,
+        user_name: `${payment.title} ${payment.first_name} ${payment.surname}`,
+        user_email: payment.email,
+        user_mobile: payment.mobile,
+        payment_type: 'seminar',
+        payment_for: payment.seminar_name,
+        amount: parseFloat(payment.amount),
+        transaction_id: payment.transaction_id,
+        payment_method: payment.payment_method,
+        status: payment.status,
+        created_at: payment.payment_date || payment.created_at,
+        details: {
+          registration_no: payment.registration_no,
+          seminar: {
+            name: payment.seminar_name,
+            start_date: payment.start_date,
+            end_date: payment.end_date
+          },
+          delegate_category: payment.delegate_category
+        }
+      });
+    });
+
+    // Get membership payments
+    const [membershipPayments] = await promisePool.query(
+      `SELECT mr.id, mr.name, mr.email, mr.mobile, mr.membership_type,
+              mr.transaction_id, mr.payment_status, mr.created_at,
+              mr.qualification, mr.institution,
+              mc.price, mc.category
+       FROM membership_registrations mr
+       LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+       ORDER BY mr.created_at DESC`
+    );
+
+    // Add membership payments to array
+    membershipPayments.forEach(payment => {
+      payments.push({
+        id: `mem_${payment.id}`,
+        user_id: null,
+        user_name: payment.name,
+        user_email: payment.email,
+        user_mobile: payment.mobile,
+        payment_type: 'membership',
+        payment_for: `${payment.membership_type} Membership`,
+        amount: parseFloat(payment.price || 0),
+        transaction_id: payment.transaction_id,
+        payment_method: 'Online',
+        status: payment.payment_status === 'completed' ? 'completed' : 'pending',
+        created_at: payment.created_at,
+        details: {
+          membership: {
+            type: payment.membership_type,
+            category: payment.category,
+            qualification: payment.qualification,
+            institution: payment.institution
+          }
+        }
+      });
+    });
+
+    // Sort by date
+    payments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Calculate stats
+    const stats = {
+      total: payments.length,
+      completed: payments.filter(p => p.status === 'completed').length,
+      pending: payments.filter(p => p.status === 'pending').length,
+      totalAmount: payments.reduce((sum, p) => sum + p.amount, 0)
+    };
+
+    res.json({
+      success: true,
+      payments,
+      stats
+    });
+  } catch (error) {
+    console.error('Get all payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payments',
+      error: error.message
+    });
+  }
+};
+
+// Download payment receipt as PDF
+exports.downloadPaymentPDF = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const PDFDocument = require('pdfkit');
+    
+    // Parse payment ID
+    const [type, paymentId] = id.split('_');
+    
+    let paymentData = null;
+    
+    if (type === 'sem') {
+      // Get seminar payment
+      const [payments] = await promisePool.query(
+        `SELECT r.*, u.title, u.first_name, u.surname, u.email, u.mobile, u.address,
+                s.name as seminar_name, s.start_date, s.end_date, s.location,
+                dc.name as delegate_category
+         FROM registrations r
+         LEFT JOIN users u ON r.user_id = u.id
+         LEFT JOIN seminars s ON r.seminar_id = s.id
+         LEFT JOIN delegate_categories dc ON r.category_id = dc.id
+         WHERE r.id = ?`,
+        [paymentId]
+      );
+      
+      if (payments.length > 0) {
+        const p = payments[0];
+        paymentData = {
+          type: 'Seminar Registration',
+          user_name: `${p.title} ${p.first_name} ${p.surname}`,
+          user_email: p.email,
+          user_mobile: p.mobile,
+          user_address: p.address,
+          payment_for: p.seminar_name,
+          registration_no: p.registration_no,
+          amount: p.amount,
+          transaction_id: p.transaction_id,
+          payment_method: p.payment_method,
+          status: p.status,
+          date: p.payment_date || p.created_at,
+          details: {
+            seminar_location: p.location,
+            start_date: p.start_date,
+            end_date: p.end_date,
+            delegate_category: p.delegate_category
+          }
+        };
+      }
+    } else if (type === 'mem') {
+      // Get membership payment
+      const [payments] = await promisePool.query(
+        `SELECT mr.*, mc.price, mc.category
+         FROM membership_registrations mr
+         LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+         WHERE mr.id = ?`,
+        [paymentId]
+      );
+      
+      if (payments.length > 0) {
+        const p = payments[0];
+        paymentData = {
+          type: 'Membership Registration',
+          user_name: p.name,
+          user_email: p.email,
+          user_mobile: p.mobile,
+          user_address: p.address,
+          payment_for: `${p.membership_type} Membership`,
+          registration_no: 'N/A',
+          amount: p.price,
+          transaction_id: p.transaction_id,
+          payment_method: 'Online',
+          status: p.payment_status,
+          date: p.created_at,
+          details: {
+            membership_type: p.membership_type,
+            category: p.category,
+            qualification: p.qualification,
+            institution: p.institution
+          }
+        };
+      }
+    }
+    
+    if (!paymentData) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    // Create PDF
+    const doc = new PDFDocument({ margin: 50 });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=payment_receipt_${id}.pdf`);
+    
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(20).text('Bihar Ophthalmic Association', { align: 'center' });
+    doc.fontSize(16).text('Payment Receipt', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(10).text(`Receipt Date: ${new Date().toLocaleDateString('en-GB')}`, { align: 'right' });
+    doc.moveDown(2);
+
+    // Payment Type
+    doc.fontSize(14).text(paymentData.type, { underline: true });
+    doc.moveDown();
+
+    // User Details
+    doc.fontSize(12).text('User Details:', { underline: true });
+    doc.fontSize(10);
+    doc.text(`Name: ${paymentData.user_name}`);
+    doc.text(`Email: ${paymentData.user_email}`);
+    doc.text(`Mobile: ${paymentData.user_mobile}`);
+    if (paymentData.user_address) {
+      doc.text(`Address: ${paymentData.user_address}`);
+    }
+    doc.moveDown();
+
+    // Payment Details
+    doc.fontSize(12).text('Payment Details:', { underline: true });
+    doc.fontSize(10);
+    doc.text(`Payment For: ${paymentData.payment_for}`);
+    if (paymentData.registration_no !== 'N/A') {
+      doc.text(`Registration No: ${paymentData.registration_no}`);
+    }
+    doc.text(`Amount: ₹${paymentData.amount}`);
+    doc.text(`Transaction ID: ${paymentData.transaction_id || 'N/A'}`);
+    doc.text(`Payment Method: ${paymentData.payment_method || 'N/A'}`);
+    doc.text(`Status: ${paymentData.status.toUpperCase()}`);
+    doc.text(`Date: ${new Date(paymentData.date).toLocaleString('en-GB')}`);
+    doc.moveDown();
+
+    // Additional Details
+    if (paymentData.details) {
+      doc.fontSize(12).text('Additional Details:', { underline: true });
+      doc.fontSize(10);
+      
+      if (paymentData.type === 'Seminar Registration') {
+        doc.text(`Location: ${paymentData.details.seminar_location || 'N/A'}`);
+        doc.text(`Start Date: ${new Date(paymentData.details.start_date).toLocaleDateString('en-GB')}`);
+        doc.text(`End Date: ${new Date(paymentData.details.end_date).toLocaleDateString('en-GB')}`);
+        doc.text(`Delegate Category: ${paymentData.details.delegate_category}`);
+      } else if (paymentData.type === 'Membership Registration') {
+        doc.text(`Membership Type: ${paymentData.details.membership_type}`);
+        doc.text(`Category: ${paymentData.details.category}`);
+        doc.text(`Qualification: ${paymentData.details.qualification || 'N/A'}`);
+        doc.text(`Institution: ${paymentData.details.institution || 'N/A'}`);
+      }
+    }
+
+    doc.moveDown(3);
+    doc.fontSize(8).text('This is a computer-generated receipt and does not require a signature.', { align: 'center', italics: true });
+    
+    doc.end();
+  } catch (error) {
+    console.error('Download payment PDF error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate PDF',
+      error: error.message
+    });
+  }
+};
+
+// Export all payments to Excel
+exports.exportAllPayments = async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    
+    // Get all payments
+    const payments = [];
+    
+    // Get seminar payments
+    const [seminarPayments] = await promisePool.query(
+      `SELECT r.registration_no, r.amount, r.status, r.payment_method, 
+              r.transaction_id, r.payment_date, r.created_at,
+              u.title, u.first_name, u.surname, u.email, u.mobile,
+              s.name as seminar_name, dc.name as delegate_category
+       FROM registrations r
+       LEFT JOIN users u ON r.user_id = u.id
+       LEFT JOIN seminars s ON r.seminar_id = s.id
+       LEFT JOIN delegate_categories dc ON r.category_id = dc.id
+       ORDER BY r.created_at DESC`
+    );
+
+    // Get membership payments
+    const [membershipPayments] = await promisePool.query(
+      `SELECT mr.name, mr.email, mr.mobile, mr.membership_type,
+              mr.transaction_id, mr.payment_status, mr.created_at,
+              mc.price
+       FROM membership_registrations mr
+       LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+       ORDER BY mr.created_at DESC`
+    );
+
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    
+    // Seminar Payments Sheet
+    if (seminarPayments.length > 0) {
+      const seminarSheet = workbook.addWorksheet('Seminar Payments');
+      seminarSheet.columns = [
+        { header: 'Registration No', key: 'reg_no', width: 20 },
+        { header: 'User Name', key: 'name', width: 30 },
+        { header: 'Email', key: 'email', width: 30 },
+        { header: 'Mobile', key: 'mobile', width: 15 },
+        { header: 'Seminar', key: 'seminar', width: 30 },
+        { header: 'Category', key: 'category', width: 20 },
+        { header: 'Amount', key: 'amount', width: 15 },
+        { header: 'Transaction ID', key: 'transaction_id', width: 25 },
+        { header: 'Payment Method', key: 'method', width: 15 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Date', key: 'date', width: 20 }
+      ];
+      
+      seminarSheet.addRows(seminarPayments.map(p => ({
+        reg_no: p.registration_no,
+        name: `${p.title} ${p.first_name} ${p.surname}`,
+        email: p.email,
+        mobile: p.mobile,
+        seminar: p.seminar_name,
+        category: p.delegate_category,
+        amount: p.amount,
+        transaction_id: p.transaction_id || 'N/A',
+        method: p.payment_method || 'N/A',
+        status: p.status,
+        date: p.payment_date || p.created_at
+      })));
+    }
+
+    // Membership Payments Sheet
+    if (membershipPayments.length > 0) {
+      const membershipSheet = workbook.addWorksheet('Membership Payments');
+      membershipSheet.columns = [
+        { header: 'Name', key: 'name', width: 30 },
+        { header: 'Email', key: 'email', width: 30 },
+        { header: 'Mobile', key: 'mobile', width: 15 },
+        { header: 'Membership Type', key: 'type', width: 25 },
+        { header: 'Amount', key: 'amount', width: 15 },
+        { header: 'Transaction ID', key: 'transaction_id', width: 25 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Date', key: 'date', width: 20 }
+      ];
+      
+      membershipSheet.addRows(membershipPayments.map(p => ({
+        name: p.name,
+        email: p.email,
+        mobile: p.mobile,
+        type: p.membership_type,
+        amount: p.price,
+        transaction_id: p.transaction_id || 'N/A',
+        status: p.payment_status,
+        date: p.created_at
+      })));
+    }
+
+    // Send file
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=all_payments_${Date.now()}.xlsx`);
+    
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Export all payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export payments',
       error: error.message
     });
   }

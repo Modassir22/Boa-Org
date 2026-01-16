@@ -12,6 +12,9 @@ router.delete('/seminars/:id', adminAuth, adminController.deleteSeminar);
 
 // Users CRUD
 router.get('/users', adminAuth, adminController.getAllUsers);
+router.get('/users/:id/details', adminAuth, adminController.getUserDetails);
+router.get('/users/:id/export', adminAuth, adminController.exportUserDetails);
+router.get('/users/export-all', adminAuth, adminController.exportAllUsers);
 router.delete('/users/:id', adminAuth, adminController.deleteUser);
 
 // Registrations CRUD
@@ -69,5 +72,42 @@ router.delete('/upcoming-events/:id', adminAuth, adminController.deleteUpcomingE
 // Contact Info CRUD
 router.get('/contact-info', adminAuth, adminController.getContactInfo);
 router.put('/contact-info', adminAuth, adminController.updateContactInfo);
+
+// Site Configuration
+router.get('/site-config', adminAuth, adminController.getSiteConfig);
+router.put('/site-config', adminAuth, adminController.updateSiteConfig);
+
+// Membership Form Configuration
+router.get('/membership-form-config', adminAuth, adminController.getMembershipFormConfig);
+router.put('/membership-form-config', adminAuth, adminController.updateMembershipFormConfig);
+
+// Offline Forms Configuration
+router.get('/offline-forms-config', adminAuth, adminController.getOfflineFormsConfig);
+router.put('/offline-forms-config', adminAuth, adminController.updateOfflineFormsConfig);
+
+// Gallery Management
+router.get('/gallery', adminAuth, adminController.getGalleryItems);
+router.post('/gallery', adminAuth, adminController.createGalleryItem);
+router.put('/gallery/:id', adminAuth, adminController.updateGalleryItem);
+router.delete('/gallery/:id', adminAuth, adminController.deleteGalleryItem);
+
+// Membership Categories Management
+router.get('/membership-categories', adminAuth, adminController.getMembershipCategories);
+router.post('/membership-categories', adminAuth, adminController.createMembershipCategory);
+router.put('/membership-categories/:id', adminAuth, adminController.updateMembershipCategory);
+router.delete('/membership-categories/:id', adminAuth, adminController.deleteMembershipCategory);
+
+// Resources Management
+router.get('/resources', adminAuth, adminController.getResources);
+router.post('/resources', adminAuth, adminController.createResource);
+router.put('/resources/:id', adminAuth, adminController.updateResource);
+router.delete('/resources/:id', adminAuth, adminController.deleteResource);
+
+// All Payments
+router.get('/payments/all', adminAuth, adminController.getAllPayments);
+router.get('/payments/latest', adminAuth, adminController.getLatestPayments);
+router.get('/payments/:id/details', adminAuth, adminController.getPaymentDetails);
+router.get('/payments/:id/pdf', adminAuth, adminController.downloadPaymentPDF);
+router.get('/payments/export-all', adminAuth, adminController.exportAllPayments);
 
 module.exports = router;

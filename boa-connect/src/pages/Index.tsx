@@ -1,18 +1,38 @@
 import { Layout } from '@/components/layout/Layout';
-import { SeminarPopup } from '@/components/home/SeminarPopup';
 import { HeroSection } from '@/components/home/HeroSection';
-import { UpcomingEventsCarousel } from '@/components/home/UpcomingEventsCarousel';
-import { SeminarsSection } from '@/components/home/SeminarsSection';
+import { StatsSection } from '@/components/home/StatsSection';
+import { AboutSection } from '@/components/home/AboutSection';
 import { CommitteeSection } from '@/components/home/CommitteeSection';
+import { UpcomingEventsCarousel } from '@/components/home/UpcomingEventsCarousel';
+import { GallerySection } from '@/components/home/GallerySection';
+import { TestimonialsSection } from '@/components/home/TestimonialsSection';
+import { ContactSection } from '@/components/home/ContactSection';
 
 const Index = () => {
   return (
     <Layout>
-      <SeminarPopup />
       <HeroSection />
-      <UpcomingEventsCarousel />
-      <CommitteeSection />
-      <SeminarsSection />
+      <div className="animate-on-scroll">
+        <StatsSection />
+      </div>
+      <div className="animate-on-scroll-left">
+        <AboutSection />
+      </div>
+      <div className="animate-on-scroll-zoom">
+        <CommitteeSection />
+      </div>
+      <div className="animate-on-scroll">
+        <UpcomingEventsCarousel />
+      </div>
+      <div className="animate-on-scroll">
+        <GallerySection />
+      </div>
+      <div className="animate-on-scroll-left">
+        <TestimonialsSection />
+      </div>
+      <div className="animate-on-scroll">
+        <ContactSection />
+      </div>
     </Layout>
   );
 };

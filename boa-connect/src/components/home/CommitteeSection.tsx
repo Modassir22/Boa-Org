@@ -37,36 +37,36 @@ export function CommitteeSection() {
   }
 
   return (
-    <section className="py-20 bg-card">
+    <section className="gov-section-gray">
       <div className="container">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="gov-section-title">
             Our Committee
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="gov-section-subtitle">
             Meet the dedicated team leading our organization
           </p>
         </div>
 
         <div className="flex flex-wrap justify-center items-center gap-10 max-w-7xl mx-auto">
           {committeeMembers.map((member) => (
-            <div key={member.id} className="text-center p-6 rounded-2xl border border-border bg-background hover:shadow-xl transition-all duration-300 w-full max-w-[200px]">
+            <div key={member.id} className="text-center gov-card p-6 w-full max-w-[200px]">
               {member.image_url ? (
                 <img 
                   src={member.image_url} 
                   alt={member.name}
-                  className="h-32 w-32 rounded-full mx-auto mb-4 object-cover border-3 border-primary/20 shadow-lg"
+                  className="h-32 w-32 rounded-full mx-auto mb-4 object-cover border-2" style={{borderColor: '#E3F2FD'}}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                   }}
                 />
               ) : null}
-              <div className={`h-32 w-32 rounded-full gradient-primary mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-primary-foreground shadow-lg ${member.image_url ? 'hidden' : ''}`}>
+              <div className={`h-32 w-32 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-semibold text-white ${member.image_url ? 'hidden' : ''}`} style={{background: '#0B3C5D'}}>
                 {member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
               </div>
-              <h3 className="font-bold text-foreground text-base leading-tight mb-2">{member.name}</h3>
-              <p className="text-primary font-semibold text-sm">{member.profession}</p>
+              <h3 className="font-semibold text-base leading-tight mb-2" style={{color: '#1F2933'}}>{member.name}</h3>
+              <p className="font-medium text-sm" style={{color: '#0B3C5D'}}>{member.profession}</p>
             </div>
           ))}
         </div>

@@ -17,7 +17,10 @@ import {
   UserPlus,
   Award,
   Image,
-  Phone
+  Phone,
+  Settings,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +43,15 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
+    'Overview': true,
+    'Seminar Management': true,
+    'User Management': true,
+    'Financial': true,
+    'Content Management': true,
+    'Membership': true,
+    'Settings': true,
+  });
 
   useEffect(() => {
     loadNotifications();
@@ -98,6 +110,13 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
     navigate('/admin-login');
   };
 
+  const toggleSection = (sectionTitle: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionTitle]: !prev[sectionTitle]
+    }));
+  };
+
   const handleNotificationClick = async (notif: any) => {
     // Mark as read
     try {
@@ -142,17 +161,58 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
     }
   };
 
-  const menuItems = [
-    { id: 'statistics', label: 'Statistics', icon: BarChart },
-    { id: 'seminars', label: 'Seminars', icon: Calendar },
-    { id: 'fees', label: 'Fee Structure', icon: DollarSign },
-    { id: 'registrations', label: 'Registrations', icon: FileText },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'offline-users', label: 'Offline Users', icon: UserPlus },
-    { id: 'committee', label: 'Committee', icon: User },
-    { id: 'certification', label: 'Certification', icon: Award },
-    { id: 'upcoming', label: 'Upcoming Events', icon: Image },
-    { id: 'contact', label: 'Contact Info', icon: Phone },
+  const menuSections = [
+    {
+      title: 'Overview',
+      items: [
+        { id: 'statistics', label: 'Statistics', icon: BarChart },
+      ]
+    },
+    {
+      title: 'Seminar Management',
+      items: [
+        { id: 'seminars', label: 'Seminars', icon: Calendar },
+        { id: 'fees', label: 'Fee Structure', icon: DollarSign },
+        { id: 'registrations', label: 'Registrations', icon: FileText },
+        { id: 'certification', label: 'Certification', icon: Award },
+      ]
+    },
+    {
+      title: 'User Management',
+      items: [
+        { id: 'users', label: 'Online Users', icon: Users },
+        { id: 'offline-users', label: 'Offline Users', icon: UserPlus },
+      ]
+    },
+    {
+      title: 'Financial',
+      items: [
+        { id: 'all-payments', label: 'All Payments', icon: DollarSign },
+      ]
+    },
+    {
+      title: 'Content Management',
+      items: [
+        { id: 'upcoming', label: 'Upcoming Events', icon: Image },
+        { id: 'gallery', label: 'Gallery', icon: Image },
+        { id: 'committee', label: 'Committee', icon: User },
+        { id: 'resources', label: 'Resources', icon: FileText },
+      ]
+    },
+    {
+      title: 'Membership',
+      items: [
+        { id: 'membership-categories', label: 'Membership Plans', icon: Award },
+        { id: 'offline-forms', label: 'Offline Forms', icon: FileText },
+      ]
+    },
+    {
+      title: 'Settings',
+      items: [
+        { id: 'contact', label: 'Contact Info', icon: Phone },
+        { id: 'site-config', label: 'Site Config', icon: Settings },
+      ]
+    },
   ];
 
   const admin = JSON.parse(localStorage.getItem('admin') || '{}');
@@ -282,27 +342,55 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 bg-card border-r border-border transition-all duration-300 z-40 ${
+        className={`fixed top-16 left-0 bottom-0 bg-card border-r border-border transition-all duration-300 z-40 overflow-y-auto ${
           isSidebarOpen ? 'w-64' : 'w-16'
         } hidden lg:block`}
       >
-        <nav className="p-2 space-y-1">
-          {menuItems.map(item => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
+        <nav className="p-2 space-y-2">
+          {menuSections.map((section, sectionIndex) => {
+            const isExpanded = expandedSections[section.title];
             return (
-              <button
-                key={item.id}
-                onClick={() => onTabChange?.(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-5 w-5 flex-shrink-0" />
-                {isSidebarOpen && <span className="font-medium">{item.label}</span>}
-              </button>
+              <div key={sectionIndex}>
+                {isSidebarOpen ? (
+                  <button
+                    onClick={() => toggleSection(section.title)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors rounded-lg hover:bg-accent"
+                  >
+                    <span>{section.title}</span>
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+                ) : (
+                  <div className="h-1 bg-border rounded my-2" />
+                )}
+                
+                {(isSidebarOpen ? isExpanded : true) && (
+                  <div className="space-y-1 mt-1">
+                    {section.items.map(item => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => onTabChange?.(item.id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                          }`}
+                          title={!isSidebarOpen ? item.label : undefined}
+                        >
+                          <Icon className="h-5 w-5 flex-shrink-0" />
+                          {isSidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -310,27 +398,54 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 top-16 bg-background z-40 lg:hidden">
+        <div className="fixed inset-0 top-16 bg-background z-40 lg:hidden overflow-y-auto">
           <nav className="p-4 space-y-2">
-            {menuItems.map(item => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+            {menuSections.map((section, sectionIndex) => {
+              const isExpanded = expandedSections[section.title];
               return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onTabChange?.(item.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
+                <div key={sectionIndex}>
+                  <button
+                    onClick={() => toggleSection(section.title)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors rounded-lg hover:bg-accent"
+                  >
+                    <span>{section.title}</span>
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+                  
+                  {isExpanded && (
+                    <div className="space-y-2 mt-2">
+                      {section.items.map(item => {
+                        const Icon = item.icon;
+                        const isActive = activeTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              onTabChange?.(item.id);
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                              isActive
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span className="font-medium">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  {sectionIndex < menuSections.length - 1 && (
+                    <div className="my-3 border-t border-border" />
+                  )}
+                </div>
               );
             })}
           </nav>

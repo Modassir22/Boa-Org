@@ -18,6 +18,11 @@ export default function UpcomingEventsTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    location: '',
+    start_date: '',
+    end_date: '',
     image_url: '',
     link_url: '',
     display_order: 0
@@ -113,6 +118,11 @@ export default function UpcomingEventsTab() {
   const handleEdit = (event: any) => {
     setEditingEvent(event);
     setFormData({
+      title: event.title || '',
+      description: event.description || '',
+      location: event.location || '',
+      start_date: event.start_date ? event.start_date.split('T')[0] : '',
+      end_date: event.end_date ? event.end_date.split('T')[0] : '',
       image_url: event.image_url || '',
       link_url: event.link_url || '',
       display_order: event.display_order || 0
@@ -139,7 +149,16 @@ export default function UpcomingEventsTab() {
 
   const resetForm = () => {
     setEditingEvent(null);
-    setFormData({ image_url: '', link_url: '', display_order: 0 });
+    setFormData({ 
+      title: '',
+      description: '',
+      location: '',
+      start_date: '',
+      end_date: '',
+      image_url: '', 
+      link_url: '', 
+      display_order: 0 
+    });
   };
 
   if (isLoading) {
@@ -165,6 +184,67 @@ export default function UpcomingEventsTab() {
               <DialogTitle>{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Event Title *</Label>
+                <Input 
+                  value={formData.title} 
+                  onChange={(e) => setFormData({...formData, title: e.target.value})} 
+                  placeholder="Enter event title"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea 
+                  value={formData.description} 
+                  onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                  placeholder="Enter event description"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input 
+                    value={formData.location} 
+                    onChange={(e) => setFormData({...formData, location: e.target.value})} 
+                    placeholder="Event location"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Display Order</Label>
+                  <Input 
+                    type="number" 
+                    value={formData.display_order} 
+                    onChange={(e) => setFormData({...formData, display_order: parseInt(e.target.value)})} 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Date *</Label>
+                  <Input 
+                    type="date" 
+                    value={formData.start_date} 
+                    onChange={(e) => setFormData({...formData, start_date: e.target.value})} 
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Input 
+                    type="date" 
+                    value={formData.end_date} 
+                    onChange={(e) => setFormData({...formData, end_date: e.target.value})} 
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Event Image *</Label>
                 {formData.image_url && (
@@ -207,24 +287,14 @@ export default function UpcomingEventsTab() {
               </div>
 
               <div>
-                <Label>Link URL</Label>
+                <Label>Link URL (Registration Form)</Label>
                 <Input 
                   value={formData.link_url} 
                   onChange={(e) => setFormData({...formData, link_url: e.target.value})} 
                   placeholder="https://example.com or /seminar/1/register"
                   type="text"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Optional - Where to redirect when image is clicked</p>
-              </div>
-
-              <div>
-                <Label>Display Order</Label>
-                <Input 
-                  type="number" 
-                  value={formData.display_order} 
-                  onChange={(e) => setFormData({...formData, display_order: parseInt(e.target.value)})} 
-                />
-                <p className="text-xs text-muted-foreground mt-1">Lower numbers appear first in carousel</p>
+                <p className="text-xs text-muted-foreground mt-1">Optional - Where to redirect when "Click here to register" is clicked</p>
               </div>
 
               <div className="flex justify-end gap-2">
@@ -243,15 +313,18 @@ export default function UpcomingEventsTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Order</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Registration Link</TableHead>
               <TableHead>Image</TableHead>
-              <TableHead>Link URL</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {events.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No upcoming events added yet. Click "Add Event" to create one.
                 </TableCell>
               </TableRow>
@@ -259,13 +332,33 @@ export default function UpcomingEventsTab() {
               events.map((event) => (
                 <TableRow key={event.id}>
                   <TableCell>{event.display_order}</TableCell>
+                  <TableCell className="font-medium">{event.title || '-'}</TableCell>
+                  <TableCell className="text-sm">
+                    {event.start_date ? new Date(event.start_date).toLocaleDateString('en-US', { 
+                      day: 'numeric', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    }) : '-'}
+                  </TableCell>
+                  <TableCell className="text-sm">{event.location || '-'}</TableCell>
+                  <TableCell className="text-sm max-w-xs">
+                    {event.link_url ? (
+                      <a 
+                        href={event.link_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline truncate block"
+                      >
+                        {event.link_url}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">No link</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {event.image_url && (
                       <img src={event.image_url} alt="Event" className="h-12 w-24 object-cover rounded" />
                     )}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                    {event.link_url || '-'}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(event)}>

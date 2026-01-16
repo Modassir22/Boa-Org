@@ -52,6 +52,18 @@ export default function SeminarRegistration() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: 'Login Required',
+        description: 'Please login to register for seminars',
+        variant: 'destructive',
+      });
+      navigate('/login');
+      return;
+    }
+    
     loadSeminarData();
   }, [id]);
 

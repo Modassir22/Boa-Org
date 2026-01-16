@@ -41,22 +41,14 @@ export function SeminarsSection() {
   }
 
   return (
-    <section className="py-20">
+    <section className="gov-section">
       <div className="container">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Upcoming Seminars
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-lg">
-              Stay updated with our latest conferences, workshops, and CME programs.
-            </p>
-          </div>
+        <div className="flex flex-col md:flex-row md:items-end md:justify-end gap-4 mb-12">
           <Link to="/seminars">
-            <Button variant="outline">
+            <button className="bg-white border-2 px-5 py-2.5 rounded font-medium hover:bg-gray-50 transition-colors" style={{color: '#0B3C5D', borderColor: '#0B3C5D'}}>
               View All
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+              <ArrowRight className="ml-2 h-4 w-4 inline" />
+            </button>
           </Link>
         </div>
 
@@ -64,15 +56,15 @@ export function SeminarsSection() {
           {seminars.map((seminar, index) => (
             <div
               key={seminar.id}
-              className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-elevated transition-all duration-300"
+              className="gov-card overflow-hidden"
             >
               {/* Status Badge */}
               {seminar.is_active && (
                 <div className="absolute top-4 right-4 z-10">
-                  <Badge className="gradient-gold text-secondary-foreground border-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary-foreground mr-1.5 animate-pulse" />
+                  <span className="gov-badge-accent">
+                    <span className="w-1.5 h-1.5 rounded-full mr-1.5" style={{background: '#C9A227'}} />
                     Active
-                  </Badge>
+                  </span>
                 </div>
               )}
 
@@ -85,35 +77,34 @@ export function SeminarsSection() {
                       alt={seminar.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Fallback to gradient if image fails to load
                         e.currentTarget.style.display = 'none';
                         e.currentTarget.nextElementSibling?.classList.remove('hidden');
                       }}
                     />
-                    <div className="hidden absolute inset-0 gradient-primary flex items-center justify-center">
-                      <Calendar className="h-16 w-16 text-primary-foreground/30" />
+                    <div className="hidden absolute inset-0 flex items-center justify-center" style={{background: '#0B3C5D'}}>
+                      <Calendar className="h-16 w-16 text-white/30" />
                     </div>
                   </>
                 ) : (
-                  <div className="absolute inset-0 gradient-primary flex items-center justify-center">
-                    <Calendar className="h-16 w-16 text-primary-foreground/30" />
+                  <div className="absolute inset-0 flex items-center justify-center" style={{background: '#0B3C5D'}}>
+                    <Calendar className="h-16 w-16 text-white/30" />
                   </div>
                 )}
               </div>
 
               {/* Content */}
               <div className="p-6 space-y-4">
-                <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                <h3 className="text-xl font-medium" style={{color: '#1F2933'}}>
                   {seminar.name}
                 </h3>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-2 text-sm" style={{color: '#616E7C'}}>
+                    <MapPin className="h-4 w-4" style={{color: '#0B3C5D'}} />
                     <span>{seminar.location}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-2 text-sm" style={{color: '#616E7C'}}>
+                    <Calendar className="h-4 w-4" style={{color: '#0B3C5D'}} />
                     <span>
                       {new Date(seminar.start_date).toLocaleDateString('en-IN', { 
                         day: 'numeric', 
@@ -128,18 +119,18 @@ export function SeminarsSection() {
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="text-sm line-clamp-2" style={{color: '#616E7C'}}>
                   {seminar.description}
                 </p>
 
                 <Link to={seminar.is_active ? `/seminar/${seminar.id}/register` : `/seminar/${seminar.id}`}>
-                  <Button 
-                    className={`w-full ${seminar.is_active ? 'gradient-primary text-primary-foreground' : ''}`}
-                    variant={seminar.is_active ? 'default' : 'outline'}
+                  <button 
+                    className={`w-full ${seminar.is_active ? 'gov-button-primary' : 'bg-white border-2 px-5 py-2.5 rounded font-medium hover:bg-gray-50 transition-colors'}`}
+                    style={!seminar.is_active ? {color: '#0B3C5D', borderColor: '#0B3C5D'} : {}}
                   >
                     {seminar.is_active ? 'Register Now' : 'View Details'}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                    <ArrowRight className="ml-2 h-4 w-4 inline" />
+                  </button>
                 </Link>
               </div>
             </div>
