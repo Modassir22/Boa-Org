@@ -7,6 +7,7 @@ import { UpcomingEventsCarousel } from '@/components/home/UpcomingEventsCarousel
 import { GallerySection } from '@/components/home/GallerySection';
 import { TestimonialsSection } from '@/components/home/TestimonialsSection';
 import { ContactSection } from '@/components/home/ContactSection';
+import { SeminarPopup } from '@/components/home/SeminarPopup';
 
 const Index = () => {
   return (
@@ -33,6 +34,9 @@ const Index = () => {
       <div className="animate-on-scroll">
         <ContactSection />
       </div>
+      
+      {/* Seminar Popup - Shows on page load if active seminar exists */}
+      <SeminarPopup />
     </Layout>
   );
 };

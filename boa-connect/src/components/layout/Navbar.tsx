@@ -37,6 +37,10 @@ export function Navbar() {
   useEffect(() => {
     loadNotifications();
     loadUser();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadNotifications = async () => {
@@ -201,13 +205,20 @@ export function Navbar() {
             >
               <span className="hidden sm:inline text-sm font-medium mr-2">Notice</span>
               <span className="sm:hidden text-sm font-medium">Notice</span>
-              {unreadNotifications > 1 && (
-                <Badge 
-                  className="ml-1 h-5 px-1.5 flex items-center justify-center text-[10px] font-bold text-white border-0 animate-pulse" 
-                  style={{ backgroundColor: theme.accent }}
-                >
-                  {unreadNotifications}
-                </Badge>
+              {unreadNotifications > 0 && (
+                <>
+                  <Badge 
+                    className="ml-1 h-5 px-1.5 flex items-center justify-center text-[10px] font-bold text-white border-0" 
+                    style={{ backgroundColor: theme.accent }}
+                  >
+                    {unreadNotifications}
+                  </Badge>
+                  {/* Pulsing dot indicator */}
+                  <span className="absolute top-1 right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: theme.accent }}></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: theme.accent }}></span>
+                  </span>
+                </>
               )}
             </Button>
           </Link>
@@ -340,7 +351,7 @@ export function Navbar() {
                     style={isActive('/notifications') ? { color: theme.primary } : { color: '#64748b' }}
                   >
                     <span>Notice</span>
-                    {unreadNotifications > 1 && (
+                    {unreadNotifications > 0 && (
                       <Badge 
                         className="h-5 px-2 flex items-center justify-center text-xs text-white border-0" 
                         style={{ backgroundColor: theme.accent }}

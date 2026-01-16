@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface TimeLeft {
   days: number;
@@ -15,6 +16,7 @@ export function UpcomingEventsCarousel() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadEvents();
@@ -104,6 +106,26 @@ export function UpcomingEventsCarousel() {
   };
 
   const handleRegisterClick = () => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      // User not logged in - show toast and redirect to login
+      toast({
+        title: 'Login Required',
+        description: 'Please login to register for this event',
+        variant: 'destructive',
+      });
+      
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        navigate('/login');
+      }, 1000);
+      return;
+    }
+    
+    // User is logged in - proceed with registration
     // If link_url is provided, use it
     if (currentEvent.link_url) {
       // Check if it's an external link
@@ -137,127 +159,135 @@ export function UpcomingEventsCarousel() {
   const currentEvent = events[currentIndex];
 
   return (
-    <section className="py-12" style={{background: '#F9FAFB'}}>
-      <div className="container">
+    <section className="py-10 bg-gray-50">
+      <div className="container max-w-6xl mx-auto px-4">
         {/* Section Heading */}
-        <h2 className="text-4xl font-bold text-center mb-8" style={{color: '#0B3C5D'}}>
-          {events.length > 1 ? 'Upcoming Events' : 'Upcoming Event'}
-        </h2>
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold mb-2 text-[#0B3C5D]">
+            {events.length > 1 ? 'Upcoming Events' : 'Upcoming Event'}
+          </h2>
+          <p className="text-gray-600">Don't miss out on our upcoming event</p>
+        </div>
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="grid md:grid-cols-3 gap-6 p-6">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="grid lg:grid-cols-2 gap-6 p-6">
             {/* Left Side - Event Details */}
-            <div className="md:col-span-2 space-y-4">
-              <div>
-                <h3 className="text-3xl font-bold mb-4" style={{color: '#0B3C5D'}}>
+            <div className="flex flex-col h-full">
+              <div className="flex-1 space-y-4">
+                <h3 className="text-2xl font-bold text-[#0B3C5D]">
                   {currentEvent.title || 'Event Title'}
                 </h3>
                 
                 <div className="space-y-3">
                   {currentEvent.start_date && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Calendar className="h-5 w-5" style={{color: '#0B3C5D'}} />
-                      <span className="font-medium">
-                        {formatDate(currentEvent.start_date)}
-                        {currentEvent.end_date && currentEvent.end_date !== currentEvent.start_date && 
-                          ` - ${formatDate(currentEvent.end_date)}`
-                        }
-                      </span>
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-[#0B3C5D]">
+                        <Calendar className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium mb-1">Event Date</p>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {formatDate(currentEvent.start_date)}
+                          {currentEvent.end_date && currentEvent.end_date !== currentEvent.start_date && 
+                            ` - ${formatDate(currentEvent.end_date)}`
+                          }
+                        </p>
+                      </div>
                     </div>
                   )}
                   
                   {currentEvent.location && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <MapPin className="h-5 w-5" style={{color: '#0B3C5D'}} />
-                      <span>{currentEvent.location}</span>
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-[#0B3C5D]">
+                        <MapPin className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium mb-1">Venue</p>
+                        <p className="text-sm font-semibold text-gray-800">{currentEvent.location}</p>
+                      </div>
                     </div>
                   )}
 
                   {currentEvent.description && (
-                    <p className="text-gray-600 mt-4 leading-relaxed">
-                      {currentEvent.description}
-                    </p>
+                    <div className="p-3 bg-gray-50 rounded-lg border-l-4 border-[#0B3C5D]">
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {currentEvent.description}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* Event Image */}
-              <div className="rounded-lg overflow-hidden shadow-md">
+              <div className="rounded-lg overflow-hidden shadow-md mt-4">
                 <img
                   src={currentEvent.image_url}
                   alt={currentEvent.title || 'Event'}
-                  className="w-full h-[300px] object-cover"
+                  className="w-full h-[200px] object-cover"
                 />
               </div>
             </div>
 
-            {/* Right Side - Countdown Timer & Register Button */}
-            <div className="flex flex-col justify-center">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 shadow-md space-y-6">
-                {/* Countdown Timer */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="h-6 w-6" style={{color: '#0B3C5D'}} />
-                    <h3 className="text-xl font-bold" style={{color: '#0B3C5D'}}>
-                      Event Starts In
-                    </h3>
+            {/* Right Side - Countdown & Button */}
+            <div className="flex flex-col h-full justify-between">
+              {/* Countdown */}
+              <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <Clock className="h-6 w-6 text-[#0B3C5D]" />
+                  <h4 className="text-lg font-bold text-[#0B3C5D]">Event Starts In</h4>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-200">
+                    <div className="text-3xl font-bold text-[#0B3C5D]">
+                      {timeLeft.days}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1 font-medium">Days</div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white rounded-lg p-4 text-center shadow">
-                      <div className="text-3xl font-bold" style={{color: '#0B3C5D'}}>
-                        {timeLeft.days}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">Days</div>
+                  <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-200">
+                    <div className="text-3xl font-bold text-[#0B3C5D]">
+                      {timeLeft.hours}
                     </div>
-                    
-                    <div className="bg-white rounded-lg p-4 text-center shadow">
-                      <div className="text-3xl font-bold" style={{color: '#0B3C5D'}}>
-                        {timeLeft.hours}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">Hours</div>
+                    <div className="text-xs text-gray-600 mt-1 font-medium">Hours</div>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-200">
+                    <div className="text-3xl font-bold text-[#0B3C5D]">
+                      {timeLeft.minutes}
                     </div>
-                    
-                    <div className="bg-white rounded-lg p-4 text-center shadow">
-                      <div className="text-3xl font-bold" style={{color: '#0B3C5D'}}>
-                        {timeLeft.minutes}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">Minutes</div>
+                    <div className="text-xs text-gray-600 mt-1 font-medium">Minutes</div>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-200">
+                    <div className="text-3xl font-bold text-[#0B3C5D]">
+                      {timeLeft.seconds}
                     </div>
-                    
-                    <div className="bg-white rounded-lg p-4 text-center shadow">
-                      <div className="text-3xl font-bold" style={{color: '#0B3C5D'}}>
-                        {timeLeft.seconds}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">Seconds</div>
-                    </div>
+                    <div className="text-xs text-gray-600 mt-1 font-medium">Seconds</div>
                   </div>
                 </div>
-
-                {/* Register Button */}
-                {(currentEvent.link_url || currentEvent.seminar_id) && (
-                  <button
-                    onClick={handleRegisterClick}
-                    className="w-full px-4 py-2.5 rounded-lg font-medium text-white transition-all duration-300 transform hover:scale-105 hover:shadow-xl flex items-center justify-center gap-2"
-                    style={{background: '#0B3C5D'}}
-                  >
-                    Click here to register
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                )}
               </div>
 
-              {/* Event Navigation Dots */}
+              {/* Register Button */}
+              <button
+                onClick={handleRegisterClick}
+                className="w-full px-6 py-3 rounded-lg font-semibold text-white transition-all hover:shadow-lg flex items-center justify-center gap-2 bg-[#0B3C5D] mt-4"
+              >
+                Register Now
+                <ArrowRight className="h-5 w-5" />
+              </button>
+
+              {/* Navigation Dots */}
               {events.length > 1 && (
-                <div className="flex justify-center gap-2 mt-6">
+                <div className="flex justify-center gap-2 pt-3">
                   {events.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentIndex(index)}
-                      className={`h-3 rounded-full transition-all ${
+                      className={`h-2.5 rounded-full transition-all ${
                         index === currentIndex
-                          ? 'w-8 bg-blue-600'
-                          : 'w-3 bg-gray-300 hover:bg-gray-400'
+                          ? 'w-8 bg-[#0B3C5D]'
+                          : 'w-2.5 bg-gray-300 hover:bg-gray-400'
                       }`}
                       aria-label={`Go to event ${index + 1}`}
                     />

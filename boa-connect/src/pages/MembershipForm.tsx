@@ -37,6 +37,17 @@ export default function MembershipForm() {
 
   useEffect(() => {
     loadOfflineForm();
+    
+    // Listen for event to auto-open form
+    const handleOpenForm = () => {
+      setShowOnlineForm(true);
+    };
+    
+    window.addEventListener('openMembershipForm', handleOpenForm);
+    
+    return () => {
+      window.removeEventListener('openMembershipForm', handleOpenForm);
+    };
   }, []);
 
   useEffect(() => {
@@ -299,261 +310,302 @@ export default function MembershipForm() {
 
   return (
     <Layout>
-      <div className="container py-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">Membership Form</h1>
-            <p className="text-lg text-muted-foreground">
-              Join Bihar Ophthalmic Association
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid md:grid-cols-2 gap-4">
-                <Button 
-                  onClick={handleDownloadOfflineForm}
-                  variant="outline"
-                  className="h-20 text-lg"
-                  size="lg"
-                >
-                  <Download className="mr-2 h-6 w-6" />
-                  Download Membership Form
-                </Button>
-                <Button 
-                  onClick={() => setShowOnlineForm(true)}
-                  className="gradient-primary text-primary-foreground h-20 text-lg"
-                  size="lg"
-                >
-                  <Send className="mr-2 h-6 w-6" />
-                  Fill Online Form
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Online Form - Only show when button clicked */}
-          {showOnlineForm && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
+      <div className="container py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Online Form - Always show */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Left Side - Form (2 columns) */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
                   <CardTitle>Online Membership Registration</CardTitle>
                   <CardDescription>
                     Fill the form below to register for BOA membership
                   </CardDescription>
-                </div>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Personal Information */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#0B3C5D]">Personal Information</h3>
+                      
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="name" className="text-sm">Name *</Label>
+                          <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => handleChange('name', e.target.value)}
+                            required
+                            className="h-10"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="father_name" className="text-sm">Father's/Husband Name *</Label>
+                          <Input
+                            id="father_name"
+                            value={formData.father_name}
+                            onChange={(e) => handleChange('father_name', e.target.value)}
+                            required
+                            className="h-10"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="qualification" className="text-sm">Academic Qualification *</Label>
+                        <Input
+                          id="qualification"
+                          value={formData.qualification}
+                          onChange={(e) => handleChange('qualification', e.target.value)}
+                          required
+                          className="h-10"
+                        />
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="year_passing" className="text-sm">Year of Passing *</Label>
+                          <Input
+                            id="year_passing"
+                            type="number"
+                            value={formData.year_passing}
+                            onChange={(e) => handleChange('year_passing', e.target.value)}
+                            required
+                            className="h-10"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="dob" className="text-sm">Date of Birth *</Label>
+                          <Input
+                            id="dob"
+                            type="date"
+                            value={formData.dob}
+                            onChange={(e) => handleChange('dob', e.target.value)}
+                            required
+                            className="h-10"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="institution" className="text-sm">Name of Institution *</Label>
+                        <Input
+                          id="institution"
+                          value={formData.institution}
+                          onChange={(e) => handleChange('institution', e.target.value)}
+                          required
+                          className="h-10"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="working_place" className="text-sm">Working Place *</Label>
+                        <Input
+                          id="working_place"
+                          value={formData.working_place}
+                          onChange={(e) => handleChange('working_place', e.target.value)}
+                          required
+                          className="h-10"
+                        />
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="sex" className="text-sm">Sex *</Label>
+                          <Select value={formData.sex} onValueChange={(value) => handleChange('sex', value)}>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Male">Male</SelectItem>
+                              <SelectItem value="Female">Female</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="age" className="text-sm">Age *</Label>
+                          <Input
+                            id="age"
+                            type="number"
+                            value={formData.age}
+                            onChange={(e) => handleChange('age', e.target.value)}
+                            required
+                            className="h-10"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="address" className="text-sm">Address *</Label>
+                        <Textarea
+                          id="address"
+                          value={formData.address}
+                          onChange={(e) => handleChange('address', e.target.value)}
+                          rows={3}
+                          required
+                        />
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="mobile" className="text-sm">Mobile *</Label>
+                          <Input
+                            id="mobile"
+                            type="tel"
+                            value={formData.mobile}
+                            onChange={(e) => handleChange('mobile', e.target.value)}
+                            required
+                            className="h-10"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="email" className="text-sm">Email *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => handleChange('email', e.target.value)}
+                            required
+                            className="h-10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Membership Selection */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <h3 className="text-lg font-semibold text-[#0B3C5D]">Membership Selection</h3>
+
+                      <div>
+                        <Label htmlFor="membership_type" className="text-sm">Select Membership Type *</Label>
+                        <Select value={formData.membership_type} onValueChange={(value) => handleChange('membership_type', value)}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select membership type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="test">Test Payment (₹1)</SelectItem>
+                            <SelectItem value="yearly_passout">Yearly - Passout (₹1200)</SelectItem>
+                            <SelectItem value="yearly_student">Yearly - Student (₹600)</SelectItem>
+                            <SelectItem value="5yearly_passout">5-Yearly - Passout (₹5000)</SelectItem>
+                            <SelectItem value="5yearly_student">5-Yearly - Student (₹2000)</SelectItem>
+                            <SelectItem value="lifetime">Lifetime - Passout (₹8000)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full gradient-primary text-primary-foreground h-11" disabled={loading}>
+                      <Send className="mr-2 h-5 w-5" />
+                      Pay Now {formData.membership_type && `- ${getMembershipAmount()}`}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Side - Fee Structure (1 column) */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-6 space-y-4">
+                {/* Fee Structure Card */}
+                <Card className="border-2 border-[#0B3C5D]">
+                  <CardHeader className="bg-[#0B3C5D] text-white">
+                    <CardTitle className="text-lg text-white">Membership Fee Structure</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-semibold text-sm">Yearly</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Passout:</span>
+                          <span className="font-bold text-[#0B3C5D]">₹1,200</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Student:</span>
+                          <span className="font-bold text-[#0B3C5D]">₹600</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-semibold text-sm">5-Yearly</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Passout:</span>
+                          <span className="font-bold text-[#0B3C5D]">₹5,000</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Student:</span>
+                          <span className="font-bold text-[#0B3C5D]">₹2,000</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 rounded-lg p-3 border">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-semibold text-sm">Lifetime</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Passout:</span>
+                          <span className="font-bold text-[#0B3C5D]">₹8,000</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Special Offer Card */}
+                <Card className="bg-yellow-50 border-yellow-300">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center flex-shrink-0">
+                        <span className="text-lg">🎉</span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-sm mb-1">Special Offer</h4>
+                        <p className="text-xs text-gray-700">
+                          Get 20% discount when you pay membership along with conference registration before the conference date.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Benefits Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Membership Benefits</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Access to all CME programs</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Discounted conference fees</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Professional networking</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Free publications & journals</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <span>Recognition & awards eligibility</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
               </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Personal Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Personal Information</h3>
-                  
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => handleChange('name', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="father_name">Father's/Husband Name *</Label>
-                      <Input
-                        id="father_name"
-                        value={formData.father_name}
-                        onChange={(e) => handleChange('father_name', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="qualification">Academic Qualification *</Label>
-                    <Input
-                      id="qualification"
-                      value={formData.qualification}
-                      onChange={(e) => handleChange('qualification', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="year_passing">Year of Passing *</Label>
-                      <Input
-                        id="year_passing"
-                        type="number"
-                        value={formData.year_passing}
-                        onChange={(e) => handleChange('year_passing', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dob">Date of Birth *</Label>
-                      <Input
-                        id="dob"
-                        type="date"
-                        value={formData.dob}
-                        onChange={(e) => handleChange('dob', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="institution">Name of Institution *</Label>
-                    <Input
-                      id="institution"
-                      value={formData.institution}
-                      onChange={(e) => handleChange('institution', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="working_place">Working Place *</Label>
-                    <Input
-                      id="working_place"
-                      value={formData.working_place}
-                      onChange={(e) => handleChange('working_place', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="sex">Sex *</Label>
-                      <Select value={formData.sex} onValueChange={(value) => handleChange('sex', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="age">Age on 1st APR 22 *</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        value={formData.age}
-                        onChange={(e) => handleChange('age', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="address">Address *</Label>
-                    <Textarea
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => handleChange('address', e.target.value)}
-                      rows={3}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="mobile">Mobile *</Label>
-                      <Input
-                        id="mobile"
-                        type="tel"
-                        value={formData.mobile}
-                        onChange={(e) => handleChange('mobile', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleChange('email', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Membership & Payment Details */}
-                <div className="space-y-4 pt-6 border-t">
-                  <h3 className="text-lg font-semibold">Membership Selection</h3>
-
-                  {/* Membership Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border">
-                      <thead>
-                        <tr className="bg-primary text-primary-foreground">
-                          <th className="border p-3 text-left">Type</th>
-                          <th className="border p-3 text-left">Passout Fee</th>
-                          <th className="border p-3 text-left">Student Fee</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border p-3">Yearly</td>
-                          <td className="border p-3">₹1200</td>
-                          <td className="border p-3">₹600</td>
-                        </tr>
-                        <tr className="bg-muted/50">
-                          <td className="border p-3">5-Yearly</td>
-                          <td className="border p-3">₹5000</td>
-                          <td className="border p-3">₹2000</td>
-                        </tr>
-                        <tr>
-                          <td className="border p-3">Lifetime</td>
-                          <td className="border p-3">₹8000</td>
-                          <td className="border p-3">₹0</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Special Offer:</strong> Pay membership along with conference registration on or before the conference date to receive 20% discount.
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="membership_type">Select Membership Type *</Label>
-                    <Select value={formData.membership_type} onValueChange={(value) => handleChange('membership_type', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select membership type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="test">Test Payment (₹1)</SelectItem>
-                        <SelectItem value="yearly_passout">Yearly - Passout (₹1200)</SelectItem>
-                        <SelectItem value="yearly_student">Yearly - Student (₹600)</SelectItem>
-                        <SelectItem value="5yearly_passout">5-Yearly - Passout (₹5000)</SelectItem>
-                        <SelectItem value="5yearly_student">5-Yearly - Student (₹2000)</SelectItem>
-                        <SelectItem value="lifetime">Lifetime - Passout (₹8000)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full gradient-primary text-primary-foreground" size="lg" disabled={loading}>
-                  <Send className="mr-2 h-5 w-5" />
-                  Pay Now {formData.membership_type && `- ${getMembershipAmount()}`}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          )}
+            </div>
+          </div>
 
           {/* Payment Modal */}
           {showPaymentModal && (

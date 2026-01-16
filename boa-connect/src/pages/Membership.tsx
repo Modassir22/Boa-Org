@@ -220,7 +220,14 @@ export default function Membership() {
             <Button 
               size="lg" 
               className="gradient-primary text-primary-foreground"
-              onClick={() => navigate('/membership-form')}
+              onClick={() => {
+                navigate('/membership-form');
+                // Trigger form to open automatically
+                setTimeout(() => {
+                  const event = new CustomEvent('openMembershipForm');
+                  window.dispatchEvent(event);
+                }, 100);
+              }}
             >
               Apply Online
               <ArrowRight className="ml-2 h-5 w-5" />

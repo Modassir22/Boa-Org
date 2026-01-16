@@ -179,11 +179,11 @@ export default function UpcomingEventsTab() {
               Add Event
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-2">
                 <Label>Event Title *</Label>
                 <Input 
@@ -200,11 +200,11 @@ export default function UpcomingEventsTab() {
                   value={formData.description} 
                   onChange={(e) => setFormData({...formData, description: e.target.value})} 
                   placeholder="Enter event description"
-                  rows={3}
+                  rows={2}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Location</Label>
                   <Input 
@@ -224,7 +224,7 @@ export default function UpcomingEventsTab() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Start Date *</Label>
                   <Input 
@@ -252,7 +252,7 @@ export default function UpcomingEventsTab() {
                     <img
                       src={formData.image_url}
                       alt="Preview"
-                      className="w-full h-48 object-cover"
+                      className="w-full h-32 object-cover"
                     />
                   </div>
                 )}
@@ -262,12 +262,13 @@ export default function UpcomingEventsTab() {
                     accept="image/*"
                     onChange={handleImageUpload}
                     disabled={isUploading}
-                    className="cursor-pointer"
+                    className="cursor-pointer text-sm"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     disabled={isUploading}
+                    size="sm"
                     onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
                   >
                     {isUploading ? (
@@ -283,23 +284,23 @@ export default function UpcomingEventsTab() {
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Upload banner image (Max 5MB, JPG/PNG) - Recommended size: 1920x600px</p>
+                <p className="text-xs text-muted-foreground">Max 5MB, JPG/PNG - Recommended: 1920x600px</p>
               </div>
 
               <div>
-                <Label>Link URL (Registration Form)</Label>
+                <Label>Registration Link</Label>
                 <Input 
                   value={formData.link_url} 
                   onChange={(e) => setFormData({...formData, link_url: e.target.value})} 
                   placeholder="https://example.com or /seminar/1/register"
                   type="text"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Optional - Where to redirect when "Click here to register" is clicked</p>
+                <p className="text-xs text-muted-foreground mt-1">Optional - Registration form URL</p>
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" className="gradient-primary text-primary-foreground">
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" size="sm" className="gradient-primary text-primary-foreground">
                   {editingEvent ? 'Update' : 'Add'}
                 </Button>
               </div>
