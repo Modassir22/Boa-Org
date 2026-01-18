@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { adminAPI } from '@/lib/api';
 import { Plus, Edit, Trash2, DollarSign } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import DelegateCategoriesManager from '@/components/admin/DelegateCategoriesManager';
 
 export default function FeeStructureTab() {
   const { toast } = useToast();
@@ -311,6 +312,11 @@ export default function FeeStructureTab() {
                 </Button>
               )}
             </div>
+          </div>
+
+          {/* Delegate Categories Manager */}
+          <div className="bg-card rounded-lg border p-4">
+            <DelegateCategoriesManager seminarId={selectedSeminar} />
           </div>
 
       {/* Categories Section */}

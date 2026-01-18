@@ -172,7 +172,8 @@ exports.getActiveSeminar = async (req, res) => {
       seminar: {
         ...seminar,
         categories: formattedCategories,
-        slabs
+        slabs,
+        delegateCategories
       }
     });
 

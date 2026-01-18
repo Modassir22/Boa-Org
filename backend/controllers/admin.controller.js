@@ -863,6 +863,10 @@ exports.updateMembershipDetails = async (req, res) => {
     const { id } = req.params;
     const { membership_no, membership_type, status, valid_from, valid_until, notes } = req.body;
 
+    console.log('=== UPDATE MEMBERSHIP DEBUG ===');
+    console.log('User ID:', id);
+    console.log('Data:', { membership_no, membership_type, status, valid_from, valid_until, notes });
+
     // Check if membership number already exists (excluding current user)
     if (membership_no) {
       const [existing] = await promisePool.query(
@@ -879,11 +883,13 @@ exports.updateMembershipDetails = async (req, res) => {
       }
     }
 
-    // Update user's membership number
+    // Update user's membership number (allow NULL/empty to remove membership)
     await promisePool.query(
       'UPDATE users SET membership_no = ? WHERE id = ?',
-      [membership_no, id]
+      [membership_no || null, id]
     );
+
+    console.log('✓ Updated user membership_no');
 
     // Get user's email for membership_registrations update
     const [user] = await promisePool.query('SELECT email FROM users WHERE id = ?', [id]);
@@ -904,14 +910,16 @@ exports.updateMembershipDetails = async (req, res) => {
           SET membership_type = ?, status = ?, valid_from = ?, valid_until = ?, notes = ?
           WHERE email = ?
         `, [membership_type, status, valid_from || null, valid_until || null, notes, userEmail]);
-      } else {
-        // Create new membership registration record
+        console.log('✓ Updated membership_registrations');
+      } else if (membership_type) {
+        // Create new membership registration record only if membership_type is provided
         await promisePool.query(`
           INSERT INTO membership_registrations 
           (email, name, membership_type, status, valid_from, valid_until, notes, created_at)
           SELECT email, CONCAT(title, ' ', first_name, ' ', surname), ?, ?, ?, ?, ?, NOW()
           FROM users WHERE id = ?
         `, [membership_type, status, valid_from || null, valid_until || null, notes, id]);
+        console.log('✓ Created membership_registrations');
       }
     }
 
@@ -921,6 +929,7 @@ exports.updateMembershipDetails = async (req, res) => {
     });
   } catch (error) {
     console.error('Update membership details error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to update membership details',
@@ -3319,6 +3328,137 @@ exports.exportAllPayments = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to export payments',
+      error: error.message
+    });
+  }
+};
+
+// ============ DELEGATE CATEGORIES CRUD ============
+
+// Get delegate categories for a seminar
+exports.getDelegateCategories = async (req, res) => {
+  try {
+    const { seminar_id } = req.params;
+
+    const [categories] = await promisePool.query(
+      `SELECT * FROM delegate_categories 
+       WHERE seminar_id = ? 
+       ORDER BY display_order ASC, id ASC`,
+      [seminar_id]
+    );
+
+    res.json({
+      success: true,
+      categories
+    });
+  } catch (error) {
+    console.error('Get delegate categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch delegate categories',
+      error: error.message
+    });
+  }
+};
+
+// Create delegate category
+exports.createDelegateCategory = async (req, res) => {
+  try {
+    const { seminar_id, name, label, description, requires_membership, display_order } = req.body;
+
+    if (!seminar_id || !name || !label) {
+      return res.status(400).json({
+        success: false,
+        message: 'Seminar ID, name, and label are required'
+      });
+    }
+
+    const [result] = await promisePool.query(
+      `INSERT INTO delegate_categories 
+       (seminar_id, name, label, description, requires_membership, display_order)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [seminar_id, name, label, description || '', requires_membership || false, display_order || 0]
+    );
+
+    res.json({
+      success: true,
+      message: 'Delegate category created successfully',
+      categoryId: result.insertId
+    });
+  } catch (error) {
+    console.error('Create delegate category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create delegate category',
+      error: error.message
+    });
+  }
+};
+
+// Update delegate category
+exports.updateDelegateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, label, description, requires_membership, display_order } = req.body;
+
+    if (!name || !label) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name and label are required'
+      });
+    }
+
+    await promisePool.query(
+      `UPDATE delegate_categories 
+       SET name = ?, label = ?, description = ?, 
+           requires_membership = ?, display_order = ?
+       WHERE id = ?`,
+      [name, label, description || '', requires_membership || false, display_order || 0, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Delegate category updated successfully'
+    });
+  } catch (error) {
+    console.error('Update delegate category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update delegate category',
+      error: error.message
+    });
+  }
+};
+
+// Delete delegate category
+exports.deleteDelegateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if category is being used in registrations
+    const [registrations] = await promisePool.query(
+      'SELECT COUNT(*) as count FROM registrations WHERE category_id = ?',
+      [id]
+    );
+
+    if (registrations[0].count > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete category that is being used in registrations'
+      });
+    }
+
+    await promisePool.query('DELETE FROM delegate_categories WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'Delegate category deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete delegate category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete delegate category',
       error: error.message
     });
   }
