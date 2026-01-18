@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Search, Download, Eye, FileText, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { exportToCSV, formatPaymentForExport } from '@/lib/exportUtils';
 import {
   Dialog,
   DialogContent,
@@ -94,6 +95,16 @@ export default function AllPaymentsTab() {
     }
   };
 
+  const handleExportCSV = () => {
+    const dataToExport = filteredPayments.length > 0 ? filteredPayments : payments;
+    const formattedData = formatPaymentForExport(dataToExport);
+    exportToCSV(formattedData, 'export_payment');
+    toast({
+      title: 'Success',
+      description: `Exported ${dataToExport.length} payments to CSV`,
+    });
+  };
+
   const applyFilters = () => {
     let filtered = [...payments];
 
@@ -157,34 +168,14 @@ export default function AllPaymentsTab() {
     }
   };
 
-  const handleExportAll = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/admin/payments/export-all', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `all_payments_${Date.now()}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: 'Success',
-        description: 'All payments exported successfully',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to export payments',
-        variant: 'destructive',
-      });
-    }
+  const handleExportAll = () => {
+    const dataToExport = filteredPayments.length > 0 ? filteredPayments : payments;
+    const formattedData = formatPaymentForExport(dataToExport);
+    exportToCSV(formattedData, 'all_payments');
+    toast({
+      title: 'Success',
+      description: `Exported ${dataToExport.length} payments to CSV`,
+    });
   };
 
   if (isLoading) {

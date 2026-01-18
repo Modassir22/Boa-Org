@@ -50,9 +50,9 @@ class HtmlToPdfService {
 
       // Generate PDF buffer
       const pdfBuffer = await page.pdf(pdfOptions);
-      
+
       await page.close();
-      
+
       return pdfBuffer;
     } catch (error) {
       console.error('HTML to PDF conversion error:', error);
@@ -152,7 +152,7 @@ class HtmlToPdfService {
             }
           </style>
         `;
-        
+
         if (processedHtml.includes('<head>')) {
           processedHtml = processedHtml.replace('</head>', `${boaStyles}</head>`);
         } else {
@@ -280,7 +280,7 @@ class HtmlToPdfService {
             }
           </style>
         `;
-        
+
         if (processedHtml.includes('<head>')) {
           processedHtml = processedHtml.replace('</head>', `${boaStyles}</head>`);
         } else {

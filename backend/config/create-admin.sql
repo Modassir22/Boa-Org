@@ -2,7 +2,7 @@
 USE boa_connect;
 
 -- Insert admin user
--- Email: admin@boa.com
+-- Email: Modassir
 -- Password: admin123
 INSERT INTO users (
   title, 
@@ -16,10 +16,10 @@ INSERT INTO users (
   role, 
   is_active
 ) VALUES (
-  'dr',
+  'mr',
+  'Modassir',
   'Admin',
-  'User',
-  'admin@boa.com',
+  'Modassir',
   '$2b$10$V6ceA53/WUJU1HbCw3wMGOd4ajXj4rzTbCC7DHtOz7q/Mu2XxBvXy',
   '9999999999',
   'male',
@@ -53,7 +53,7 @@ INSERT INTO addresses (
 -- Display admin credentials
 SELECT 
   'Admin user created successfully!' as message,
-  'admin@boa.com' as email,
+  'Modassir' as username,
   'admin123' as password,
   'Login at /login and access admin panel' as instructions;
 

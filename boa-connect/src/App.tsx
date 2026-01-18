@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import AdminLogin from "./pages/AdminLogin";
 import RegisterSimple from "./pages/RegisterSimple";
 import Dashboard from "./pages/Dashboard";
+import Certificates from "./pages/Certificates";
 import Notifications from "./pages/Notifications";
 import Seminars from "./pages/Seminars";
 import SeminarDetail from "./pages/SeminarDetail";
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/register" element={<RegisterSimple />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/certificates" element={<Certificates />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/seminars" element={<Seminars />} />
           <Route path="/seminar/:id" element={<SeminarDetail />} />

@@ -75,8 +75,8 @@ export default function AdminLogin() {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4" style={{transform: 'translateZ(0)', backfaceVisibility: 'hidden', opacity: 1, visibility: 'visible'}}>
+        <div className="w-full max-w-md" style={{transform: 'translateZ(0)', opacity: 1, visibility: 'visible'}}>
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
               <Shield className="h-8 w-8 text-primary" />
@@ -87,18 +87,19 @@ export default function AdminLogin() {
             </p>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-8 shadow-card">
-            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <div className="bg-card rounded-2xl border border-border p-8 shadow-card" style={{transform: 'translateZ(0)', backfaceVisibility: 'hidden', opacity: 1, visibility: 'visible'}}>
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" style={{transform: 'translateZ(0)', backfaceVisibility: 'hidden', opacity: 1, visibility: 'visible'}}>
+              <div className="space-y-2" style={{ minHeight: '90px', transform: 'translateZ(0)', opacity: 1, visibility: 'visible' }}>
+                <Label htmlFor="username" style={{opacity: 1, visibility: 'visible'}}>Username</Label>
+                <div className="relative" style={{transform: 'translateZ(0)', opacity: 1, visibility: 'visible'}}>
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" style={{opacity: 1, visibility: 'visible'}} />
                   <Input
                     id="username"
                     name="admin-username"
                     type="text"
                     placeholder="Enter admin username"
                     className="pl-10"
+                    style={{ transition: 'none', animation: 'none', transform: 'translateZ(0)', opacity: 1, visibility: 'visible' }}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
@@ -108,16 +109,17 @@ export default function AdminLogin() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <div className="space-y-2" style={{ minHeight: '90px', transform: 'translateZ(0)', opacity: 1, visibility: 'visible' }}>
+                <Label htmlFor="password" style={{opacity: 1, visibility: 'visible'}}>Password</Label>
+                <div className="relative" style={{transform: 'translateZ(0)', opacity: 1, visibility: 'visible'}}>
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" style={{opacity: 1, visibility: 'visible'}} />
                   <Input
                     id="password"
                     name="admin-password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter admin password"
                     className="pl-10 pr-10"
+                    style={{ transition: 'none', animation: 'none', transform: 'translateZ(0)', opacity: 1, visibility: 'visible' }}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -128,13 +130,14 @@ export default function AdminLogin() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    style={{opacity: 1, visibility: 'visible'}}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full gradient-primary text-primary-foreground" size="lg" disabled={isLoading}>
+              <Button type="submit" className="w-full gradient-primary text-primary-foreground" size="lg" disabled={isLoading} style={{transform: 'translateZ(0)', opacity: 1, visibility: 'visible'}}>
                 {isLoading ? 'Signing in...' : 'Admin Sign In'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>

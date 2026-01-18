@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast';
 import { adminAPI } from '@/lib/api';
 import { Search, Edit, Award, Calendar, User, Mail, Phone, Download } from 'lucide-react';
+import { exportToCSV, formatMembershipForExport } from '@/lib/exportUtils';
 
 // Helper function to format title consistently
 const formatTitle = (title: string) => {
@@ -62,6 +63,16 @@ export default function MembershipManagementTab() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    const dataToExport = filteredMembers.length > 0 ? filteredMembers : members;
+    const formattedData = formatMembershipForExport(dataToExport);
+    exportToCSV(formattedData, 'export_membership_registration');
+    toast({
+      title: 'Success',
+      description: `Exported ${dataToExport.length} memberships to CSV`,
+    });
   };
 
   const filterMembers = () => {
@@ -214,9 +225,9 @@ export default function MembershipManagementTab() {
           <h2 className="text-2xl font-bold">Membership Management</h2>
           <p className="text-muted-foreground">Manage member details and assign membership numbers</p>
         </div>
-        <Button onClick={exportMembersList} className="gradient-primary">
+        <Button onClick={handleExportCSV} className="gradient-primary">
           <Download className="mr-2 h-4 w-4" />
-          Export Members
+          Export CSV
         </Button>
       </div>
 

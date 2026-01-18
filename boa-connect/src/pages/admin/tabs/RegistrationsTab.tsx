@@ -6,9 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { adminAPI } from '@/lib/api';
-import { Trash2, Eye, Download } from 'lucide-react';
+import { Trash2, Eye, Download, Award } from 'lucide-react';
+import { exportToCSV, formatRegistrationForExport } from '@/lib/exportUtils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import AddCertificateModal from '@/components/admin/AddCertificateModal';
 
 // Helper function to convert delegate_type to readable format
 const formatDelegateType = (delegateType: string) => {
@@ -38,6 +40,8 @@ export default function RegistrationsTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   useEffect(() => {
     loadRegistrations();
@@ -52,6 +56,15 @@ export default function RegistrationsTab() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    const formattedData = formatRegistrationForExport(registrations);
+    exportToCSV(formattedData, 'export_user_registration');
+    toast({
+      title: 'Success',
+      description: `Exported ${registrations.length} registrations to CSV`,
+    });
   };
 
   const handleStatusChange = async (id: string, status: string) => {
@@ -86,6 +99,11 @@ export default function RegistrationsTab() {
   const handleViewDetails = (reg: any) => {
     setSelectedRegistration(reg);
     setIsDetailsOpen(true);
+  };
+
+  const handleAddCertificate = (userId: number) => {
+    setSelectedUserId(userId);
+    setIsCertificateModalOpen(true);
   };
 
   const generatePDF = (reg: any) => {
@@ -257,7 +275,13 @@ export default function RegistrationsTab() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Registrations Management</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Registrations Management</h2>
+        <Button onClick={handleExportCSV} className="gap-2">
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
       <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
@@ -322,6 +346,9 @@ export default function RegistrationsTab() {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => generatePDF(reg)} title="Download PDF">
                       <Download className="h-4 w-4 text-green-600" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleAddCertificate(reg.user_id)} title="Add Certificate">
+                      <Award className="h-4 w-4 text-amber-600" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(reg.id)} title="Delete">
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -433,6 +460,19 @@ export default function RegistrationsTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add Certificate Modal */}
+      {selectedUserId && (
+        <AddCertificateModal
+          isOpen={isCertificateModalOpen}
+          onClose={() => {
+            setIsCertificateModalOpen(false);
+            setSelectedUserId(null);
+          }}
+          userId={selectedUserId}
+          onSuccess={loadRegistrations}
+        />
+      )}
     </div>
   );
 }

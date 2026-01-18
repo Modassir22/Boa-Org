@@ -54,10 +54,10 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
   });
 
   useEffect(() => {
-    loadNotifications();
-    // Refresh notifications every 30 seconds
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
+    // Notifications disabled for admin panel
+    // loadNotifications();
+    // const interval = setInterval(loadNotifications, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   const loadNotifications = async () => {
@@ -194,7 +194,6 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
     {
       title: 'Content Management',
       items: [
-        { id: 'notifications', label: 'Notifications', icon: Bell },
         { id: 'upcoming', label: 'Upcoming Events', icon: Image },
         { id: 'gallery', label: 'Gallery', icon: Image },
         { id: 'committee', label: 'Committee', icon: User },
@@ -248,9 +247,10 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
             </Link>
           </div>
 
-          {/* Right: Notifications & Profile */}
+          {/* Right: Profile */}
           <div className="flex items-center gap-3">
-            {/* Notifications */}
+            {/* Notifications - Hidden for Admin */}
+            <div style={{display: 'none'}}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
@@ -311,6 +311,7 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
 
             {/* Admin Profile */}
             <DropdownMenu>

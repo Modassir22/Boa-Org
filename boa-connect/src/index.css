@@ -1,11 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import './styles/animations.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import Government-style animations */
-@import './styles/animations.css';
 
 @layer base {
   :root {
@@ -67,18 +65,35 @@
     line-height: 1.6;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold text-foreground;
     line-height: 1.3;
   }
 
-  h1 { @apply text-3xl md:text-4xl; }
-  h2 { @apply text-2xl md:text-3xl; }
-  h3 { @apply text-xl md:text-2xl; }
-  h4 { @apply text-lg md:text-xl; }
+  h1 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl;
+  }
 }
 
 @layer components {
+
   /* Medical Theme Gradients - Only for Navbar/Footer */
   .gradient-primary {
     background: linear-gradient(to right, #0B3C5D, #0A2540);
@@ -115,7 +130,7 @@
     @apply px-5 py-2.5 rounded font-medium transition-colors text-white;
     background: #0B3C5D;
   }
-  
+
   .gov-button-primary:hover {
     background: #0A2540;
   }
@@ -124,7 +139,7 @@
     @apply px-5 py-2.5 rounded font-medium transition-colors text-white;
     background: #2E7D32;
   }
-  
+
   .gov-button-secondary:hover {
     background: #1B5E20;
   }
@@ -134,7 +149,7 @@
     background: #C9A227;
     color: #1F2933;
   }
-  
+
   .gov-button-accent:hover {
     background: #B8911F;
   }
@@ -181,6 +196,7 @@
 }
 
 @layer utilities {
+
   /* Minimal Animations - Government Standard */
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
@@ -191,18 +207,24 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes slideUp {
-    from { 
-      opacity: 0; 
-      transform: translateY(10px); 
+    from {
+      opacity: 0;
+      transform: translateY(10px);
     }
-    to { 
-      opacity: 1; 
-      transform: translateY(0); 
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 }
@@ -214,6 +236,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -224,6 +247,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -234,6 +258,7 @@
     opacity: 0;
     transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -245,6 +270,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -268,9 +294,80 @@
   animation: scaleIn 0.3s ease-out;
 }
 
-/* Smooth transitions for all interactive elements */
-button, a, .card, .badge {
+/* Smooth transitions for all interactive elements - EXCEPT inputs */
+button,
+a,
+.card,
+.badge {
   transition: all 0.2s ease-in-out;
+}
+
+/* Disable animations on form inputs to prevent shake - AGGRESSIVE FIX */
+input,
+textarea,
+select,
+input *,
+textarea *,
+select *,
+.input,
+.textarea,
+.select {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+  will-change: auto !important;
+  backface-visibility: hidden !important;
+}
+
+/* Disable all animations on form containers */
+form,
+form *,
+.space-y-1\.5,
+.space-y-2,
+.space-y-4,
+.space-y-1\.5 *,
+.space-y-2 *,
+.space-y-4 * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Only allow minimal focus transitions on inputs */
+input:focus,
+textarea:focus,
+select:focus {
+  transition: border-color 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+/* Prevent layout shift in forms */
+form {
+  contain: layout style;
+  transform: translateZ(0);
+}
+
+/* Stabilize form field containers */
+.space-y-1\.5,
+.space-y-2,
+.space-y-4 {
+  contain: layout style;
+}
+
+/* Disable page-level animations that might affect forms */
+.page-enter,
+.section-enter,
+.gov-fade-in,
+.gov-slide-up,
+.animate-fade-in,
+.animate-fade-in-up,
+.animate-slide-up {
+  animation: none !important;
+}
+
+/* Force hardware acceleration off for inputs */
+input,
+textarea,
+select {
+  transform: translate3d(0, 0, 0) !important;
 }
 
 
@@ -282,6 +379,7 @@ button, a, .card, .badge {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -294,6 +392,7 @@ button, a, .card, .badge {
     opacity: 0;
     transform: translateX(-50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -306,6 +405,7 @@ button, a, .card, .badge {
     opacity: 0;
     transform: translateY(50px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -318,6 +418,7 @@ button, a, .card, .badge {
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -330,6 +431,7 @@ button, a, .card, .badge {
     opacity: 0;
     transform: rotate(-10deg) scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: rotate(0) scale(1);
@@ -342,6 +444,7 @@ button, a, .card, .badge {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -377,12 +480,29 @@ button, a, .card, .badge {
 }
 
 /* Staggered delays for multiple elements */
-.scroll-reveal:nth-child(1) { animation-delay: 0.1s; }
-.scroll-reveal:nth-child(2) { animation-delay: 0.2s; }
-.scroll-reveal:nth-child(3) { animation-delay: 0.3s; }
-.scroll-reveal:nth-child(4) { animation-delay: 0.4s; }
-.scroll-reveal:nth-child(5) { animation-delay: 0.5s; }
-.scroll-reveal:nth-child(6) { animation-delay: 0.6s; }
+.scroll-reveal:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.scroll-reveal:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.scroll-reveal:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.scroll-reveal:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.scroll-reveal:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.scroll-reveal:nth-child(6) {
+  animation-delay: 0.6s;
+}
 
 /* Page transition */
 .page-transition {
@@ -444,6 +564,7 @@ html {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
@@ -457,9 +578,12 @@ html {
 
 /* Pulse animation */
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -515,4 +639,160 @@ html {
 .animate-on-scroll-zoom.is-visible {
   opacity: 1;
   transform: scale(1);
+}
+
+
+/* ==================== CRITICAL FIX: PREVENT FORM DISAPPEARING ==================== */
+
+/* Force all form elements to stay visible */
+input,
+textarea,
+select,
+input *,
+textarea *,
+select *,
+form,
+form *,
+.gov-card,
+.gov-card *,
+[class*="login"],
+[class*="Login"],
+[class*="form"],
+[class*="Form"] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Prevent keypress from triggering any animations */
+*:active,
+*:focus,
+*:focus-within,
+input:active,
+input:focus,
+input:focus-within,
+textarea:active,
+textarea:focus,
+textarea:focus-within,
+select:active,
+select:focus,
+select:focus-within {
+  animation: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: border-color 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+/* Override any scroll reveal animations on forms */
+form.scroll-reveal,
+form .scroll-reveal,
+form.animate-on-scroll,
+form .animate-on-scroll {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Ensure login containers stay visible */
+.min-h-\[calc\(100vh-4rem\)\],
+.w-full.max-w-4xl,
+.w-full.max-w-md {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+
+/* ==================== REGISTRATION PAGE FIXES ==================== */
+
+/* Prevent registration form from shuttering/jittering */
+[class*="SeminarRegistration"],
+[class*="seminar-registration"],
+.max-w-7xl,
+.lg\:col-span-2,
+.bg-card.rounded-2xl {
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+
+/* Stabilize registration form inputs */
+.max-w-7xl input,
+.max-w-7xl textarea,
+.max-w-7xl select,
+.lg\:col-span-2 input,
+.lg\:col-span-2 textarea,
+.lg\:col-span-2 select {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  backface-visibility: hidden !important;
+}
+
+/* Prevent step transitions from causing jitter */
+.animate-fade-in {
+  animation: none !important;
+}
+
+/* Stabilize grid layouts in registration */
+.grid.grid-cols-1,
+.grid.grid-cols-1.md\:grid-cols-2,
+.grid.grid-cols-1.md\:grid-cols-3,
+.grid.grid-cols-1.lg\:grid-cols-3 {
+  contain: layout style;
+  transform: translateZ(0);
+}
+
+/* Force registration containers to stay visible */
+.space-y-6,
+.space-y-4,
+.space-y-2,
+.space-y-6 *,
+.space-y-4 *,
+.space-y-2 * {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Disable animations on registration cards */
+.bg-card,
+.rounded-2xl,
+.border.border-border {
+  animation: none !important;
+  transition: box-shadow 0.2s ease !important;
+}
+
+/* Prevent layout shifts during input */
+.max-w-7xl form,
+.lg\:col-span-2 form {
+  contain: layout style;
+  transform: translateZ(0);
+}
+
+/* Stabilize Select components in registration */
+button[role="combobox"],
+div[role="listbox"],
+.select-trigger,
+.select-content {
+  animation: none !important;
+  transition: border-color 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+/* Prevent checkbox/radio animations */
+input[type="checkbox"],
+input[type="radio"],
+.checkbox,
+.radio {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Force hardware acceleration off for registration forms */
+.max-w-7xl,
+.lg\:col-span-2 {
+  transform: translate3d(0, 0, 0) !important;
 }

@@ -110,13 +110,40 @@
   transform: translateY(-2px);
 }
 
-/* Form Elements */
+/* Form Elements - Minimal transitions to prevent shake */
 .gov-input {
   transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
 }
 
 .gov-input:focus {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* AGGRESSIVE: Disable all animations on input fields to prevent shake */
+input, textarea, select,
+input *, textarea *, select *,
+input:before, input:after,
+textarea:before, textarea:after,
+select:before, select:after {
+  animation: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Only allow focus transitions */
+input:focus, textarea:focus, select:focus {
+  transition: border-color 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+/* Disable animations on form containers */
+form, form div, form label, form button {
+  animation: none !important;
+}
+
+/* Keep form stable */
+form {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Error Messages */
@@ -219,4 +246,38 @@
     opacity: 1;
     transform: none;
   }
+}
+
+/* 
+==================== CRITICAL FIX: PREVENT FORM DISAPPEARING ==================== */
+
+/* Force all form elements to stay visible during any interaction */
+input, textarea, select,
+input *, textarea *, select *,
+form, form *,
+.gov-card, .gov-card * {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Prevent any state change from hiding elements */
+*:active, *:focus, *:focus-within, *:hover,
+input:active, input:focus, input:focus-within, input:hover,
+textarea:active, textarea:focus, textarea:focus-within, textarea:hover,
+select:active, select:focus, select:focus-within, select:hover {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Override all animation classes on forms */
+form[class*="animate"],
+form [class*="animate"],
+form[class*="fade"],
+form [class*="fade"],
+form[class*="slide"],
+form [class*="slide"] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: none !important;
+  transform: none !important;
 }

@@ -6,7 +6,6 @@ import { CommitteeSection } from '@/components/home/CommitteeSection';
 import { UpcomingEventsCarousel } from '@/components/home/UpcomingEventsCarousel';
 import { GallerySection } from '@/components/home/GallerySection';
 import { TestimonialsSection } from '@/components/home/TestimonialsSection';
-import { ContactSection } from '@/components/home/ContactSection';
 import { SeminarPopup } from '@/components/home/SeminarPopup';
 
 const Index = () => {
@@ -31,9 +30,6 @@ const Index = () => {
         </div>
         <div className="section-enter">
           <TestimonialsSection />
-        </div>
-        <div className="section-enter">
-          <ContactSection />
         </div>
         
         {/* Seminar Popup - Shows on page load if active seminar exists */}

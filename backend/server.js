@@ -3,7 +3,9 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+// Updated: Added membership verification API and certificate management
 const { testConnection } = require('./config/database');
+const boaSyncService = require('./services/boa-member-sync.service');
 
 const app = express();
 
@@ -71,6 +73,11 @@ try {
   const paymentRoutes = require('./routes/payment.routes');
   app.use('/api/payment', paymentRoutes);
   console.log('✓ Payment routes loaded');
+
+  // Certificate routes
+  const certificateRoutes = require('./routes/certificate.routes');
+  app.use('/api/certificates', certificateRoutes);
+  console.log('✓ Certificate routes loaded');
 
   // Public committee members route
   app.get('/api/committee-members', async (req, res) => {
@@ -440,6 +447,9 @@ const startServer = async () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
       console.log('=== SERVER STARTED - CONSOLE LOG TEST ===');
+      
+      // Start BOA Member Sync Service
+      boaSyncService.start();
     });
   } catch (error) {
     console.error('Failed to start server:', error);

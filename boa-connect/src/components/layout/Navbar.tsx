@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { notificationAPI } from '@/lib/api';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { useFavicon } from '@/hooks/useFavicon';
 
 export function Navbar() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -26,6 +27,9 @@ export function Navbar() {
   const [contactInfo, setContactInfo] = useState<any>(null);
   const navigate = useNavigate();
   const { config } = useSiteConfig();
+
+  // Update favicon with logo
+  useFavicon(config.logo_url);
 
   useEffect(() => {
     loadNotifications();
@@ -141,7 +145,7 @@ export function Navbar() {
   return (
     <>
       {/* Top Contact Bar */}
-      <div className="bg-gray-800 text-gray-300 py-2 hidden md:block gov-fade-in">
+      <div className="bg-gray-800 text-gray-300 py-2 gov-fade-in" style={{opacity: 1, visibility: 'visible'}}>
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center text-sm">
             <div className="flex items-center gap-6">
@@ -164,7 +168,7 @@ export function Navbar() {
                 </a>
               </div>
             </div>
-            <div className="text-xs text-gray-300">
+            <div className="text-xs text-gray-300 hidden md:block">
               Government Recognized Medical Association | Est. 1975
             </div>
           </div>
@@ -253,26 +257,13 @@ export function Navbar() {
                     />
                   </svg>
                   
-                  {/* Notification Badge - Fixed positioning */}
+                  {/* Notification Badge - Only number */}
                   {unreadNotifications > 0 && (
                     <span className="notification-badge absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white border-2 border-blue-900">
                       {unreadNotifications > 9 ? '9+' : unreadNotifications}
                     </span>
                   )}
                 </div>
-                <span className="hidden sm:block text-sm font-medium">
-                  Notifications
-                </span>
-                
-                {/* Pulsing indicator for new announcements - Separate from badge */}
-                {unreadNotifications > 0 && (
-                  <div className="absolute top-1 right-1">
-                    <span className="notification-pulse flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                    </span>
-                  </div>
-                )}
               </div>
             </Link>
 

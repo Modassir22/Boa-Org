@@ -234,3 +234,56 @@ exports.getMembershipDetails = async (req, res) => {
     });
   }
 };
+
+// Verify BOA Membership Number
+exports.verifyMembership = async (req, res) => {
+  try {
+    const { membershipNo } = req.body;
+
+    if (!membershipNo) {
+      return res.status(400).json({
+        success: false,
+        message: 'Membership number is required'
+      });
+    }
+
+    // Check in users table for BOA members
+    const [users] = await promisePool.query(
+      `SELECT id, first_name, surname, email, membership_no, is_boa_member, created_at
+       FROM users 
+       WHERE membership_no = ? AND is_boa_member = TRUE AND is_active = TRUE`,
+      [membershipNo]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid membership number or user is not an active BOA member',
+        verified: false
+      });
+    }
+
+    const user = users[0];
+
+    res.json({
+      success: true,
+      message: 'Membership verified successfully',
+      verified: true,
+      membership: {
+        membershipNo: membershipNo,
+        name: `${user.first_name} ${user.surname}`,
+        email: user.email,
+        memberSince: user.created_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Verify membership error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify membership',
+      error: error.message,
+      verified: false
+    });
+  }
+};

@@ -114,6 +114,36 @@ export const adminAuthAPI = {
     const response = await adminApi.post('/admin-auth/logout');
     return response.data;
   },
+
+  // Generic methods for admin routes
+  get: async (url: string) => {
+    const response = await adminApi.get(url);
+    return response.data;
+  },
+
+  post: async (url: string, data: any) => {
+    const response = await adminApi.post(url, data);
+    return response.data;
+  },
+
+  put: async (url: string, data: any) => {
+    const response = await adminApi.put(url, data);
+    return response.data;
+  },
+
+  delete: async (url: string) => {
+    const response = await adminApi.delete(url);
+    return response.data;
+  },
+
+  uploadCertificateImage: async (formData: FormData) => {
+    const response = await adminApi.post('/admin/certification/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // User APIs
@@ -322,15 +352,6 @@ export const adminAPI = {
   },
   deleteGalleryItem: async (id: number) => {
     const response = await adminApi.delete(`/admin/gallery/${id}`);
-    return response.data;
-  },
-
-  uploadCertificateImage: async (formData: FormData) => {
-    const response = await adminApi.post('/admin/certification/upload-image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
     return response.data;
   },
 

@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { adminAPI } from '@/lib/api';
-import { Download, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 // Import tab components
 import SeminarsTab from './tabs/SeminarsTab';
 import UsersTab from './tabs/UsersTab';
 import RegistrationsTab from './tabs/RegistrationsTab';
-import NotificationsTab from './tabs/NotificationsTab';
 import StatisticsTab from './tabs/StatisticsTab';
 import FeeStructureTab from './tabs/FeeStructureTab';
 import OfflineUsersTab from './tabs/OfflineUsersTab';
@@ -81,32 +79,6 @@ export default function AdminPanel() {
     }
   }, [navigate, toast]);
 
-  const handleExportAll = async () => {
-    try {
-      const blob = await adminAPI.exportRegistrations();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `BOA_Registrations_${Date.now()}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: 'Export Successful',
-        description: 'Registrations exported to Excel',
-      });
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({
-        title: 'Export Failed',
-        description: 'Failed to export registrations',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleReLogin = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('admin');
@@ -134,10 +106,6 @@ export default function AdminPanel() {
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button onClick={handleExportAll} className="gradient-primary text-primary-foreground">
-            <Download className="mr-2 h-4 w-4" />
-            Export All Registrations
-          </Button>
         </div>
       </div>
 
@@ -151,7 +119,6 @@ export default function AdminPanel() {
         {activeTab === 'offline-users' && <OfflineUsersTab />}
         {activeTab === 'membership-management' && <MembershipManagementTab />}
         {activeTab === 'all-payments' && <AllPaymentsTab />}
-        {activeTab === 'notifications' && <NotificationsTab />}
         {activeTab === 'committee' && <CommitteeMembersTab />}
         {activeTab === 'certification' && <CertificationTab />}
         {activeTab === 'upcoming' && <UpcomingEventsTab />}

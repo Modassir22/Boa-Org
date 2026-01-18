@@ -606,6 +606,12 @@ export default function Dashboard() {
                       </Button>
                     </Link>
                   )}
+                  <Link to="/certificates">
+                    <Button variant="outline" className="w-full justify-start">
+                      <Award className="mr-2 h-4 w-4" />
+                      My Certificates
+                    </Button>
+                  </Link>
                   <Link to="/seminars">
                     <Button variant="outline" className="w-full justify-start">
                       <FileText className="mr-2 h-4 w-4" />
