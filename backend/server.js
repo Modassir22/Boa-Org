@@ -137,6 +137,19 @@ try {
     }
   });
 
+  // Public testimonials route
+  app.get('/api/testimonials', async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const [testimonials] = await promisePool.query(
+        'SELECT * FROM testimonials WHERE is_active = TRUE ORDER BY display_order ASC, created_at DESC'
+      );
+      res.json({ success: true, testimonials });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to fetch testimonials' });
+    }
+  });
+
   // Public site config route
   app.get('/api/site-config', async (req, res) => {
     try {

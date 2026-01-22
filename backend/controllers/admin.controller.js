@@ -45,17 +45,20 @@ exports.createSeminar = async (req, res) => {
   try {
     const {
       name, title, location, venue, start_date, end_date,
-      registration_start, registration_end, description, offline_form_html, image_url, is_active, status
+      registration_start, registration_end, description, offline_form_html, image_url, is_active, status,
+      color, online_registration_enabled
     } = req.body;
 
     await connection.beginTransaction();
 
     const [result] = await connection.query(
       `INSERT INTO seminars (name, title, location, venue, start_date, end_date, 
-       registration_start, registration_end, description, offline_form_html, image_url, is_active, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       registration_start, registration_end, description, offline_form_html, image_url, is_active, status,
+       color, online_registration_enabled)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, title, location, venue, start_date, end_date, registration_start, 
-       registration_end, description, offline_form_html || '', image_url, is_active || true, status || 'active']
+       registration_end, description, offline_form_html || '', image_url, is_active || true, status || 'active',
+       color || '#0B3C5D', online_registration_enabled !== false ? 1 : 0]
     );
 
     const seminarId = result.insertId;
@@ -136,15 +139,18 @@ exports.updateSeminar = async (req, res) => {
     const { id } = req.params;
     const {
       name, title, location, venue, start_date, end_date,
-      registration_start, registration_end, description, offline_form_html, image_url, is_active, status
+      registration_start, registration_end, description, offline_form_html, image_url, is_active, status,
+      color, online_registration_enabled
     } = req.body;
 
     await promisePool.query(
       `UPDATE seminars SET name = ?, title = ?, location = ?, venue = ?, start_date = ?, 
        end_date = ?, registration_start = ?, registration_end = ?, 
-       description = ?, offline_form_html = ?, image_url = ?, is_active = ?, status = ? WHERE id = ?`,
+       description = ?, offline_form_html = ?, image_url = ?, is_active = ?, status = ?, 
+       color = ?, online_registration_enabled = ? WHERE id = ?`,
       [name, title, location, venue, start_date, end_date, registration_start, 
-       registration_end, description, offline_form_html || '', image_url, is_active, status || 'active', id]
+       registration_end, description, offline_form_html || '', image_url, is_active, status || 'active',
+       color || '#0B3C5D', online_registration_enabled !== false ? 1 : 0, id]
     );
 
     // Check if notification exists for this seminar
@@ -3469,6 +3475,152 @@ exports.deleteDelegateCategory = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete delegate category',
+      error: error.message
+    });
+  }
+};
+
+
+// ==================== TESTIMONIALS MANAGEMENT ====================
+
+// Get all testimonials
+exports.getAllTestimonials = async (req, res) => {
+  try {
+    const [testimonials] = await promisePool.query(
+      `SELECT * FROM testimonials ORDER BY display_order ASC, created_at DESC`
+    );
+
+    res.json({
+      success: true,
+      testimonials
+    });
+  } catch (error) {
+    console.error('Get testimonials error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch testimonials',
+      error: error.message
+    });
+  }
+};
+
+// Create testimonial
+exports.createTestimonial = async (req, res) => {
+  try {
+    const { name, designation, organization, image_url, testimonial, rating, display_order } = req.body;
+
+    if (!name || !designation || !testimonial) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, designation, and testimonial are required'
+      });
+    }
+
+    const [result] = await promisePool.query(
+      `INSERT INTO testimonials (name, designation, organization, image_url, testimonial, rating, display_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [name, designation, organization || null, image_url || null, testimonial, rating || 5, display_order || 0]
+    );
+
+    res.json({
+      success: true,
+      message: 'Testimonial created successfully',
+      testimonial: {
+        id: result.insertId,
+        name,
+        designation,
+        organization,
+        image_url,
+        testimonial,
+        rating,
+        display_order
+      }
+    });
+  } catch (error) {
+    console.error('Create testimonial error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create testimonial',
+      error: error.message
+    });
+  }
+};
+
+// Update testimonial
+exports.updateTestimonial = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, designation, organization, image_url, testimonial, rating, display_order } = req.body;
+
+    if (!name || !designation || !testimonial) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, designation, and testimonial are required'
+      });
+    }
+
+    await promisePool.query(
+      `UPDATE testimonials 
+       SET name = ?, designation = ?, organization = ?, image_url = ?, 
+           testimonial = ?, rating = ?, display_order = ?
+       WHERE id = ?`,
+      [name, designation, organization || null, image_url || null, testimonial, rating || 5, display_order || 0, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Testimonial updated successfully'
+    });
+  } catch (error) {
+    console.error('Update testimonial error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update testimonial',
+      error: error.message
+    });
+  }
+};
+
+// Delete testimonial
+exports.deleteTestimonial = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query('DELETE FROM testimonials WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'Testimonial deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete testimonial error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete testimonial',
+      error: error.message
+    });
+  }
+};
+
+// Toggle testimonial active status
+exports.toggleTestimonialActive = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query(
+      'UPDATE testimonials SET is_active = NOT is_active WHERE id = ?',
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Testimonial status updated successfully'
+    });
+  } catch (error) {
+    console.error('Toggle testimonial active error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update testimonial status',
       error: error.message
     });
   }

@@ -37,15 +37,15 @@ export default function About() {
 
   return (
     <Layout>
-      <div style={{opacity: 1, visibility: 'visible'}}>
+      <div style={{ opacity: 1, visibility: 'visible' }}>
         {/* Hero Section */}
-        <section className="bg-white py-20 border-b border-gray-200" style={{opacity: 1, visibility: 'visible'}}>
-          <div className="container mx-auto px-4 max-w-4xl" style={{opacity: 1, visibility: 'visible'}}>
-            <div className="text-center" style={{opacity: 1, visibility: 'visible'}}>
+        <section className="bg-white py-20 border-b border-gray-200" style={{ opacity: 1, visibility: 'visible' }}>
+          <div className="container mx-auto px-4 max-w-4xl" style={{ opacity: 1, visibility: 'visible' }}>
+            <div className="text-center" style={{ opacity: 1, visibility: 'visible' }}>
               <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900" style={{ fontFamily: 'Noto Sans, sans-serif', opacity: 1, visibility: 'visible' }}>
                 About Bihar Ophthalmic Association
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto" style={{opacity: 1, visibility: 'visible'}}>
+              <p className="text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto" style={{ opacity: 1, visibility: 'visible' }}>
                 A Government-recognized medical association serving the ophthalmology community of Bihar since 1975
               </p>
             </div>
@@ -61,20 +61,20 @@ export default function About() {
               </h2>
               <div className="prose prose-lg max-w-none">
                 <p className="text-gray-700 leading-relaxed mb-6 text-lg">
-                  The Bihar Ophthalmic Association (BOA) was established in 1975 as a professional medical association 
-                  to serve the ophthalmology community across the state of Bihar. Operating under the jurisdiction of 
-                  the Government of Bihar, BOA functions as the official representative body for ophthalmologists and 
+                  The Bihar Ophthalmic Association (BOA) was established in 1975 as a professional medical association
+                  to serve the ophthalmology community across the state of Bihar. Operating under the jurisdiction of
+                  the Government of Bihar, BOA functions as the official representative body for ophthalmologists and
                   eye care professionals in the region.
                 </p>
                 <p className="text-gray-700 leading-relaxed mb-6 text-lg">
-                  The association serves all 38 districts of Bihar, providing professional development opportunities, 
-                  continuing medical education, and advocacy for improved eye care services throughout the state. 
-                  BOA operates in accordance with medical ethics and professional standards as prescribed by the 
+                  The association serves all 38 districts of Bihar, providing professional development opportunities,
+                  continuing medical education, and advocacy for improved eye care services throughout the state.
+                  BOA operates in accordance with medical ethics and professional standards as prescribed by the
                   Medical Council of India and relevant regulatory authorities.
                 </p>
                 <p className="text-gray-700 leading-relaxed text-lg">
-                  As a registered society under the Societies Registration Act, 1860, BOA maintains transparency 
-                  in its operations and adheres to all statutory requirements for professional medical associations 
+                  As a registered society under the Societies Registration Act, 1860, BOA maintains transparency
+                  in its operations and adheres to all statutory requirements for professional medical associations
                   in India.
                 </p>
               </div>
@@ -97,8 +97,8 @@ export default function About() {
                 {/* Certification Image */}
                 {certification.certificate_image_url && (
                   <div className="p-6 border-b border-gray-200 bg-gray-50">
-                    <img 
-                      src={certification.certificate_image_url} 
+                    <img
+                      src={certification.certificate_image_url}
                       alt="BOA Certification"
                       className="w-full h-auto rounded-lg shadow-md"
                     />
@@ -200,16 +200,16 @@ export default function About() {
               {committeeMembers.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {committeeMembers.map((member, index) => (
-                    <div 
-                      key={member.id} 
+                    <div
+                      key={member.id}
                       className="flex flex-col items-center text-center p-6 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow section-enter"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="relative mb-4">
                         <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-blue-300 bg-white shadow-md">
                           {member.image_url ? (
-                            <img 
-                              src={member.image_url} 
+                            <img
+                              src={member.image_url}
                               alt={member.name}
                               className="h-full w-full object-cover"
                               onError={(e) => {

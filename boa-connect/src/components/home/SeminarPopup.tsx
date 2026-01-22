@@ -120,14 +120,15 @@ export function SeminarPopup() {
           {/* Popup */}
           <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="bg-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+            <div className="text-white p-4 rounded-t-lg flex items-center justify-between" style={{ backgroundColor: upcomingEvent.color || '#2563eb' }}>
               <div className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
                 <h3 className="font-bold text-white text-lg">Upcoming Event</h3>
               </div>
               <button
                 onClick={handleCloseReloadPopup}
-                className="hover:bg-blue-700 rounded-full p-1 transition-colors"
+                className="hover:opacity-80 rounded-full p-1 transition-opacity"
+                style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -158,14 +159,14 @@ export function SeminarPopup() {
               {/* Event Details */}
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <Calendar className="h-4 w-4" style={{ color: upcomingEvent.color || '#2563eb' }} />
                   <span className="font-medium">Date:</span>
                   <span>{formatDate(upcomingEvent.start_date)}</span>
                 </div>
 
                 {upcomingEvent.location && (
                   <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <MapPin className="h-4 w-4 text-blue-600" />
+                    <MapPin className="h-4 w-4" style={{ color: upcomingEvent.color || '#2563eb' }} />
                     <span className="font-medium">Location:</span>
                     <span>{upcomingEvent.location}</span>
                   </div>
@@ -176,7 +177,8 @@ export function SeminarPopup() {
               <div className="flex gap-2">
                 <button
                   onClick={handleViewNotifications}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 text-white font-medium py-2 px-4 rounded-lg transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: upcomingEvent.color || '#2563eb' }}
                 >
                   View Notifications
                 </button>

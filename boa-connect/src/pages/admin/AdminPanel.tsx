@@ -23,6 +23,7 @@ import MembershipCategoriesTab from './tabs/MembershipCategoriesTab';
 import MembershipManagementTab from './tabs/MembershipManagementTab';
 import ResourcesTab from './tabs/ResourcesTab';
 import AllPaymentsTab from './tabs/AllPaymentsTab';
+import TestimonialsTab from './tabs/TestimonialsTab';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -123,6 +124,7 @@ export default function AdminPanel() {
         {activeTab === 'certification' && <CertificationTab />}
         {activeTab === 'upcoming' && <UpcomingEventsTab />}
         {activeTab === 'gallery' && <GalleryTab />}
+        {activeTab === 'testimonials' && <TestimonialsTab />}
         {activeTab === 'membership-categories' && <MembershipCategoriesTab />}
         {activeTab === 'resources' && <ResourcesTab />}
         {activeTab === 'contact' && <ContactInfoTab />}

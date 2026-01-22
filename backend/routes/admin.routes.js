@@ -116,4 +116,11 @@ router.get('/payments/:id/details', adminAuth, adminController.getPaymentDetails
 router.get('/payments/:id/pdf', adminAuth, adminController.downloadPaymentPDF);
 router.get('/payments/export-all', adminAuth, adminController.exportAllPayments);
 
+// Testimonials Management
+router.get('/testimonials', adminAuth, adminController.getAllTestimonials);
+router.post('/testimonials', adminAuth, adminController.createTestimonial);
+router.put('/testimonials/:id', adminAuth, adminController.updateTestimonial);
+router.delete('/testimonials/:id', adminAuth, adminController.deleteTestimonial);
+router.put('/testimonials/:id/toggle-active', adminAuth, adminController.toggleTestimonialActive);
+
 module.exports = router;

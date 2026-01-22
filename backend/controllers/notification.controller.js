@@ -4,7 +4,8 @@ const { promisePool } = require('../config/database');
 exports.getAllNotifications = async (req, res) => {
   try {
     const [notifications] = await promisePool.query(
-      `SELECT n.*, s.name as seminar_name, s.location, s.start_date, s.end_date
+      `SELECT n.*, s.name as seminar_name, s.location, s.start_date, s.end_date, 
+              s.color, s.online_registration_enabled
        FROM notifications n
        LEFT JOIN seminars s ON n.seminar_id = s.id
        WHERE n.is_active = TRUE AND n.type = 'announcement'

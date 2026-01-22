@@ -31,7 +31,9 @@ export default function SeminarsTab() {
     offline_form_html: '',
     image_url: '',
     is_active: true,
-    status: 'active' // 'active' or 'previous'
+    status: 'active', // 'active' or 'previous'
+    color: '#0B3C5D', // Calendar color
+    online_registration_enabled: true // Online registration toggle
   });
 
   useEffect(() => {
@@ -86,7 +88,9 @@ export default function SeminarsTab() {
       offline_form_html: seminar.offline_form_html || '',
       image_url: seminar.image_url || '',
       is_active: seminar.is_active,
-      status: seminar.status || 'active'
+      status: seminar.status || 'active',
+      color: seminar.color || '#0B3C5D',
+      online_registration_enabled: seminar.online_registration_enabled !== false
     });
     setIsDialogOpen(true);
   };
@@ -350,6 +354,49 @@ export default function SeminarsTab() {
                   <p className="text-xs text-muted-foreground mt-1">
                     Previous events will automatically be deactivated and shown in "Previous Events" section without fee structure
                   </p>
+                </div>
+
+                <div className="col-span-2">
+                  <Label>Calendar Color</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="w-20 h-10 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      placeholder="#0B3C5D"
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This color will be used in calendar notifications and event displays
+                  </p>
+                </div>
+
+                <div className="col-span-2 flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <Label className="text-base font-semibold">
+                      Online Registration
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable online registration form. If disabled, only offline form will be shown.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.online_registration_enabled}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, online_registration_enabled: checked })
+                    }
+                    className="
+      data-[state=checked]:bg-green-600
+      data-[state=unchecked]:bg-gray-400
+    "
+                  />
                 </div>
               </div>
               <div className="flex justify-end gap-2">

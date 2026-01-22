@@ -118,7 +118,10 @@ export default function Notifications() {
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div 
+                          className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: notification.color || '#2563eb' }}
+                        >
                           <Calendar className="h-5 w-5 text-white" />
                         </div>
                         <div>
@@ -146,12 +149,17 @@ export default function Notifications() {
                     {/* Actions */}
                     {notification.seminar_id && (
                       <div className="flex flex-col sm:flex-row gap-3">
-                        <Link to={`/seminar/${notification.seminar_id}/register`}>
-                          <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5">
-                            Register Now
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </Link>
+                        {notification.online_registration_enabled === 1 && (
+                          <Link to={`/seminar/${notification.seminar_id}/register`}>
+                            <Button 
+                              className="w-full sm:w-auto h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5 text-white hover:opacity-90"
+                              style={{ backgroundColor: notification.color || '#2563eb' }}
+                            >
+                              Register Now
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </Link>
+                        )}
                         <Button 
                           variant="outline"
                           className="w-full sm:w-auto h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5"

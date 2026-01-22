@@ -14,6 +14,24 @@ import { useToast } from '@/hooks/use-toast';
 import { seminarAPI, registrationAPI } from '@/lib/api';
 import { titleOptions, genderOptions, indianStates } from '@/lib/mockData';
 import { razorpayService } from '@/lib/razorpay';
+import { title } from 'process';
+import { title } from 'process';
+import { title } from 'process';
+import { toast } from 'sonner';
+import { title } from 'process';
+import { toast } from 'sonner';
+import { title } from 'process';
+import { title } from 'process';
+import { title } from 'process';
+import { toast } from 'sonner';
+import { title } from 'process';
+import { title } from 'process';
+import { title } from 'process';
+import { toast } from 'sonner';
+import { title } from 'process';
+import { title } from 'process';
+import { title } from 'process';
+import console from 'console';
 type Step = 'personal' | 'address' | 'registration' | 'fee' | 'consent' | 'payment';
 
 // Helper function to format title consistently
@@ -101,7 +119,7 @@ export default function SeminarRegistration() {
     // Auto-select fee category based on delegate type
     if (delegateType || isBOAMember) {
       const categoryName = isBOAMember ? 'boa-member' : delegateType;
-      
+
       // Find matching fee category (case-insensitive, match by name)
       const matchingFeeCategory = feeCategories.find(cat => {
         const catNameLower = cat.name.toLowerCase().replace(/\s+/g, '-');
@@ -111,11 +129,11 @@ export default function SeminarRegistration() {
 
       if (matchingFeeCategory) {
         setSelectedCategory(matchingFeeCategory.id.toString());
-        
+
         // Auto-select current slab based on date
         const today = new Date();
         let currentSlab = null;
-        
+
         for (const slab of feeSlabs) {
           const dateRange = slab.dateRange;
           const match = dateRange.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
@@ -251,6 +269,37 @@ export default function SeminarRegistration() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Seminars
               </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Check if online registration is disabled
+  if (seminar.online_registration_enabled === false) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1">
+          <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+            <div className="text-center max-w-md mx-auto p-6">
+              <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-2xl font-bold mb-2">Online Registration Closed</h2>
+              <p className="text-muted-foreground mb-6">
+                Online registration for this seminar is currently closed. Please use the offline registration form.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => navigate('/seminars')} variant="outline">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Seminars
+                </Button>
+                <Button onClick={generateOfflineRegistrationForm} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Download Offline Form
+                </Button>
+              </div>
             </div>
           </div>
         </main>
