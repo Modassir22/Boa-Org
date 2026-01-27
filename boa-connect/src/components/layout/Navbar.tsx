@@ -315,12 +315,7 @@ export function Navbar() {
                         <span>Dashboard</span>
                       </DropdownMenuItem>
 
-                      {user.role === 'admin' && (
-                        <DropdownMenuItem onClick={() => navigate('/admin')} className="cursor-pointer">
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>Admin Panel</span>
-                        </DropdownMenuItem>
-                      )}
+                      {/* Admin Panel option removed as requested */}
 
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">

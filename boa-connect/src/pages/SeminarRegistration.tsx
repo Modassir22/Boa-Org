@@ -14,24 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { seminarAPI, registrationAPI } from '@/lib/api';
 import { titleOptions, genderOptions, indianStates } from '@/lib/mockData';
 import { razorpayService } from '@/lib/razorpay';
-import { title } from 'process';
-import { title } from 'process';
-import { title } from 'process';
-import { toast } from 'sonner';
-import { title } from 'process';
-import { toast } from 'sonner';
-import { title } from 'process';
-import { title } from 'process';
-import { title } from 'process';
-import { toast } from 'sonner';
-import { title } from 'process';
-import { title } from 'process';
-import { title } from 'process';
-import { toast } from 'sonner';
-import { title } from 'process';
-import { title } from 'process';
-import { title } from 'process';
-import console from 'console';
 type Step = 'personal' | 'address' | 'registration' | 'fee' | 'consent' | 'payment';
 
 // Helper function to format title consistently
@@ -186,11 +168,6 @@ export default function SeminarRegistration() {
         fees: cat.fees || {}
       }));
 
-      console.log('=== FEE STRUCTURE DEBUG ===');
-      console.log('Raw seminar data:', response.seminar);
-      console.log('Transformed categories:', categories);
-      console.log('Categories with fees:', categories.map(c => ({ id: c.id, name: c.name, fees: c.fees })));
-
       setFeeCategories(categories);
 
       // Transform slabs
@@ -199,8 +176,6 @@ export default function SeminarRegistration() {
         label: slab.label,
         dateRange: slab.date_range
       }));
-
-      console.log('Transformed slabs:', slabs);
 
       setFeeSlabs(slabs);
 
@@ -216,7 +191,6 @@ export default function SeminarRegistration() {
       // Load committee members
       await loadCommitteeMembers();
     } catch (error) {
-      console.error('Failed to load seminar:', error);
       toast({
         title: 'Error',
         description: 'Failed to load seminar details',
@@ -239,7 +213,51 @@ export default function SeminarRegistration() {
         setCommitteeMembers(uniqueMembers);
       }
     } catch (error) {
-      console.error('Failed to load committee members:', error);
+      // Failed to load committee members
+    }
+  };
+
+  const generateOfflineRegistrationForm = async () => {
+    try {
+      if (!seminar?.id) {
+        toast({
+          title: 'Error',
+          description: 'Seminar information not available',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Call backend API to generate PDF from HTML template
+      const response = await fetch(`http://localhost:5000/api/generate-seminar-pdf/${seminar.id}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Get PDF blob
+      const pdfBlob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Success!',
+        description: 'Offline registration form downloaded as PDF',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download form. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -320,7 +338,7 @@ export default function SeminarRegistration() {
     ];
 
     // Filter categories that have matching fee structure
-    return categories.filter(delCat => {
+    const filtered = categories.filter(delCat => {
       const categoryName = delCat.value.toLowerCase().replace(/\s+/g, '-');
       const hasFeeStructure = feeCategories.some(feeCat => {
         const feeCatName = feeCat.name.toLowerCase().replace(/\s+/g, '-');
@@ -328,6 +346,13 @@ export default function SeminarRegistration() {
       });
       return hasFeeStructure;
     });
+    
+    // If no categories match, return all categories (fallback)
+    if (filtered.length === 0) {
+      return categories;
+    }
+    
+    return filtered;
   })();
 
   // Dynamic steps - skip registration step for BOA members
@@ -352,18 +377,6 @@ export default function SeminarRegistration() {
   const selectedFee = feeCategories.find(f => f.id.toString() === selectedCategory);
   const rawAmount = selectedFee && selectedSlab ? selectedFee.fees[selectedSlab] : 0;
   const selectedAmount = typeof rawAmount === 'number' && !isNaN(rawAmount) ? rawAmount : 0;
-
-  // Debug amount calculation
-  if (selectedCategory && selectedSlab) {
-    console.log('=== AMOUNT CALCULATION DEBUG ===');
-    console.log('selectedCategory:', selectedCategory);
-    console.log('selectedSlab:', selectedSlab);
-    console.log('selectedFee:', selectedFee);
-    console.log('selectedFee.fees:', selectedFee?.fees);
-    console.log('rawAmount:', rawAmount);
-    console.log('selectedAmount:', selectedAmount);
-  }
-
   const selectedSlabLabel = feeSlabs.find(s => s.id.toString() === selectedSlab)?.label || '';
   const additionalAmount = additionalPersons.reduce((sum, p) => {
     const amount = typeof p.amount === 'number' && !isNaN(p.amount) ? p.amount : 0;
@@ -409,7 +422,6 @@ export default function SeminarRegistration() {
         });
       }
     } catch (error) {
-      console.error('Verification error:', error);
       toast({
         title: 'Error',
         description: 'Failed to verify membership. Please try again.',
@@ -511,51 +523,6 @@ export default function SeminarRegistration() {
   const handleBack = () => {
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1].id);
-    }
-  };
-
-  const generateOfflineRegistrationForm = async () => {
-    try {
-      if (!seminar?.id) {
-        toast({
-          title: 'Error',
-          description: 'Seminar information not available',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Call backend API to generate PDF from HTML template
-      const response = await fetch(`http://localhost:5000/api/generate-seminar-pdf/${seminar.id}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-
-      // Get PDF blob
-      const pdfBlob = await response.blob();
-
-      // Create download link
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: 'Success!',
-        description: 'Offline registration form downloaded as PDF',
-      });
-    } catch (error) {
-      console.error('Failed to download form:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to download form. Please try again.',
-        variant: 'destructive',
-      });
     }
   };
 
@@ -752,16 +719,6 @@ export default function SeminarRegistration() {
         mobile: mobile
       };
 
-      console.log('=== PAYMENT DEBUG ===');
-      console.log('selectedCategory:', selectedCategory);
-      console.log('selectedSlab:', selectedSlab);
-      console.log('selectedFee:', selectedFee);
-      console.log('rawAmount:', selectedFee && selectedSlab ? selectedFee.fees[selectedSlab] : 'N/A');
-      console.log('selectedAmount:', selectedAmount);
-      console.log('additionalAmount:', additionalAmount);
-      console.log('totalAmount:', totalAmount);
-      console.log('registrationData:', registrationData);
-
       // Validate total amount before payment
       if (!totalAmount || typeof totalAmount !== 'number' || isNaN(totalAmount) || totalAmount <= 0) {
         throw new Error(`Invalid payment amount: ${totalAmount}. Please check your fee selection.`);
@@ -783,8 +740,6 @@ export default function SeminarRegistration() {
       }
 
     } catch (error: any) {
-      console.error('Payment error:', error);
-
       if (error.message === 'Payment cancelled by user') {
         toast({
           title: 'Payment Cancelled',

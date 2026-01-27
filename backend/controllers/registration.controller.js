@@ -36,7 +36,6 @@ exports.createRegistration = async (req, res) => {
   let connection;
   
   try {
-    );
     connection = await promisePool.getConnection();
     await connection.beginTransaction();
     const userId = req.user.id;
@@ -85,9 +84,7 @@ exports.createRegistration = async (req, res) => {
         'UPDATE users SET membership_no = ?, is_boa_member = TRUE WHERE id = ?',
         [membershipNo, userId]
       );
-      
-      } else {
-      }
+    }
 
     // Determine payment status based on Razorpay data
     const paymentStatus = razorpay_payment_id ? 'confirmed' : 'pending';
