@@ -20,9 +20,16 @@ const promisePool = pool.promise();
 const testConnection = async () => {
   try {
     const connection = await promisePool.getConnection();
+    console.log('✅ Database connected successfully');
     connection.release();
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
+    console.error('Connection details:', {
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      database: process.env.DB_NAME,
+      port: process.env.DB_PORT
+    });
     process.exit(1);
   }
 };
