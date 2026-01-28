@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/admin.controller');
+const certificateController = require('../controllers/certificate.controller');
 const adminAuth = require('../middleware/admin-auth.middleware');
 const upload = require('../middleware/upload.middleware');
 
@@ -62,6 +63,9 @@ router.delete('/delegate-categories/:id', adminAuth, adminController.deleteDeleg
 router.get('/certification', adminAuth, adminController.getCertification);
 router.put('/certification', adminAuth, adminController.updateCertification);
 router.post('/certification/upload-image', adminAuth, upload.single('image'), adminController.uploadCertificateImage);
+
+// Certificate Management
+router.post('/certificates/upload', adminAuth, upload.single('certificate'), certificateController.uploadMemberCertificate);
 
 // Upcoming Events CRUD
 router.get('/upcoming-events', adminAuth, adminController.getAllUpcomingEvents);

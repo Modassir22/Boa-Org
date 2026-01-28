@@ -65,8 +65,16 @@ export default function Membership() {
 
   const handleDownloadOfflineForm = async () => {
     try {
-      // Call backend API to generate PDF from HTML template
-      const response = await fetch('http://localhost:5000/api/generate-membership-pdf');
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(`http://localhost:5000/api/generate-membership-pdf?t=${timestamp}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
 
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
@@ -75,11 +83,11 @@ export default function Membership() {
       // Get PDF blob
       const pdfBlob = await response.blob();
 
-      // Create download link
+      // Create download link with timestamp
       const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'BOA_Membership_Application_Form.pdf';
+      link.download = `BOA_Membership_Application_Form_${timestamp}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

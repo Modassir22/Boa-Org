@@ -200,7 +200,6 @@ const sendPasswordResetEmail = async (to, resetLink, userName) => {
     const info = await transporter.sendMail(mailOptions);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Password reset email error:', error.message);
     throw error;
   }
 };
@@ -211,7 +210,6 @@ const testEmailConfig = async () => {
     await transporter.verify();
     return true;
   } catch (error) {
-    console.error('Email service error:', error.message);
     return false;
   }
 };

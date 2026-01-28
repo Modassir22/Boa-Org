@@ -11,7 +11,7 @@ import { SeminarPopup } from '@/components/home/SeminarPopup';
 const Index = () => {
   return (
     <Layout>
-      <div className="page-enter">
+      <div className="page-enter p-10">
         <HeroSection />
         <div className="section-enter">
           <StatsSection />
@@ -22,7 +22,7 @@ const Index = () => {
         <div className="section-enter animate-delay-200">
           <CommitteeSection />
         </div>
-        <hr/>
+        <hr />
         <div className="section-enter animate-delay-300">
           <UpcomingEventsCarousel />
         </div>
@@ -32,7 +32,7 @@ const Index = () => {
         <div className="section-enter">
           <TestimonialsSection />
         </div>
-        
+
         {/* Seminar Popup - Shows on page load if active seminar exists */}
         <SeminarPopup />
       </div>

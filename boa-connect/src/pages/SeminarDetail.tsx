@@ -19,6 +19,11 @@ export default function SeminarDetail() {
   const loadSeminar = async () => {
     try {
       const response = await seminarAPI.getById(id!);
+      console.log('Seminar data loaded:', response.seminar);
+      console.log('Start date:', response.seminar.start_date);
+      console.log('End date:', response.seminar.end_date);
+      console.log('Registration start:', response.seminar.registration_start);
+      console.log('Registration end:', response.seminar.registration_end);
       setSeminar(response.seminar);
     } catch (error) {
       console.error('Failed to load seminar:', error);
@@ -57,6 +62,13 @@ export default function SeminarDetail() {
   const endDate = new Date(seminar.end_date);
   const regStartDate = new Date(seminar.registration_start);
   const regEndDate = new Date(seminar.registration_end);
+
+  console.log('Parsed dates:', {
+    startDate: startDate.toLocaleDateString(),
+    endDate: endDate.toLocaleDateString(),
+    regStartDate: regStartDate.toLocaleDateString(),
+    regEndDate: regEndDate.toLocaleDateString()
+  });
 
   return (
     <Layout>
@@ -104,7 +116,7 @@ export default function SeminarDetail() {
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
                 {seminar.name}
               </h1>
-              <div className="flex flex-wrap gap-4 text-white/90">
+              <div className="flex flex-wrap gap-4 text-white/90 mb-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
                   <span>{seminar.location}</span>
@@ -118,6 +130,8 @@ export default function SeminarDetail() {
                   </span>
                 </div>
               </div>
+              
+          
             </div>
           </div>
 
@@ -267,11 +281,12 @@ export default function SeminarDetail() {
                     <Calendar className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <p className="text-sm text-muted-foreground">Conference Dates</p>
-                      <p className="font-semibold">
-                        {startDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      <p className="font-bold text-lg text-primary">
+                        {startDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                         {' - '}
-                        {endDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {endDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </p>
+          
                     </div>
                   </div>
 
@@ -279,11 +294,12 @@ export default function SeminarDetail() {
                     <Clock className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <p className="text-sm text-muted-foreground">Registration Period</p>
-                      <p className="font-semibold">
-                        {regStartDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      <p className="font-bold text-lg text-primary">
+                        {regStartDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                         {' - '}
-                        {regEndDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {regEndDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </p>
+                     
                     </div>
                   </div>
 

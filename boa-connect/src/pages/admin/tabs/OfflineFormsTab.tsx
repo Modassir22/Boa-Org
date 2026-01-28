@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, FileText, Calendar } from 'lucide-react';
+import { Save, FileText, Calendar, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminAPI } from '@/lib/api';
 
@@ -12,6 +12,8 @@ export function OfflineFormsTab() {
   const [loading, setLoading] = useState(false);
   const [membershipFormHtml, setMembershipFormHtml] = useState('');
   const [seminarFormHtml, setSeminarFormHtml] = useState('');
+  const [showMembershipPreview, setShowMembershipPreview] = useState(false);
+  const [showSeminarPreview, setShowSeminarPreview] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -31,15 +33,25 @@ export function OfflineFormsTab() {
   };
 
   const handleSave = async () => {
+    console.log('=== SAVE BUTTON CLICKED ===');
+    console.log('Membership HTML length:', membershipFormHtml?.length || 0);
+    console.log('Seminar HTML length:', seminarFormHtml?.length || 0);
+    
     setLoading(true);
     try {
-      await adminAPI.updateOfflineFormsConfig({
+      console.log('Calling adminAPI.updateOfflineFormsConfig...');
+      const response = await adminAPI.updateOfflineFormsConfig({
         membership_form_html: membershipFormHtml,
         seminar_form_html: seminarFormHtml
       });
+      console.log('Response:', response);
       toast.success('Offline forms configuration updated successfully');
+      
+      // Reload to verify
+      await loadConfig();
     } catch (error: any) {
       console.error('Failed to update offline forms config:', error);
+      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to update configuration');
     } finally {
       setLoading(false);
@@ -48,6 +60,18 @@ export function OfflineFormsTab() {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        .html-editor-textarea {
+          min-height: 500px !important;
+          height: 500px !important;
+          max-height: none !important;
+          overflow-y: auto !important;
+        }
+        .html-editor-textarea:focus {
+          min-height: 500px !important;
+          height: 500px !important;
+        }
+      `}</style>
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Offline Forms Configuration</h2>
@@ -83,31 +107,71 @@ export function OfflineFormsTab() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="membership-html">HTML Content</Label>
-                <Textarea
-                  id="membership-html"
-                  value={membershipFormHtml}
-                  onChange={(e) => setMembershipFormHtml(e.target.value)}
-                  placeholder="Enter complete HTML for offline membership form..."
-                  className="min-h-[400px] font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Enter the complete HTML markup including declaration section. This will be downloaded as a file.
-                </p>
-              </div>
-
-              {membershipFormHtml && (
-                <div>
-                  <Label>Preview</Label>
-                  <div className="border rounded-lg p-4 bg-muted/50 max-h-[300px] overflow-auto">
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: membershipFormHtml }}
-                      style={{ maxWidth: '100%', width: '100%' }}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="membership-html">
+                    {showMembershipPreview ? 'Form Preview' : 'HTML Content'}
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowMembershipPreview(!showMembershipPreview)}
+                    className="gap-2"
+                  >
+                    {showMembershipPreview ? (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        Back to Editor
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        Show Preview
+                      </>
+                    )}
+                  </Button>
                 </div>
-              )}
+
+                {!showMembershipPreview ? (
+                  <>
+                    <Textarea
+                      id="membership-html"
+                      value={membershipFormHtml}
+                      onChange={(e) => setMembershipFormHtml(e.target.value)}
+                      placeholder="Enter complete HTML for offline membership form..."
+                      className="html-editor-textarea font-mono text-sm resize-y w-full"
+                      rows={25}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter the complete HTML markup including declaration section. This will be downloaded as a file.
+                    </p>
+                    {membershipFormHtml && (
+                      <p className="text-xs text-green-600">
+                        ✓ HTML loaded ({membershipFormHtml.length} characters)
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="border rounded-lg p-6 bg-white overflow-auto" style={{ minHeight: '600px' }}>
+                      <iframe
+                        srcDoc={membershipFormHtml}
+                        style={{ 
+                          width: '100%', 
+                          minHeight: '800px',
+                          border: 'none',
+                          background: 'white'
+                        }}
+                        title="Membership Form Preview"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Preview of how the form will look when downloaded. Click "Back to Editor" to continue editing.
+                    </p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -122,31 +186,71 @@ export function OfflineFormsTab() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="seminar-html">HTML Content</Label>
-                <Textarea
-                  id="seminar-html"
-                  value={seminarFormHtml}
-                  onChange={(e) => setSeminarFormHtml(e.target.value)}
-                  placeholder="Enter complete HTML for offline seminar registration form..."
-                  className="min-h-[400px] font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Enter the complete HTML markup for seminar registration. This will be used for offline registrations.
-                </p>
-              </div>
-
-              {seminarFormHtml && (
-                <div>
-                  <Label>Preview</Label>
-                  <div className="border rounded-lg p-4 bg-muted/50 max-h-[300px] overflow-auto">
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: seminarFormHtml }}
-                      style={{ maxWidth: '100%', width: '100%' }}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="seminar-html">
+                    {showSeminarPreview ? 'Form Preview' : 'HTML Content'}
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSeminarPreview(!showSeminarPreview)}
+                    className="gap-2"
+                  >
+                    {showSeminarPreview ? (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        Back to Editor
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        Show Preview
+                      </>
+                    )}
+                  </Button>
                 </div>
-              )}
+
+                {!showSeminarPreview ? (
+                  <>
+                    <Textarea
+                      id="seminar-html"
+                      value={seminarFormHtml}
+                      onChange={(e) => setSeminarFormHtml(e.target.value)}
+                      placeholder="Enter complete HTML for offline seminar registration form..."
+                      className="html-editor-textarea font-mono text-sm resize-y w-full"
+                      rows={25}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter the complete HTML markup for seminar registration. This will be used for offline registrations.
+                    </p>
+                    {seminarFormHtml && (
+                      <p className="text-xs text-green-600">
+                        ✓ HTML loaded ({seminarFormHtml.length} characters)
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="border rounded-lg p-6 bg-white overflow-auto" style={{ minHeight: '600px' }}>
+                      <iframe
+                        srcDoc={seminarFormHtml}
+                        style={{ 
+                          width: '100%', 
+                          minHeight: '800px',
+                          border: 'none',
+                          background: 'white'
+                        }}
+                        title="Seminar Form Preview"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Preview of how the form will look when downloaded. Click "Back to Editor" to continue editing.
+                    </p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

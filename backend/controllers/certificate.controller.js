@@ -150,3 +150,93 @@ exports.deleteCertificate = async (req, res) => {
     });
   }
 };
+
+// Upload certificate for member (admin only)
+exports.uploadMemberCertificate = async (req, res) => {
+  try {
+    console.log('=== UPLOAD MEMBER CERTIFICATE ===');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+    console.log('Admin user:', req.admin);
+
+    const { user_id, title, description, issue_date, expiry_date, certificate_type } = req.body;
+    const adminId = req.admin?.id || null;
+
+    console.log('Parsed data:', { user_id, title, description, issue_date, expiry_date, certificate_type, adminId });
+
+    if (!user_id || !title) {
+      console.log('Missing required fields');
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and certificate title are required'
+      });
+    }
+
+    // Check if file was uploaded
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).json({
+        success: false,
+        message: 'Certificate file is required'
+      });
+    }
+
+    console.log('Uploading to Cloudinary...');
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'certificates',
+      resource_type: 'auto'
+    });
+    console.log('Cloudinary upload result:', result.secure_url);
+
+    console.log('Inserting into database...');
+    // Insert certificate record
+    const [insertResult] = await promisePool.query(
+      `INSERT INTO user_certificates 
+       (user_id, certificate_name, certificate_url, issued_date, expiry_date, description, certificate_type, uploaded_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        user_id, 
+        title, 
+        result.secure_url, 
+        issue_date || null, 
+        expiry_date || null, 
+        description || null, 
+        certificate_type || 'membership',
+        adminId
+      ]
+    );
+    console.log('Certificate inserted with ID:', insertResult.insertId);
+
+    console.log('Creating notification...');
+    // Create global notification about certificate upload
+    await promisePool.query(
+      `INSERT INTO notifications (title, message, type, is_active, created_at)
+       VALUES (?, ?, ?, TRUE, NOW())`,
+      [
+        'Certificate Uploaded',
+        `A ${certificate_type || 'membership'} certificate "${title}" has been uploaded for a member.`,
+        'certificate'
+      ]
+    );
+    console.log('Notification created');
+
+    res.json({
+      success: true,
+      message: 'Certificate uploaded successfully',
+      certificate: {
+        id: insertResult.insertId,
+        certificate_url: result.secure_url,
+        title: title
+      }
+    });
+  } catch (error) {
+    console.error('Upload member certificate error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload certificate',
+      error: error.message
+    });
+  }
+};

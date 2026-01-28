@@ -45,9 +45,9 @@ export default function CommitteeMembersTab() {
     e.preventDefault();
     try {
       if (editingMember) {
-        await axios.put(`http://localhost:5000/api/admin/committee-members/${editingMember.id}`, 
+        await axios.put(`http://localhost:5000/api/admin/committee-members/${editingMember.id}`,
           { ...formData, is_active: true },
-          { headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }}
+          { headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` } }
         );
         toast({ title: 'Success', description: 'Member updated successfully' });
       } else {
@@ -100,7 +100,7 @@ export default function CommitteeMembersTab() {
       uploadFormData.append('image', file);
 
       const response = await adminAuthAPI.uploadCertificateImage(uploadFormData);
-      
+
       if (response.success) {
         setFormData(prev => ({ ...prev, image_url: response.image_url }));
         toast({ title: 'Success', description: 'Image uploaded successfully!' });
@@ -161,13 +161,13 @@ export default function CommitteeMembersTab() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Name *</Label>
-                <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required placeholder="Dr. John Doe" />
+                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Dr. John Doe" />
               </div>
               <div>
                 <Label>Profession/Role *</Label>
-                <Input value={formData.profession} onChange={(e) => setFormData({...formData, profession: e.target.value})} required placeholder="President" />
+                <Input value={formData.profession} onChange={(e) => setFormData({ ...formData, profession: e.target.value })} required placeholder="President" />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Member Image</Label>
                 {formData.image_url && (
@@ -208,18 +208,18 @@ export default function CommitteeMembersTab() {
                 </div>
                 <p className="text-xs text-muted-foreground">Upload image (Max 5MB, JPG/PNG) or leave empty for default avatar</p>
               </div>
-              
+
               <div>
                 <Label>Image URL (Alternative)</Label>
-                <Input value={formData.image_url} onChange={(e) => setFormData({...formData, image_url: e.target.value})} placeholder="https://example.com/image.jpg" />
+                <Input value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} placeholder="https://example.com/image.jpg" />
                 <p className="text-xs text-muted-foreground mt-1">Or paste image URL directly</p>
               </div>
-              
+
               <div>
                 <Label>Display On Page *</Label>
-                <select 
-                  value={formData.page_type} 
-                  onChange={(e) => setFormData({...formData, page_type: e.target.value})}
+                <select
+                  value={formData.page_type}
+                  onChange={(e) => setFormData({ ...formData, page_type: e.target.value })}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   required
                 >
@@ -228,10 +228,10 @@ export default function CommitteeMembersTab() {
                 </select>
                 <p className="text-xs text-muted-foreground mt-1">Choose where to display this member</p>
               </div>
-              
+
               <div>
                 <Label>Display Order</Label>
-                <Input type="number" value={formData.display_order} onChange={(e) => setFormData({...formData, display_order: parseInt(e.target.value)})} />
+                <Input type="number" value={formData.display_order} onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })} />
                 <p className="text-xs text-muted-foreground mt-1">Lower numbers appear first</p>
               </div>
               <div className="flex justify-end gap-2 pt-4 sticky bottom-0 bg-background border-t mt-4 -mx-6 px-6 py-4">
@@ -264,7 +264,7 @@ export default function CommitteeMembersTab() {
                 <TableCell className="font-medium">{member.name}</TableCell>
                 <TableCell>{member.profession}</TableCell>
                 <TableCell>
-                  <span className={`text-xs px-2 py-1 rounded ${member.page_type === 'home' ? 'bg-primary/10 text-primary' : 'bg-secondary/10 text-secondary-foreground'}`}>
+                  <span className={`text-xs px-2 py-1 rounded ${member.page_type === 'home' ? 'bg-primary text-white' : 'bg-primary text-white'}`}>
                     {member.page_type === 'home' ? 'Home' : 'About'}
                   </span>
                 </TableCell>

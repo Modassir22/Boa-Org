@@ -15,6 +15,9 @@ const adminApi = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
   },
 });
 
@@ -362,6 +365,16 @@ export const adminAPI = {
   },
   updateMembershipDetails: async (id: string, data: any) => {
     const response = await adminApi.put(`/admin/members/${id}`, data);
+    return response.data;
+  },
+
+  // Certificate Management
+  uploadCertificate: async (formData: FormData) => {
+    const response = await adminApi.post('/admin/certificates/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

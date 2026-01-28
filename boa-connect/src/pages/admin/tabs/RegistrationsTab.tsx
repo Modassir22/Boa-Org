@@ -13,9 +13,15 @@ import 'jspdf-autotable';
 import AddCertificateModal from '@/components/admin/AddCertificateModal';
 
 // Helper function to convert delegate_type to readable format
-const formatDelegateType = (delegateType: string) => {
+const formatDelegateType = (delegateType: string, categoryName?: string) => {
+  // If we have the original category name, use that
+  if (categoryName) {
+    return categoryName;
+  }
+  
+  // Fallback to mapping delegate_type
   const typeMap: { [key: string]: string } = {
-    'boa-member': 'BOA Member',
+    'life-member': 'Life Member',
     'non-boa-member': 'Non BOA Member',
     'accompanying-person': 'Accompanying Person'
   };
@@ -171,7 +177,7 @@ export default function RegistrationsTab() {
       ['Mobile:', reg.mobile],
       ['Gender:', reg.gender],
       ['Membership No:', reg.membership_no || 'N/A'],
-      ['Delegate Type:', formatDelegateType(reg.delegate_type) || 'Self']
+      ['Delegate Type:', formatDelegateType(reg.delegate_type, reg.category_name) || 'Self']
     ];
     
     participantInfo.forEach(([label, value]) => {
@@ -306,7 +312,7 @@ export default function RegistrationsTab() {
                 <TableCell className="text-sm">{reg.category_name}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize">
-                    {formatDelegateType(reg.delegate_type) || 'Self'}
+                    {formatDelegateType(reg.delegate_type, reg.category_name) || 'Self'}
                   </Badge>
                 </TableCell>
                 <TableCell>Rs {parseFloat(reg.amount).toLocaleString()}</TableCell>
@@ -400,7 +406,7 @@ export default function RegistrationsTab() {
                   <div><span className="font-semibold">Mobile:</span> {selectedRegistration.mobile}</div>
                   <div><span className="font-semibold">Gender:</span> {selectedRegistration.gender}</div>
                   <div><span className="font-semibold">Membership No:</span> {selectedRegistration.membership_no || 'N/A'}</div>
-                  <div><span className="font-semibold">Delegate Type:</span> {formatDelegateType(selectedRegistration.delegate_type) || 'Self'}</div>
+                  <div><span className="font-semibold">Delegate Type:</span> {formatDelegateType(selectedRegistration.delegate_type, selectedRegistration.category_name) || 'Self'}</div>
                 </div>
               </div>
 
