@@ -250,27 +250,55 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
     } = registrationData;
 
     // Transform delegate_type to match database enum values
-    let normalizedDelegateType = delegate_type;
+    let normalizedDelegateType = 'non-boa-member'; // Default fallback
     
-    // Normalize delegate_type to lowercase with hyphens
+    // Normalize delegate_type to match database ENUM values exactly
     if (delegate_type) {
-      const lowerType = delegate_type.toLowerCase().trim().replace(/\s+/g, '-');
+      const lowerType = delegate_type.toLowerCase().trim();
       
       logToFile(`Lowercase type: ${lowerType}`);
+      logToFile(`Checking conditions for: "${lowerType}"`);
       
-      if (lowerType === 'non-boa-member' || lowerType.includes('non') && lowerType.includes('boa')) {
+      // Check for life-member variations (but not non-boa-member)
+      if ((lowerType.includes('life') && lowerType.includes('member')) || 
+          (lowerType.includes('boa') && lowerType.includes('member') && !lowerType.includes('non'))) {
+        logToFile(`✓ Matched life-member condition`);
+        normalizedDelegateType = 'life-member';
+      } 
+      // Check for non-boa-member variations
+      else if (lowerType.includes('non') && lowerType.includes('boa')) {
+        logToFile(`✓ Matched non-boa-member condition`);
         normalizedDelegateType = 'non-boa-member';
-      } else if (lowerType === 'boa-member' || (lowerType.includes('boa') && !lowerType.includes('non'))) {
-        normalizedDelegateType = 'boa-member';
-      } else if (lowerType === 'accompanying-person' || lowerType.includes('accompanying')) {
+      } 
+      // Check for accompanying person variations (spouse, family, etc.)
+      else if (lowerType.includes('accompanying') || lowerType.includes('spouse') || lowerType.includes('family')) {
+        logToFile(`✓ Matched accompanying-person condition`);
         normalizedDelegateType = 'accompanying-person';
-      } else {
-        // If already in correct format, use as is
-        normalizedDelegateType = lowerType;
+      }
+      // Map specific categories to appropriate ENUM values
+      else if (lowerType === 'student' || lowerType.includes('student')) {
+        logToFile(`✓ Matched student category: ${lowerType}`);
+        normalizedDelegateType = 'non-boa-member'; // Students are typically non-members
+      }
+      else if (lowerType === 'trade' || lowerType.includes('trade')) {
+        logToFile(`✓ Matched trade category: ${lowerType}`);
+        normalizedDelegateType = 'non-boa-member'; // Trade participants are typically non-members
+      }
+      else if (lowerType === 'spouse') {
+        logToFile(`✓ Matched spouse category: ${lowerType}`);
+        normalizedDelegateType = 'accompanying-person'; // Spouse is an accompanying person
+      }
+      // For any other value, default to non-boa-member
+      else {
+        logToFile(`⚠️ Unknown delegate_type "${delegate_type}" (lowercase: "${lowerType}"), defaulting to non-boa-member`);
+        normalizedDelegateType = 'non-boa-member';
       }
     }
 
     logToFile(`Original delegate_type: ${delegate_type}, Normalized: ${normalizedDelegateType}`);
+
+    // Store the original delegate type name for display purposes
+    const originalCategoryName = delegate_type;
 
     // Generate registration number
     const registration_no = `REG-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
@@ -280,9 +308,9 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
     // Insert main registration
     const [regResult] = await connection.query(
       `INSERT INTO registrations 
-       (registration_no, user_id, seminar_id, category_id, slab_id, delegate_type, 
+       (registration_no, user_id, seminar_id, category_id, slab_id, delegate_type, category_name,
         amount, status, transaction_id, payment_method, payment_date, razorpay_order_id, razorpay_payment_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
       [
         registration_no,
         user_id,
@@ -290,6 +318,7 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
         category_id,
         slab_id,
         normalizedDelegateType,
+        originalCategoryName,
         paymentInfo.amount,
         paymentInfo.status,
         paymentInfo.payment_id,

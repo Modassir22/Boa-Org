@@ -223,21 +223,37 @@ try {
   // Generate PDF from HTML template routes
   app.get('/api/generate-membership-pdf', async (req, res) => {
     try {
+      // Set cache control headers to prevent caching
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+
       const { promisePool } = require('./config/database');
       const htmlToPdfService = require('./services/htmlToPdf.service');
+      
+      console.log('=== MEMBERSHIP PDF GENERATION DEBUG ===');
       
       // Get HTML template from database
       const [config] = await promisePool.query('SELECT membership_form_html FROM offline_forms_config ORDER BY id DESC LIMIT 1');
       
       if (!config[0] || !config[0].membership_form_html) {
+        console.log('No membership form template found in database');
         return res.status(404).json({
           success: false,
           message: 'Membership form template not found'
         });
       }
 
+      const htmlTemplate = config[0].membership_form_html;
+      console.log('Membership form HTML length:', htmlTemplate?.length || 0);
+      console.log('First 300 chars:', htmlTemplate?.substring(0, 300));
+
       // Generate PDF from HTML template
-      const pdfBuffer = await htmlToPdfService.generateMembershipFormPdf(config[0].membership_form_html);
+      const pdfBuffer = await htmlToPdfService.generateMembershipFormPdf(htmlTemplate);
+      
+      console.log('Membership PDF generated successfully, size:', pdfBuffer.length);
       
       // Set response headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
@@ -256,9 +272,19 @@ try {
 
   app.get('/api/generate-seminar-pdf/:seminarId', async (req, res) => {
     try {
+      // Set cache control headers to prevent caching
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+
       const { promisePool } = require('./config/database');
       const htmlToPdfService = require('./services/htmlToPdf.service');
       const { seminarId } = req.params;
+      
+      console.log('=== PDF GENERATION DEBUG ===');
+      console.log('Seminar ID:', seminarId);
       
       // Get seminar details and HTML template
       const [seminars] = await promisePool.query('SELECT * FROM seminars WHERE id = ?', [seminarId]);
@@ -272,11 +298,14 @@ try {
 
       const seminar = seminars[0];
       let htmlTemplate = seminar.offline_form_html;
+      
+      console.log('Seminar offline_form_html length:', htmlTemplate?.length || 0);
 
       // If seminar doesn't have custom template, use global template
       if (!htmlTemplate) {
         const [config] = await promisePool.query('SELECT seminar_form_html FROM offline_forms_config ORDER BY id DESC LIMIT 1');
         htmlTemplate = config[0]?.seminar_form_html || '';
+        console.log('Using global template, length:', htmlTemplate?.length || 0);
       }
 
       if (!htmlTemplate) {
@@ -286,8 +315,12 @@ try {
         });
       }
 
+      console.log('Generating PDF from HTML template...');
+      
       // Generate PDF from HTML template with seminar data
       const pdfBuffer = await htmlToPdfService.generateSeminarFormPdf(htmlTemplate, seminar);
+      
+      console.log('PDF generated successfully, size:', pdfBuffer.length);
       
       // Set response headers for PDF download
       const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;

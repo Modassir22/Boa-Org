@@ -27,10 +27,10 @@ export function UpcomingEventsCarousel() {
     const calculateCountdowns = () => {
       const newCountdowns: { [key: number]: TimeLeft } = {};
 
-      console.log('Calculating countdowns for', events.length, 'events');
+    
 
       events.forEach((event, index) => {
-        console.log(`Event ${index}:`, event.title, 'Start date:', event.start_date);
+      
 
         if (event.start_date) {
           try {
@@ -44,7 +44,7 @@ export function UpcomingEventsCarousel() {
             const now = Date.now();
             const difference = eventTime - now;
 
-            console.log(`Event ${index} - Now:`, new Date(now), 'Event:', eventDate, 'Difference:', difference);
+
 
             if (difference > 0) {
               const days = Math.floor(difference / (1000 * 60 * 60 * 24));
@@ -53,22 +53,21 @@ export function UpcomingEventsCarousel() {
               const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
               newCountdowns[index] = { days, hours, minutes, seconds };
-              console.log(`Countdown ${index}:`, { days, hours, minutes, seconds });
+             
             } else {
               newCountdowns[index] = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-              console.log(`Event ${index} has passed`);
+              
             }
           } catch (error) {
-            console.error('Error calculating countdown for event:', error);
+          
             newCountdowns[index] = { days: 0, hours: 0, minutes: 0, seconds: 0 };
           }
         } else {
           newCountdowns[index] = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-          console.log(`Event ${index} has no start date`);
+       
         }
       });
 
-      console.log('Final countdowns:', newCountdowns);
       setCountdowns(newCountdowns);
     };
 
@@ -83,34 +82,26 @@ export function UpcomingEventsCarousel() {
 
   const loadEvents = async () => {
     try {
-      console.log('Loading upcoming events...');
-      console.log('Making request to:', '/api/upcoming-events');
-      const response = await fetch('/api/upcoming-events');
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+      const response = await fetch('http://localhost:5000/api/upcoming-events');
       const data = await response.json();
-      console.log('API Response:', data);
       if (data.success) {
-        console.log('Events loaded:', data.events);
         setEvents(data.events || []);
-      } else {
-        console.log('API returned success: false');
-      }
+      } 
     } catch (error) {
-      console.error('Failed to load upcoming events:', error);
       console.error('Error details:', error.message);
     } finally {
-      console.log('Setting loading to false');
       setIsLoading(false);
     }
   };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
+    
     const date = new Date(dateString);
+    
     return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
+      day: 'numeric',
+      month: 'long',
       year: 'numeric'
     });
   };
@@ -140,7 +131,9 @@ export function UpcomingEventsCarousel() {
     );
   };
 
-  const handleEventAction = (event: any) => {
+  const handleEventAction = (event: any, actionType: 'details' | 'download') => {
+    console.log('Event action triggered:', actionType, event);
+    
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
 
@@ -157,18 +150,236 @@ export function UpcomingEventsCarousel() {
       return;
     }
 
-    if (event.link_url) {
-      if (event.link_url.startsWith('http://') || event.link_url.startsWith('https://')) {
-        window.open(event.link_url, '_blank');
+    if (actionType === 'details') {
+      console.log('Navigating to event details for:', event.title);
+      console.log('Event object:', event);
+      console.log('Seminar ID:', event.seminar_id);
+      console.log('Link URL:', event.link_url);
+      
+      // Navigate to seminar detail page
+      if (event.seminar_id) {
+        console.log('Navigating to seminar detail:', event.seminar_id);
+        navigate(`/seminar/${event.seminar_id}`);
+      } else if (event.id) {
+        // Try using event.id if seminar_id is not available
+        console.log('Using event.id for navigation:', event.id);
+        navigate(`/seminar/${event.id}`);
+      } else if (event.link_url) {
+        console.log('Opening external link:', event.link_url);
+        if (event.link_url.startsWith('http://') || event.link_url.startsWith('https://')) {
+          window.open(event.link_url, '_blank');
+        } else {
+          navigate(event.link_url);
+        }
       } else {
-        navigate(event.link_url);
+        // Default - show event info and try to navigate anyway
+        console.log('No seminar_id or link_url found, showing event info');
+        console.log('Available event properties:', Object.keys(event));
+        
+        toast({
+          title: 'Navigation Issue',
+          description: `Event: ${event.title || 'Unknown'} - Missing navigation data`,
+          variant: 'destructive',
+        });
       }
-    } else if (event.seminar_id) {
-      navigate(`/seminar/${event.seminar_id}/register`);
+    } else if (actionType === 'download') {
+      console.log('Generating PDF circular for:', event.title);
+      // Generate and download PDF circular
+      generateEventCircularPDF(event);
     }
   };
 
-  console.log('UpcomingEventsCarousel render - Events:', events.length, 'Loading:', isLoading);
+  const generateEventCircularPDF = (event: any) => {
+    try {
+      // Create a new window with the event details for PDF generation
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: 'Popup Blocked',
+          description: 'Please allow popups to download the circular',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const eventDate = event.start_date ? formatDate(event.start_date) : 'Date TBA';
+
+      const endDate = event.end_date && event.end_date !== event.start_date ? 
+        ` - ${formatDate(event.end_date)}` : '';
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${event.title || 'Event'} - Circular</title>
+          <style>
+            body { 
+              font-family: 'Times New Roman', serif; 
+              margin: 40px; 
+              line-height: 1.6;
+              color: #333;
+            }
+            .header { 
+              text-align: center; 
+              border-bottom: 3px solid #0B3C5D; 
+              padding-bottom: 20px; 
+              margin-bottom: 30px;
+            }
+            .logo { 
+              font-size: 24px; 
+              font-weight: bold; 
+              color: #0B3C5D; 
+              margin-bottom: 10px;
+            }
+            .title { 
+              font-size: 28px; 
+              font-weight: bold; 
+              color: #0B3C5D; 
+              margin: 20px 0;
+              text-transform: uppercase;
+            }
+            .subtitle {
+              font-size: 18px;
+              color: #666;
+              margin-bottom: 10px;
+            }
+            .content { 
+              margin: 30px 0; 
+            }
+            .section { 
+              margin: 25px 0; 
+            }
+            .section-title { 
+              font-size: 18px; 
+              font-weight: bold; 
+              color: #0B3C5D; 
+              border-bottom: 1px solid #ddd; 
+              padding-bottom: 5px;
+              margin-bottom: 15px;
+            }
+            .details-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin: 20px 0;
+            }
+            .detail-item {
+              padding: 10px;
+              background: #f8f9fa;
+              border-left: 4px solid #0B3C5D;
+            }
+            .detail-label {
+              font-weight: bold;
+              color: #0B3C5D;
+              margin-bottom: 5px;
+            }
+            .footer { 
+              margin-top: 50px; 
+              text-align: center; 
+              font-size: 12px; 
+              color: #666;
+              border-top: 1px solid #ddd;
+              padding-top: 20px;
+            }
+            .contact-info {
+              background: #f0f8ff;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            @media print {
+              body { margin: 20px; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">Bihar Ophthalmic Association</div>
+            <div class="subtitle">Official Event Circular</div>
+          </div>
+
+          <div class="title">${event.title || 'Official Event'}</div>
+
+          <div class="content">
+            <div class="details-grid">
+              <div class="detail-item">
+                <div class="detail-label">📅 Event Date</div>
+                <div>${eventDate}${endDate}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">📍 Location</div>
+                <div>${event.location || 'To be announced'}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">🏢 Venue</div>
+                <div>${event.venue || event.location || 'To be announced'}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">🎯 Event Type</div>
+                <div>Conference / Seminar</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">About the Event</div>
+              <p>${event.description || 'Join us for this important event organized by Bihar Ophthalmic Association. This event will feature expert speakers, networking opportunities, and the latest developments in ophthalmology.'}</p>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Registration Information</div>
+              <p>Registration is now open for this event. Please visit our website or contact us for registration details and fee structure.</p>
+              <ul>
+                <li>Early registration recommended</li>
+                <li>Limited seats available</li>
+                <li>CME credits will be provided</li>
+                <li>Certificate of participation included</li>
+              </ul>
+            </div>
+
+            <div class="contact-info">
+              <div class="section-title">Contact Information</div>
+              <p><strong>Bihar Ophthalmic Association</strong></p>
+              <p>For registration and queries, please contact us through our official website or visit the event registration page.</p>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>This is an official circular from Bihar Ophthalmic Association</p>
+            <p>Generated on: ${new Date().toLocaleDateString('en-IN')} at ${new Date().toLocaleTimeString('en-IN')}</p>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() {
+                window.close();
+              }, 1000);
+            }
+          </script>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      toast({
+        title: 'Circular Generated',
+        description: 'Event circular is being prepared for download',
+      });
+
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: 'Download Failed',
+        description: 'Unable to generate circular. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+ 
 
   return (
     <section className="py-16 bg-gray-50">
@@ -204,12 +415,7 @@ export function UpcomingEventsCarousel() {
               const countdown = countdowns[index] || { days: 0, hours: 0, minutes: 0, seconds: 0 };
               const hasCountdown = status === 'upcoming' && (countdown.days > 0 || countdown.hours > 0 || countdown.minutes > 0 || countdown.seconds > 0);
 
-              console.log(`Event ${index} render:`, {
-                title: event.title,
-                status,
-                countdown,
-                hasCountdown
-              });
+          
 
               return (
                 <div
@@ -326,7 +532,7 @@ export function UpcomingEventsCarousel() {
                         {/* Action Buttons */}
                         <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
                           <button
-                            onClick={() => handleEventAction(event)}
+                            onClick={() => handleEventAction(event, 'details')}
                             className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg h-10 px-4 text-sm transition-colors"
                             style={{ fontFamily: 'Noto Sans, sans-serif' }}
                           >
@@ -335,7 +541,7 @@ export function UpcomingEventsCarousel() {
                           </button>
 
                           <button
-                            onClick={() => handleEventAction(event)}
+                            onClick={() => handleEventAction(event, 'download')}
                             className="inline-flex items-center justify-center gap-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-medium rounded-lg h-10 px-4 text-sm transition-colors"
                             style={{ fontFamily: 'Noto Sans, sans-serif' }}
                           >

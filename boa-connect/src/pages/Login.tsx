@@ -56,9 +56,9 @@ export default function Login() {
         description: `Welcome back, ${response.user.first_name}!`,
       });
 
-      // Redirect to dashboard
+      // Reload and redirect to dashboard
       setTimeout(() => {
-        navigate('/dashboard');
+        window.location.href = '/dashboard';
       }, 500);
 
     } catch (error: any) {

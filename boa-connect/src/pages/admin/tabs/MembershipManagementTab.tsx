@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { adminAPI } from '@/lib/api';
-import { Search, Edit, Award, Calendar, User, Mail, Phone, Download } from 'lucide-react';
+import { Search, Edit, Award, Calendar, User, Mail, Phone, Download, Upload, FileText, X, CheckCircle } from 'lucide-react';
 import { exportToCSV, formatMembershipForExport } from '@/lib/exportUtils';
 
 // Helper function to format title consistently
@@ -31,7 +32,19 @@ export default function MembershipManagementTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isCertificateOpen, setIsCertificateOpen] = useState(false);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [isUploadingCertificate, setIsUploadingCertificate] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
+  const [certificatePreview, setCertificatePreview] = useState<string | null>(null);
+  const [certificateForm, setCertificateForm] = useState({
+    title: '',
+    description: '',
+    issue_date: '',
+    expiry_date: '',
+    certificate_type: 'membership'
+  });
   const [editForm, setEditForm] = useState({
     membership_no: '',
     membership_type: '',
@@ -89,6 +102,131 @@ export default function MembershipManagementTab() {
       member.mobile?.includes(searchQuery)
     );
     setFilteredMembers(filtered);
+  };
+
+  const handleAddCertificate = (member: any) => {
+    setSelectedMember(member);
+    setCertificateForm({
+      title: '',
+      description: '',
+      issue_date: new Date().toISOString().split('T')[0],
+      expiry_date: '',
+      certificate_type: 'membership'
+    });
+    setCertificateFile(null);
+    setCertificatePreview(null);
+    setUploadSuccess(false);
+    setIsCertificateOpen(true);
+  };
+
+  const handleCertificateFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file type
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: 'Invalid File Type',
+          description: 'Please upload a PDF, JPEG, or PNG file',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Please upload a file smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      setCertificateFile(file);
+      
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setCertificatePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setCertificatePreview(null);
+      }
+    }
+  };
+
+  const handleUploadCertificate = async () => {
+    if (!certificateFile || !selectedMember) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please select a file and fill all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!certificateForm.title.trim()) {
+      toast({
+        title: 'Missing Title',
+        description: 'Please enter a certificate title',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!certificateForm.issue_date) {
+      toast({
+        title: 'Missing Issue Date',
+        description: 'Please select an issue date',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploadingCertificate(true);
+
+    try {
+      console.log('Starting certificate upload...');
+      console.log('Selected member:', selectedMember);
+      console.log('Certificate form:', certificateForm);
+      console.log('Certificate file:', certificateFile);
+
+      const formData = new FormData();
+      formData.append('certificate', certificateFile);
+      formData.append('user_id', selectedMember.id.toString());
+      formData.append('title', certificateForm.title.trim());
+      formData.append('description', certificateForm.description.trim());
+      formData.append('issue_date', certificateForm.issue_date);
+      formData.append('expiry_date', certificateForm.expiry_date);
+      formData.append('certificate_type', certificateForm.certificate_type);
+
+      console.log('FormData prepared, calling API...');
+      const response = await adminAPI.uploadCertificate(formData);
+      console.log('API response:', response);
+      
+      toast({
+        title: 'Success',
+        description: 'Certificate uploaded successfully! You can upload another certificate or close this dialog.',
+      });
+      
+      // Set success state but DON'T reset form - keep it visible
+      setUploadSuccess(true);
+      
+    } catch (error: any) {
+      console.error('Certificate upload error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || error.message || 'Failed to upload certificate',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingCertificate(false);
+    }
   };
 
   const handleEditMember = (member: any) => {
@@ -324,13 +462,24 @@ export default function MembershipManagementTab() {
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditMember(member)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditMember(member)}
+                      title="Edit Membership"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleAddCertificate(member)}
+                      title="Add Certificate"
+                    >
+                      <Award className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -465,6 +614,264 @@ export default function MembershipManagementTab() {
                 </Button>
                 <Button onClick={handleSaveMember} className="gradient-primary">
                   Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Certificate Dialog */}
+      <Dialog open={isCertificateOpen} onOpenChange={setIsCertificateOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Add Certificate - {selectedMember && `${formatTitle(selectedMember.title)} ${selectedMember.first_name} ${selectedMember.surname}`}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedMember && (
+            <div className="space-y-6">
+              {/* Member Info */}
+              <div className="bg-accent/30 rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Member Information</h3>
+                <div className="grid md:grid-cols-2 gap-3 text-sm">
+                  <div><span className="font-medium">Name:</span> {formatTitle(selectedMember.title)} {selectedMember.first_name} {selectedMember.surname}</div>
+                  <div><span className="font-medium">Email:</span> {selectedMember.email}</div>
+                  <div><span className="font-medium">Mobile:</span> {selectedMember.mobile}</div>
+                  <div><span className="font-medium">Membership No:</span> {selectedMember.membership_no || 'Not Assigned'}</div>
+                </div>
+              </div>
+
+              {/* Success Message */}
+              {uploadSuccess && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <CheckCircle className="h-5 w-5" />
+                    <h3 className="font-semibold">Certificate Uploaded Successfully!</h3>
+                  </div>
+                  <p className="text-green-700 text-sm mt-1">
+                    The certificate has been uploaded and the member will be notified. You can upload another certificate or close this dialog.
+                  </p>
+                </div>
+              )}
+
+              {/* Certificate Form */}
+              <div className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Certificate Title <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={certificateForm.title}
+                      onChange={(e) => setCertificateForm(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="e.g., Membership Certificate"
+                      disabled={isUploadingCertificate}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Certificate Type</Label>
+                    <Select 
+                      value={certificateForm.certificate_type} 
+                      onValueChange={(value) => setCertificateForm(prev => ({ ...prev, certificate_type: value }))}
+                      disabled={isUploadingCertificate}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="membership">Membership Certificate</SelectItem>
+                        <SelectItem value="completion">Course Completion</SelectItem>
+                        <SelectItem value="participation">Participation Certificate</SelectItem>
+                        <SelectItem value="achievement">Achievement Certificate</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={certificateForm.description}
+                    onChange={(e) => setCertificateForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description of the certificate..."
+                    rows={3}
+                    disabled={isUploadingCertificate}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Issue Date <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="date"
+                      value={certificateForm.issue_date}
+                      onChange={(e) => setCertificateForm(prev => ({ ...prev, issue_date: e.target.value }))}
+                      disabled={isUploadingCertificate}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Expiry Date (Optional)</Label>
+                    <Input
+                      type="date"
+                      value={certificateForm.expiry_date}
+                      onChange={(e) => setCertificateForm(prev => ({ ...prev, expiry_date: e.target.value }))}
+                      disabled={isUploadingCertificate}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Certificate File <span className="text-destructive">*</span></Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <div className="text-center">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="mt-4">
+                        <div className="flex gap-2 justify-center mb-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const input = document.getElementById('certificate-upload') as HTMLInputElement;
+                              if (input) {
+                                input.accept = '.jpg,.jpeg,.png';
+                                input.click();
+                              }
+                            }}
+                            disabled={isUploadingCertificate}
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload Image
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const input = document.getElementById('certificate-upload') as HTMLInputElement;
+                              if (input) {
+                                input.accept = '.pdf';
+                                input.click();
+                              }
+                            }}
+                            disabled={isUploadingCertificate}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Upload PDF
+                          </Button>
+                        </div>
+                        <label htmlFor="certificate-upload" className="cursor-pointer">
+                          <span className="mt-2 block text-sm font-medium text-gray-900">
+                            {certificateFile ? certificateFile.name : 'Or click here to browse files'}
+                          </span>
+                          <span className="mt-1 block text-xs text-gray-500">
+                            PDF, JPEG, PNG up to 5MB
+                          </span>
+                        </label>
+                        <input
+                          id="certificate-upload"
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={handleCertificateFileChange}
+                          disabled={isUploadingCertificate}
+                        />
+                      </div>
+                      {certificateFile && (
+                        <div className="mt-4 flex items-center justify-center gap-2">
+                          <FileText className="h-4 w-4 text-green-600" />
+                          <span className="text-sm text-green-600">File selected: {certificateFile.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setCertificateFile(null);
+                              setCertificatePreview(null);
+                            }}
+                            disabled={isUploadingCertificate}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Preview Section */}
+                  {certificatePreview && (
+                    <div className="mt-4">
+                      <Label>Preview</Label>
+                      <div className="border rounded-lg p-4 bg-gray-50">
+                        <img 
+                          src={certificatePreview} 
+                          alt="Certificate preview" 
+                          className="max-w-full h-auto max-h-64 mx-auto rounded border"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {certificateFile && certificateFile.type === 'application/pdf' && (
+                    <div className="mt-4">
+                      <Label>PDF File Selected</Label>
+                      <div className="border rounded-lg p-4 bg-gray-50 text-center">
+                        <FileText className="h-16 w-16 text-red-500 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">{certificateFile.name}</p>
+                        <p className="text-xs text-gray-500">PDF preview not available</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCertificateOpen(false)}
+                  disabled={isUploadingCertificate}
+                >
+                  Close
+                </Button>
+                {uploadSuccess && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setUploadSuccess(false);
+                      // Reset form for another upload
+                      setCertificateForm({
+                        title: '',
+                        description: '',
+                        issue_date: new Date().toISOString().split('T')[0],
+                        expiry_date: '',
+                        certificate_type: 'membership'
+                      });
+                      setCertificateFile(null);
+                      setCertificatePreview(null);
+                    }}
+                    disabled={isUploadingCertificate}
+                  >
+                    Clear Form
+                  </Button>
+                )}
+                <Button 
+                  onClick={handleUploadCertificate}
+                  className="gradient-primary"
+                  disabled={!certificateFile || !certificateForm.title || !certificateForm.issue_date || isUploadingCertificate}
+                >
+                  {isUploadingCertificate ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Certificate
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

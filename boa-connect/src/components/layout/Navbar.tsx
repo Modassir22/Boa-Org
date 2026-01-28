@@ -25,7 +25,7 @@ export function Navbar() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [contactInfo, setContactInfo] = useState<any>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const navigate = useNavigate();
   const { config } = useSiteConfig();
 
@@ -34,8 +34,30 @@ export function Navbar() {
 
   useEffect(() => {
     loadNotifications();
-    loadUser();
     loadContactInfo();
+    
+    // Load user immediately on mount
+    const token = localStorage.getItem('token');
+    const cachedUserData = localStorage.getItem('user');
+    
+    console.log('=== NAVBAR MOUNT DEBUG ===');
+    console.log('Token exists:', !!token);
+    console.log('User data exists:', !!cachedUserData);
+    
+    if (cachedUserData && token) {
+      try {
+        const userData = JSON.parse(cachedUserData);
+        console.log('Setting user from localStorage:', userData.email);
+        setUser(userData);
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    }
+    
+    // Then load fresh data
+    loadUser();
 
     // Poll for new notifications every 30 seconds
     const interval = setInterval(loadNotifications, 30000);
@@ -67,38 +89,65 @@ export function Navbar() {
     const token = localStorage.getItem('token');
     const cachedUserData = localStorage.getItem('user');
     
-    // Immediately load from localStorage and stop loading state
-    if (token && cachedUserData) {
+    // Immediately set loading to false and load from cache if available
+    if (cachedUserData && token) {
       try {
-        setUser(JSON.parse(cachedUserData));
+        const userData = JSON.parse(cachedUserData);
+        console.log('User loaded from localStorage:', userData.email);
+        setUser(userData);
+        setIsAuthLoading(false);
       } catch (error) {
         console.error('Failed to parse cached user data:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setIsAuthLoading(false);
+        return;
+      }
+    } else {
+      // No cached data, stop loading immediately
+      setIsAuthLoading(false);
+      if (!token) {
+        console.log('No token found in localStorage');
+        return;
       }
     }
     
-    // Always set loading to false immediately after checking localStorage
-    setIsAuthLoading(false);
-    
     // Then fetch fresh data in background if token exists
     if (token) {
-      fetch('/api/users/profile', {
+      fetch('http://localhost:5000/api/users/profile', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
         .then(response => {
+          console.log('Profile fetch response status:', response.status);
           if (response.ok) {
             return response.json();
           }
-          throw new Error('Failed to fetch user profile');
+          // If token is invalid, clear localStorage
+          if (response.status === 401) {
+            console.log('Token expired or invalid');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+          if (response.status === 404) {
+            console.log('Profile endpoint not found - using cached data');
+            return null; // Just use cached data
+          }
+          throw new Error(`Failed to fetch user profile: ${response.status}`);
         })
         .then(userData => {
-          setUser(userData.user);
-          localStorage.setItem('user', JSON.stringify(userData.user));
+          if (userData && userData.user) {
+            setUser(userData.user);
+            localStorage.setItem('user', JSON.stringify(userData.user));
+            console.log('Profile refreshed from server');
+          }
         })
         .catch(error => {
-          console.error('Failed to load user data:', error);
+          // Silently fail - user data already loaded from localStorage
+          console.log('Background profile refresh failed (non-critical):', error.message);
         });
     }
   };
@@ -271,74 +320,78 @@ export function Navbar() {
                 </div>
               </Link>
 
-              {!isAuthLoading && (
-                user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-800 transition-colors">
-                        <Avatar className="h-8 w-8 border border-orange-300">
-                          <AvatarImage src={user.avatar} alt={getUserName()} />
-                          <AvatarFallback className="text-xs font-semibold bg-orange-500 text-white">
-                            {getUserInitials()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="hidden sm:block text-sm font-medium text-white">
-                          {getUserName().split(' ')[0]}
-                        </span>
-                        <ChevronDown className="h-4 w-4 text-blue-200" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-60" align="end">
-                      <DropdownMenuLabel>
-                        <div className="p-2 bg-gray-50 rounded">
-                          <p className="text-sm font-semibold text-gray-900">{getUserName()}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
-                        </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
+              {/* User Menu or Login Buttons */}
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-800 transition-colors">
+                      <Avatar className="h-8 w-8 border border-orange-300">
+                        <AvatarImage src={user.avatar} alt={getUserName()} />
+                        <AvatarFallback className="text-xs font-semibold bg-orange-500 text-white">
+                          {getUserInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden sm:block text-sm font-medium text-white">
+                        {getUserName().split(' ')[0]}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-blue-200" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-60" align="end">
+                    <DropdownMenuLabel>
+                      <div className="p-2 bg-gray-50 rounded">
+                        <p className="text-sm font-semibold text-gray-900">{getUserName()}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
 
-                      {user.membership_no && (
-                        <>
-                          <DropdownMenuItem className="cursor-default">
-                            <div className="flex items-center justify-center w-full">
-                              <Badge variant="outline" className="text-xs border-blue-200 bg-blue-50 text-blue-700">
-                                Membership: {user.membership_no}
-                              </Badge>
-                            </div>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                        </>
-                      )}
+                    {user.membership_no && (
+                      <>
+                        <DropdownMenuItem className="cursor-default">
+                          <div className="flex items-center justify-center w-full">
+                            <Badge variant="outline" className="text-xs border-blue-200 bg-blue-50 text-blue-700">
+                              Membership: {user.membership_no}
+                            </Badge>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
 
-                      <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
+                    <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </DropdownMenuItem>
+
+                    {user.role === 'admin' && (
+                      <DropdownMenuItem onClick={() => navigate('/admin')} className="cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Admin Panel</span>
                       </DropdownMenuItem>
+                    )}
 
-                      {/* Admin Panel option removed as requested */}
-
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Logout</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Link to="/login">
-                      <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white">
-                        Login
-                      </Button>
-                    </Link>
-                    <span className="text-blue-400">|</span>
-                    <Link to="/admin/login">
-                      <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white">
-                        Admin
-                      </Button>
-                    </Link>
-                  </div>
-                )
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link to="/login">
+                    <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white">
+                      Login
+                    </Button>
+                  </Link>
+                  <span className="text-blue-400">|</span>
+                  <Link to="/admin/login">
+                    <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white">
+                      Admin
+                    </Button>
+                  </Link>
+                </div>
               )}
 
               {/* Mobile Menu */}

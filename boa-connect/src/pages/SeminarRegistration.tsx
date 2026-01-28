@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Check, CreditCard, FileText, User, MapPin, Receipt, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { seminarAPI, registrationAPI } from '@/lib/api';
 import { titleOptions, genderOptions, indianStates } from '@/lib/mockData';
 import { razorpayService } from '@/lib/razorpay';
+import { Footer } from '@/components/layout/Footer';
 type Step = 'personal' | 'address' | 'registration' | 'fee' | 'consent' | 'payment';
 
 // Helper function to format title consistently
@@ -39,7 +38,7 @@ export default function SeminarRegistration() {
   const [selectedSlab, setSelectedSlab] = useState<string>('');
   const [delegateType, setDelegateType] = useState<string>('');
   const [membershipNo, setMembershipNo] = useState('');
-  const [isBOAMember, setIsBOAMember] = useState(false);
+  const [isLifeMember, setIsLifeMember] = useState(false);
   const [isMembershipVerified, setIsMembershipVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -87,65 +86,150 @@ export default function SeminarRegistration() {
     loadSeminarData();
   }, [id]);
 
-  // Auto-select fee when delegate type or BOA member status changes
+  // Auto-select fee when delegate type changes
   useEffect(() => {
+    // Don't run if slabs or categories aren't loaded yet
+    if (feeSlabs.length === 0 || feeCategories.length === 0) {
+      console.log('Waiting for slabs and categories to load...');
+      return;
+    }
+
     // Reset first
     setSelectedCategory('');
     setSelectedSlab('');
 
-    // If BOA member, set delegate type automatically
-    if (isBOAMember && delegateType !== 'boa-member') {
-      setDelegateType('boa-member');
-    }
-
     // Auto-select fee category based on delegate type
-    if (delegateType || isBOAMember) {
-      const categoryName = isBOAMember ? 'boa-member' : delegateType;
+    if (delegateType) {
+      const categoryName = delegateType;
 
-      // Find matching fee category (case-insensitive, match by name)
+      console.log('=== FEE CATEGORY MATCHING DEBUG ===');
+      console.log('Looking for category:', categoryName);
+      console.log('Available categories:', feeCategories.map(c => ({ id: c.id, name: c.name })));
+
+      // Find matching fee category with flexible matching
       const matchingFeeCategory = feeCategories.find(cat => {
-        const catNameLower = cat.name.toLowerCase().replace(/\s+/g, '-');
-        const searchName = categoryName.toLowerCase().replace(/\s+/g, '-');
-        return catNameLower === searchName || catNameLower.includes(searchName);
+        const catNameNormalized = cat.name.toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+        const searchNameNormalized = categoryName.toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
+
+        console.log(`Comparing: "${catNameNormalized}" with "${searchNameNormalized}"`);
+
+        // Try exact match first
+        if (catNameNormalized === searchNameNormalized) {
+          console.log(`✓ Exact match found: ${cat.name}`);
+          return true;
+        }
+
+        // Special case: life-member should ONLY match "Life Member" 
+        if (searchNameNormalized === 'life-member' || searchNameNormalized.includes('life')) {
+          // Must match exactly "life-member" or "life member" 
+          if (catNameNormalized.includes('life') && catNameNormalized.includes('member')) {
+            console.log(`✓ Life Member exact match: ${cat.name}`);
+            return true;
+          }
+          return false;
+        }
+
+        // Special case: non-boa-member should match "Non-BOA Member"
+        if (searchNameNormalized.includes('non-boa') || searchNameNormalized.includes('non-member')) {
+          if (catNameNormalized.includes('non') && catNameNormalized.includes('boa')) {
+            console.log(`✓ Non-BOA Member match: ${cat.name}`);
+            return true;
+          }
+          return false;
+        }
+
+        // Try partial match (contains) - but exclude specific cases handled above
+        if (!searchNameNormalized.includes('life') && !searchNameNormalized.includes('boa') && 
+            (catNameNormalized.includes(searchNameNormalized) || searchNameNormalized.includes(catNameNormalized))) {
+          console.log(`✓ Partial match found: ${cat.name}`);
+          return true;
+        }
+
+        return false;
       });
 
       if (matchingFeeCategory) {
+        console.log(`Selected fee category: ${matchingFeeCategory.name} (ID: ${matchingFeeCategory.id})`);
         setSelectedCategory(matchingFeeCategory.id.toString());
 
         // Auto-select current slab based on date
         const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
         let currentSlab = null;
 
+        console.log('=== AUTO SLAB SELECTION DEBUG ===');
+        console.log('Today:', today.toISOString());
+        console.log('Available slabs:', feeSlabs);
+
         for (const slab of feeSlabs) {
-          const dateRange = slab.dateRange;
-          const match = dateRange.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
-          if (match) {
-            const [, day, month, year] = match;
-            const months: { [key: string]: number } = {
-              'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
-              'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
-            };
-            const monthNum = months[month.toLowerCase().substring(0, 3)];
-            const endDate = new Date(parseInt(year), monthNum, parseInt(day));
+          console.log(`Checking slab: ${slab.label}`);
+          console.log(`  dateRange: ${slab.dateRange}`);
+          console.log(`  startDate: ${slab.startDate}`);
+          console.log(`  endDate: ${slab.endDate}`);
+
+          // Use database dates if available, otherwise parse text
+          let endDate = null;
+
+          if (slab.endDate) {
+            // Use database end_date field
+            endDate = new Date(slab.endDate);
+            endDate.setHours(23, 59, 59, 999); // End of day
+            console.log(`  Using database endDate: ${endDate.toISOString()}`);
+          } else {
+            // Fallback: Parse date range text
+            const dateRange = slab.dateRange;
+            const dateMatches = dateRange.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/g);
+            if (dateMatches && dateMatches.length > 0) {
+              const lastDateStr = dateMatches[dateMatches.length - 1];
+              const match = lastDateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+
+              if (match) {
+                const [, day, month, year] = match;
+                const months: { [key: string]: number } = {
+                  'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+                  'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+                };
+                const monthNum = months[month.toLowerCase().substring(0, 3)];
+                endDate = new Date(parseInt(year), monthNum, parseInt(day));
+                endDate.setHours(23, 59, 59, 999);
+                console.log(`  Parsed from text: ${endDate.toISOString()}`);
+              }
+            }
+          }
+
+          if (endDate) {
+            console.log(`  Comparing: today (${today.toISOString()}) <= endDate (${endDate.toISOString()})`);
+            console.log(`  Result: ${today <= endDate}`);
 
             if (today <= endDate) {
               currentSlab = slab;
+              console.log(`  ✓ SELECTED SLAB: ${slab.label}`);
               break;
+            } else {
+              console.log(`  ✗ Date passed, skipping`);
             }
+          } else {
+            console.log(`  ⚠️ Could not parse date`);
           }
         }
 
-        // If no slab found, use last slab
+        // If no slab found (all dates passed), use last slab (Spot registration)
         if (!currentSlab && feeSlabs.length > 0) {
           currentSlab = feeSlabs[feeSlabs.length - 1];
+          console.log(`No matching slab found, using last slab: ${currentSlab.label}`);
         }
 
         if (currentSlab) {
           setSelectedSlab(currentSlab.id.toString());
+          console.log(`Final selected slab ID: ${currentSlab.id}`);
         }
+      } else {
+        // If no exact match, clear selections
+        setSelectedCategory('');
+        setSelectedSlab('');
       }
     }
-  }, [delegateType, isBOAMember, feeCategories, feeSlabs]);
+  }, [delegateType, feeCategories, feeSlabs]);
 
   const loadSeminarData = async () => {
     try {
@@ -168,14 +252,25 @@ export default function SeminarRegistration() {
         fees: cat.fees || {}
       }));
 
+      console.log('=== FEE STRUCTURE DEBUG ===');
+      console.log('Raw seminar data:', response.seminar);
+      console.log('Transformed categories:', categories);
+      console.log('Categories with fees:', categories.map(c => ({ id: c.id, name: c.name, fees: c.fees })));
+
       setFeeCategories(categories);
 
       // Transform slabs
       const slabs = (response.seminar.slabs || []).map((slab: any) => ({
         id: slab.id.toString(),
         label: slab.label,
-        dateRange: slab.date_range
+        dateRange: slab.date_range,
+        startDate: slab.start_date,
+        endDate: slab.end_date
       }));
+
+      console.log('=== FEE SLABS DEBUG ===');
+      console.log('Transformed slabs:', slabs);
+      console.log('Current date:', new Date().toISOString());
 
       setFeeSlabs(slabs);
 
@@ -191,6 +286,7 @@ export default function SeminarRegistration() {
       // Load committee members
       await loadCommitteeMembers();
     } catch (error) {
+      console.error('Failed to load seminar:', error);
       toast({
         title: 'Error',
         description: 'Failed to load seminar details',
@@ -213,7 +309,7 @@ export default function SeminarRegistration() {
         setCommitteeMembers(uniqueMembers);
       }
     } catch (error) {
-      // Failed to load committee members
+      console.error('Failed to load committee members:', error);
     }
   };
 
@@ -228,8 +324,16 @@ export default function SeminarRegistration() {
         return;
       }
 
-      // Call backend API to generate PDF from HTML template
-      const response = await fetch(`http://localhost:5000/api/generate-seminar-pdf/${seminar.id}`);
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(`http://localhost:5000/api/generate-seminar-pdf/${seminar.id}?t=${timestamp}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
 
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
@@ -238,11 +342,11 @@ export default function SeminarRegistration() {
       // Get PDF blob
       const pdfBlob = await response.blob();
 
-      // Create download link
+      // Create download link with timestamp in filename
       const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
+      link.download = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form_${timestamp}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -253,6 +357,7 @@ export default function SeminarRegistration() {
         description: 'Offline registration form downloaded as PDF',
       });
     } catch (error) {
+      console.error('Failed to download form:', error);
       toast({
         title: 'Error',
         description: 'Failed to download form. Please try again.',
@@ -263,34 +368,22 @@ export default function SeminarRegistration() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="flex-1">
-          <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!seminar) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="flex-1">
-          <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-muted-foreground">Seminar not found</p>
-              <Button onClick={() => navigate('/seminars')} className="mt-4 h-12 text-base px-6 md:h-11 md:text-sm md:px-5">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Seminars
-              </Button>
-            </div>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Seminar not found</p>
+          <Button onClick={() => navigate('/seminars')} className="mt-4 h-12 text-base px-6 md:h-11 md:text-sm md:px-5">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Seminars
+          </Button>
+        </div>
       </div>
     );
   }
@@ -298,85 +391,95 @@ export default function SeminarRegistration() {
   // Check if online registration is disabled
   if (seminar.online_registration_enabled === false) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="flex-1">
-          <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-            <div className="text-center max-w-md mx-auto p-6">
-              <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-2xl font-bold mb-2">Online Registration Closed</h2>
-              <p className="text-muted-foreground mb-6">
-                Online registration for this seminar is currently closed. Please use the offline registration form.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button onClick={() => navigate('/seminars')} variant="outline">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Seminars
-                </Button>
-                <Button onClick={generateOfflineRegistrationForm} className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Download Offline Form
-                </Button>
-              </div>
-            </div>
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-2xl font-bold mb-2">Online Registration Closed</h2>
+          <p className="text-muted-foreground mb-6">
+            Online registration for this seminar is currently closed. Please use the offline registration form.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => navigate('/seminars')} variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Seminars
+            </Button>
+            <Button onClick={generateOfflineRegistrationForm} className="gap-2">
+              <Download className="h-4 w-4" />
+              Download Offline Form
+            </Button>
           </div>
-        </main>
-        <Footer />
+        </div>
       </div>
     );
   }
 
   const activeSeminar = seminar;
 
-  // Use dynamic delegate categories from API, fallback to default if empty
-  // Filter to show only categories that have corresponding fee structure
+  // Use delegate categories from API
   const displayDelegateCategories = (() => {
-    const categories = delegateCategories.length > 0 ? delegateCategories : [
-      { value: 'boa-member', label: 'BOA MEMBER', requiresMembership: true },
-      { value: 'non-boa-member', label: 'NON BOA MEMBER', requiresMembership: false },
-      { value: 'accompanying-person', label: 'ACCOMPANYING PERSON', requiresMembership: false },
-    ];
-
-    // Filter categories that have matching fee structure
-    const filtered = categories.filter(delCat => {
-      const categoryName = delCat.value.toLowerCase().replace(/\s+/g, '-');
-      const hasFeeStructure = feeCategories.some(feeCat => {
-        const feeCatName = feeCat.name.toLowerCase().replace(/\s+/g, '-');
-        return feeCatName === categoryName || feeCatName.includes(categoryName);
-      });
-      return hasFeeStructure;
-    });
+    let categories = [];
     
-    // If no categories match, return all categories (fallback)
-    if (filtered.length === 0) {
-      return categories;
+    // If we have delegate categories from API, use them
+    if (delegateCategories.length > 0) {
+      console.log('Using delegate categories from API:', delegateCategories);
+      categories = delegateCategories.map(cat => ({
+        value: cat.value,
+        label: cat.label.toUpperCase(),
+        requiresMembership: cat.requiresMembership
+      }));
     }
-    
-    return filtered;
+    // Fallback: If no delegate categories, generate from fee categories
+    else if (feeCategories.length > 0) {
+      console.log('Generating delegate categories from fee categories');
+      categories = feeCategories.map(cat => ({
+        value: cat.name.toLowerCase().replace(/\s+/g, '-'),
+        label: cat.name.toUpperCase(),
+        requiresMembership: cat.name.toLowerCase().includes('life') && cat.name.toLowerCase().includes('member')
+      }));
+    }
+    // Final fallback to default categories
+    else {
+      categories = [
+        { value: 'life-member', label: 'LIFE MEMBER', requiresMembership: true },
+        { value: 'non-boa-member', label: 'NON BOA MEMBER', requiresMembership: false },
+        { value: 'accompanying-person', label: 'ACCOMPANYING PERSON', requiresMembership: false },
+        { value: 'pg-student', label: 'PG STUDENT', requiresMembership: false },
+      ];
+    }
+
+    // Filter out Life Member option if not selected in Personal step
+    if (!isLifeMember) {
+      categories = categories.filter(cat => 
+        !cat.value.includes('life') && 
+        !cat.label.toLowerCase().includes('life')
+      );
+    }
+
+    return categories;
   })();
 
-  // Dynamic steps - skip registration step for BOA members
-  const steps: { id: Step; label: string; icon: React.ComponentType<any> }[] = isBOAMember
-    ? [
-      { id: 'personal', label: 'Personal', icon: User },
-      { id: 'address', label: 'Address', icon: MapPin },
-      { id: 'fee', label: 'Fee', icon: Receipt },
-      { id: 'consent', label: 'Consent', icon: Check },
-      { id: 'payment', label: 'Payment', icon: CreditCard },
-    ]
-    : [
-      { id: 'personal', label: 'Personal', icon: User },
-      { id: 'address', label: 'Address', icon: MapPin },
-      { id: 'registration', label: 'Delegate', icon: FileText },
-      { id: 'fee', label: 'Fee', icon: Receipt },
-      { id: 'consent', label: 'Consent', icon: Check },
-      { id: 'payment', label: 'Payment', icon: CreditCard },
-    ];
+  // All users go through the same steps - no skipping
+  const steps: { id: Step; label: string; icon: React.ComponentType<any> }[] = [
+    { id: 'personal', label: 'Personal', icon: User },
+    { id: 'address', label: 'Address', icon: MapPin },
+    { id: 'registration', label: 'Category', icon: FileText },
+    { id: 'fee', label: 'Fee', icon: Receipt },
+    { id: 'consent', label: 'Consent', icon: Check },
+    { id: 'payment', label: 'Payment', icon: CreditCard },
+  ];
+
+  // Filter steps for Life Members - hide Category step
+  const displaySteps = isLifeMember 
+    ? steps.filter(step => step.id !== 'registration')
+    : steps;
 
   const currentIndex = steps.findIndex(s => s.id === currentStep);
+  const displayCurrentIndex = displaySteps.findIndex(s => s.id === currentStep);
   const selectedFee = feeCategories.find(f => f.id.toString() === selectedCategory);
   const rawAmount = selectedFee && selectedSlab ? selectedFee.fees[selectedSlab] : 0;
   const selectedAmount = typeof rawAmount === 'number' && !isNaN(rawAmount) ? rawAmount : 0;
+
+
   const selectedSlabLabel = feeSlabs.find(s => s.id.toString() === selectedSlab)?.label || '';
   const additionalAmount = additionalPersons.reduce((sum, p) => {
     const amount = typeof p.amount === 'number' && !isNaN(p.amount) ? p.amount : 0;
@@ -389,6 +492,16 @@ export default function SeminarRegistration() {
       toast({
         title: 'Required Field',
         description: 'Please enter membership number',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if name is filled
+    if (!fullName || !surname) {
+      toast({
+        title: 'Name Required',
+        description: 'Please fill your first name and surname before verifying membership',
         variant: 'destructive',
       });
       return;
@@ -408,6 +521,24 @@ export default function SeminarRegistration() {
       const data = await response.json();
 
       if (data.success && data.verified) {
+        // Verify name matches
+        const membershipName = data.membership.name.toLowerCase().trim();
+        const enteredName = `${fullName} ${surname}`.toLowerCase().trim();
+
+        // Check if names match (allow partial match for flexibility)
+        const nameMatches = membershipName.includes(fullName.toLowerCase().trim()) ||
+          enteredName.includes(membershipName);
+
+        if (!nameMatches) {
+          setIsMembershipVerified(false);
+          toast({
+            title: 'Name Mismatch',
+            description: `This membership belongs to "${data.membership.name}". Please enter the correct name or use your own membership number.`,
+            variant: 'destructive',
+          });
+          return;
+        }
+
         setIsMembershipVerified(true);
         toast({
           title: 'Verified!',
@@ -422,6 +553,7 @@ export default function SeminarRegistration() {
         });
       }
     } catch (error) {
+      console.error('Verification error:', error);
       toast({
         title: 'Error',
         description: 'Failed to verify membership. Please try again.',
@@ -451,14 +583,19 @@ export default function SeminarRegistration() {
         });
         return;
       }
-      // Check BOA membership verification
-      if (isBOAMember && !isMembershipVerified) {
+      // Check Life membership verification
+      if (isLifeMember && !isMembershipVerified) {
         toast({
           title: 'Verification Required',
-          description: 'Please verify your BOA membership number before continuing',
+          description: 'Please verify your Life membership number before continuing',
           variant: 'destructive',
         });
         return;
+      }
+      
+      // If Life Member is selected, set delegate type and skip to address
+      if (isLifeMember) {
+        setDelegateType('life-member');
       }
     }
 
@@ -479,14 +616,29 @@ export default function SeminarRegistration() {
         });
         return;
       }
+      
+      // If Life Member is selected, skip registration step and go directly to fee
+      if (isLifeMember) {
+        setCurrentStep('fee');
+        return;
+      }
     }
 
     if (currentStep === 'registration') {
-      // This step is only for non-BOA members
       if (!delegateType) {
         toast({
           title: 'Required Field',
           description: 'Please select delegate category',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check Life membership verification if Life Member is selected
+      if ((delegateType === 'life member' || delegateType === 'life-member') && !isMembershipVerified) {
+        toast({
+          title: 'Verification Required',
+          description: 'Please verify your Life membership number before continuing',
           variant: 'destructive',
         });
         return;
@@ -521,6 +673,12 @@ export default function SeminarRegistration() {
   };
 
   const handleBack = () => {
+    // Special handling for Life Members - skip registration step when going back
+    if (currentStep === 'fee' && isLifeMember) {
+      setCurrentStep('address');
+      return;
+    }
+    
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1].id);
     }
@@ -740,6 +898,8 @@ export default function SeminarRegistration() {
       }
 
     } catch (error: any) {
+      console.error('Payment error:', error);
+
       if (error.message === 'Payment cancelled by user') {
         toast({
           title: 'Payment Cancelled',
@@ -757,822 +917,874 @@ export default function SeminarRegistration() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ animation: 'none', transition: 'none' }}>
-      <Navbar />
-      <main className="flex-1" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
-        <div className="min-h-[calc(100vh-4rem)] py-8 px-4" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
-          <div className="max-w-7xl mx-auto" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
-            {/* Header */}
-            <div className="text-center mb-8">
-              <Badge className="gradient-gold text-secondary-foreground border-0 mb-4">
-                Registration Open
-              </Badge>
+    <>
+      <div className="min-h-[calc(100vh-4rem)] py-8 px-4" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
+        <div className="max-w-7xl mx-auto" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <Badge className="gradient-gold text-secondary-foreground border-0 mb-4">
+              Registration Open
+            </Badge>
 
-              {/* Main Seminar Name */}
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-                {activeSeminar.name}
-              </h1>
+            {/* Main Seminar Name */}
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+              {activeSeminar.name}
+            </h1>
 
-              {/* Title/Tagline if exists */}
-              {activeSeminar.title && (
-                <p className="text-lg md:text-xl text-black font-semibold mb-4">
-                  {activeSeminar.title}
-                </p>
-              )}
+            {/* Title/Tagline if exists */}
+            {activeSeminar.title && (
+              <p className="text-lg md:text-xl text-black font-semibold mb-4">
+                {activeSeminar.title}
+              </p>
+            )}
 
-              {/* Date and Venue Info */}
-              <div className="flex flex-col md:flex-row items-center justify-center gap-2 text-muted-foreground text-base md:text-lg">
-                <span className="font-medium">
-                  {new Date(activeSeminar.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  {activeSeminar.end_date && activeSeminar.start_date !== activeSeminar.end_date && (
-                    <> - {new Date(activeSeminar.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</>
-                  )}
-                </span>
-                <span className="hidden md:inline">|</span>
-                <span className="font-medium">
-                  {activeSeminar.venue}, {activeSeminar.location}
-                </span>
-              </div>
+            {/* Date and Venue Info */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2 text-muted-foreground text-base md:text-lg">
+              <span className="font-medium">
+                {new Date(activeSeminar.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                {activeSeminar.end_date && activeSeminar.start_date !== activeSeminar.end_date && (
+                  <> - {new Date(activeSeminar.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</>
+                )}
+              </span>
+              <span className="hidden md:inline">|</span>
+              <span className="font-medium">
+                {activeSeminar.venue}, {activeSeminar.location}
+              </span>
             </div>
+          </div>
 
-            {/* Main Content - Two Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Registration Form */}
-              <div className="lg:col-span-2">
-                {/* Progress Steps */}
-                <div className="flex items-center justify-center gap-2 mb-8 overflow-x-auto pb-2">
-                  {steps.map((step, index) => (
-                    <div key={step.id} className="flex items-center">
-                      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${index === currentIndex
-                        ? 'gradient-primary text-primary-foreground shadow-glow'
-                        : index < currentIndex
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-muted text-muted-foreground'
-                        }`}>
-                        {index < currentIndex ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <step.icon className="h-4 w-4" />
-                        )}
-                        <span className="text-sm font-medium hidden sm:inline">{step.label}</span>
-                      </div>
-                      {index < steps.length - 1 && (
-                        <div className={`w-6 h-0.5 ${index < currentIndex ? 'bg-primary' : 'bg-border'
-                          }`} />
+          {/* Main Content - Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Registration Form */}
+            <div className="lg:col-span-2">
+              {/* Progress Steps */}
+              <div className="flex items-center justify-center gap-2 mb-8 overflow-x-auto pb-2">
+                {displaySteps.map((step, index) => (
+                  <div key={step.id} className="flex items-center">
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${index === displayCurrentIndex
+                      ? 'gradient-primary text-primary-foreground shadow-glow'
+                      : index < displayCurrentIndex
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-muted text-muted-foreground'
+                      }`}>
+                      {index < displayCurrentIndex ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <step.icon className="h-4 w-4" />
                       )}
+                      <span className="text-sm font-medium hidden sm:inline">{step.label}</span>
                     </div>
-                  ))}
-                </div>
+                    {index < displaySteps.length - 1 && (
+                      <div className={`w-6 h-0.5 ${index < displayCurrentIndex ? 'bg-primary' : 'bg-border'
+                        }`} />
+                    )}
+                  </div>
+                ))}
+              </div>
 
-                <div className="bg-card rounded-2xl border border-border p-8 shadow-card" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible', transform: 'none' }}>
-                  {/* Personal Information */}
-                  {currentStep === 'personal' && (
-                    <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
-                      <h2 className="text-xl font-semibold text-foreground">Personal Information</h2>
+              <div className="bg-card rounded-2xl border border-border p-8 shadow-card" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible', transform: 'none' }}>
+                {/* Personal Information */}
+                {currentStep === 'personal' && (
+                  <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
+                    <h2 className="text-xl font-semibold text-foreground">Personal Information</h2>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label>Title <span className="text-destructive">*</span></Label>
-                          <Select value={title} onValueChange={setTitle} required>
-                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                            <SelectContent>
-                              {titleOptions.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>First Name <span className="text-destructive">*</span></Label>
-                          <Input placeholder="First name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Surname <span className="text-destructive">*</span></Label>
-                          <Input placeholder="Surname" value={surname} onChange={(e) => setSurname(e.target.value)} required />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label>Date of Birth <span className="text-destructive">*</span></Label>
-                          <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Gender <span className="text-destructive">*</span></Label>
-                          <Select value={gender} onValueChange={setGender} required>
-                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                            <SelectContent>
-                              {genderOptions.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Mobile (10 digits) <span className="text-destructive">*</span></Label>
-                          <Input
-                            type="tel"
-                            placeholder="9876543210"
-                            value={mobile}
-                            onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                            maxLength={10}
-                            required
-                          />
-                        </div>
-                      </div>
-
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label>Email <span className="text-destructive">*</span></Label>
-                        <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        <Label>Title <span className="text-destructive">*</span></Label>
+                        <Select value={title} onValueChange={setTitle} required>
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {titleOptions.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
+                      <div className="space-y-2">
+                        <Label>First Name <span className="text-destructive">*</span></Label>
+                        <Input placeholder="First name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Surname <span className="text-destructive">*</span></Label>
+                        <Input placeholder="Surname" value={surname} onChange={(e) => setSurname(e.target.value)} required />
+                      </div>
+                    </div>
 
-                      {/* BOA Member Checkbox */}
-                      <div className="flex items-center space-x-2 p-4 bg-accent/30 rounded-lg border border-border">
-                        <Checkbox
-                          id="boa-member"
-                          checked={isBOAMember}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Date of Birth <span className="text-destructive">*</span></Label>
+                        <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Gender <span className="text-destructive">*</span></Label>
+                        <Select value={gender} onValueChange={setGender} required>
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {genderOptions.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Mobile (10 digits) <span className="text-destructive">*</span></Label>
+                        <Input
+                          type="tel"
+                          placeholder="9876543210"
+                          value={mobile}
+                          onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          maxLength={10}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Email <span className="text-destructive">*</span></Label>
+                      <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    </div>
+
+                    {/* Life Member Section */}
+                    <div className="bg-accent/30 rounded-lg p-4 space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="lifeMember" 
+                          checked={isLifeMember} 
                           onCheckedChange={(checked) => {
-                            setIsBOAMember(checked as boolean);
+                            setIsLifeMember(checked as boolean);
                             if (!checked) {
                               setMembershipNo('');
                               setIsMembershipVerified(false);
+                              // Clear delegate type if it was set to life-member
+                              if (delegateType === 'life-member' || delegateType === 'life member') {
+                                setDelegateType('');
+                              }
+                            } else {
+                              // If Life Member is checked, set delegate type
+                              setDelegateType('life-member');
                             }
-                          }}
+                          }} 
                         />
-                        <label
-                          htmlFor="boa-member"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          I am a BOA Member
-                        </label>
+                        <Label htmlFor="lifeMember" className="text-sm font-medium">
+                          I am a Life Member
+                        </Label>
                       </div>
 
-                      {/* BOA Membership Number Field */}
-                      {isBOAMember && (
-                        <div className="space-y-2 p-4 bg-primary/5 rounded-lg border border-primary/20" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
-                          <Label>BOA Membership Number <span className="text-destructive">*</span></Label>
+                      {isLifeMember && (
+                        <div className="space-y-2">
+                          <Label>Membership Number <span className="text-destructive">*</span></Label>
                           <div className="flex gap-2">
                             <Input
-                              placeholder="BOA/LM/0001/2023"
+                              placeholder="Enter your membership number"
                               value={membershipNo}
                               onChange={(e) => {
                                 setMembershipNo(e.target.value);
-                                setIsMembershipVerified(false); // Reset verification on change
+                                setIsMembershipVerified(false);
                               }}
-                              required={isBOAMember}
+                              required={isLifeMember}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleVerifyMembership}
+                              disabled={!membershipNo || isVerifying}
+                            >
+                              {isVerifying ? 'Verifying...' : 'Verify'}
+                            </Button>
+                          </div>
+                          {isMembershipVerified && (
+                            <p className="text-sm text-green-600 flex items-center gap-1">
+                              <Check className="h-4 w-4" />
+                              Membership verified successfully
+                            </p>
+                          )}
+                          {membershipNo && !isMembershipVerified && !isVerifying && (
+                            <p className="text-sm text-orange-600">
+                              Please verify your membership number
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Address */}
+                {currentStep === 'address' && (
+                  <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
+                    <h2 className="text-xl font-semibold text-foreground">Address Details</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>House/Flat No.</Label>
+                        <Input placeholder="Enter house/flat number" value={house} onChange={(e) => setHouse(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Street</Label>
+                        <Input placeholder="Enter street" value={street} onChange={(e) => setStreet(e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Landmark</Label>
+                      <Input placeholder="Enter landmark" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>City <span className="text-destructive">*</span></Label>
+                        <Input placeholder="Enter city" value={city} onChange={(e) => setCity(e.target.value)} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>State <span className="text-destructive">*</span></Label>
+                        <Select value={state} onValueChange={setState} required>
+                          <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                          <SelectContent>
+                            {indianStates.map(s => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Country</Label>
+                        <Select value={country} onValueChange={setCountry}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="India">India</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>PIN Code (6 digits) <span className="text-destructive">*</span></Label>
+                        <Input
+                          placeholder="800001"
+                          value={pinCode}
+                          onChange={(e) => setPinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          maxLength={6}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Category Selection - For All Users */}
+                {currentStep === 'registration' && (
+                  <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
+                    <h2 className="text-xl font-semibold text-foreground">Select Category</h2>
+
+                    <div className="space-y-2">
+                      <Label>Delegate Category <span className="text-destructive">*</span></Label>
+                      <Select value={delegateType} onValueChange={(value) => {
+                        setDelegateType(value);
+                        
+                        // If Life Member is selected, show membership verification
+                        if (value === 'life member' || value === 'life-member') {
+                          setIsLifeMember(true);
+                        } else {
+                          setIsLifeMember(false);
+                          setMembershipNo('');
+                          setIsMembershipVerified(false);
+                        }
+                      }} required>
+                        <SelectTrigger><SelectValue placeholder="Select your category" /></SelectTrigger>
+                        <SelectContent>
+                          {displayDelegateCategories.map(cat => (
+                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">
+                        Select your delegate category for the seminar
+                      </p>
+                    </div>
+
+                    {/* Life Membership Verification - Show if Life Member selected */}
+                    {(delegateType === 'life member' || delegateType === 'life-member') && (
+                      <div className="space-y-4 p-4 border rounded-lg bg-blue-50/50">
+                        <div className="flex items-start gap-2">
+                          <div className="text-blue-600 mt-1">
+                            <Check className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">Life Member Verification Required</p>
+                            <p className="text-sm text-blue-700">Please verify your Life membership number to continue.</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Life Membership Number <span className="text-destructive">*</span></Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter membership number"
+                              value={membershipNo}
+                              onChange={(e) => {
+                                setMembershipNo(e.target.value);
+                                setIsMembershipVerified(false);
+                              }}
                               disabled={isMembershipVerified}
                               className={isMembershipVerified ? 'bg-green-50 border-green-500' : ''}
                             />
-                            {!isMembershipVerified ? (
-                              <Button
-                                type="button"
-                                onClick={handleVerifyMembership}
-                                disabled={isVerifying || !membershipNo}
-                                className="h-11 px-6 whitespace-nowrap"
-                              >
-                                {isVerifying ? 'Verifying...' : 'Verify'}
-                              </Button>
-                            ) : (
-                              <div className="flex items-center justify-center h-11 px-4 bg-green-100 rounded-lg border border-green-500">
-                                <Check className="h-5 w-5 text-green-600" />
-                              </div>
-                            )}
+                            <Button
+                              type="button"
+                              onClick={handleVerifyMembership}
+                              disabled={isVerifying || !membershipNo || isMembershipVerified}
+                              className="whitespace-nowrap"
+                            >
+                              {isVerifying ? 'Verifying...' : isMembershipVerified ? '✓ Verified' : 'Verify'}
+                            </Button>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {isMembershipVerified
-                              ? '✓ Membership verified successfully'
-                              : 'Enter your valid BOA membership number and click Verify'}
-                          </p>
+                          {isMembershipVerified && (
+                            <p className="text-sm text-green-600 flex items-center gap-1">
+                              <Check className="h-4 w-4" />
+                              Membership verified successfully
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Fee Selection */}
+                {currentStep === 'fee' && (
+                  <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
+                    <h2 className="text-xl font-semibold text-foreground">Registration Fee</h2>
+                    <p className="text-muted-foreground">
+                      Your registration fee based on current date and selected category
+                    </p>
+
+                    {selectedFee && selectedSlab && (
+                      <div className="p-6 rounded-xl border" style={{
+                        backgroundColor: 'rgba(55, 235, 121, 0.2)',
+                        borderColor: 'rgba(31, 236, 106, 0.3)'
+                      }}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">
+                              Registration Fee
+                            </p>
+                            <p className="text-2xl font-bold text-primary">Rs {selectedAmount.toLocaleString()}</p>
+                            <p className="text-sm text-muted-foreground mt-2">
+                              Category: <span className="font-semibold text-foreground">{selectedFee.name}</span>
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Fee Slab: <span className="font-semibold text-foreground">{selectedSlabLabel}</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!selectedFee && (
+                      <div className="p-6 rounded-xl border border-yellow-300 bg-yellow-50">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ Fee structure not available for selected delegate category. Please contact admin.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Add Additional Delegates */}
+                    <div className="mt-8 p-6 bg-muted/50 rounded-xl border border-border">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-foreground">Add Additional Delegates</h3>
+                          <p className="text-sm text-muted-foreground">Register spouse, colleagues, or other delegates</p>
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setAdditionalPersons([...additionalPersons, {
+                              name: '',
+                              category_id: '',
+                              slab_id: selectedSlab,
+                              amount: 0
+                            }]);
+                          }}
+                          variant="outline"
+                          className="h-11 text-sm px-5"
+                        >
+                          + Add Person
+                        </Button>
+                      </div>
+
+                      {additionalPersons.length > 0 && (
+                        <div className="space-y-4">
+                          {additionalPersons.map((person, index) => (
+                            <div key={index} className="p-4 bg-background rounded-lg border border-border space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-sm text-foreground">Person {index + 1}</h4>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updated = additionalPersons.filter((_, i) => i !== index);
+                                    setAdditionalPersons(updated);
+                                  }}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label>Full Name</Label>
+                                  <Input
+                                    placeholder="Enter full name"
+                                    value={person.name}
+                                    onChange={(e) => {
+                                      const updated = [...additionalPersons];
+                                      updated[index].name = e.target.value;
+                                      setAdditionalPersons(updated);
+                                    }}
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Category</Label>
+                                  <Select
+                                    value={person.category_id?.toString()}
+                                    onValueChange={(value) => {
+                                      const updated = [...additionalPersons];
+                                      updated[index].category_id = value;
+                                      const category = feeCategories.find(c => c.id.toString() === value);
+                                      if (category && selectedSlab) {
+                                        const rawAmount = category.fees[selectedSlab];
+                                        updated[index].amount = typeof rawAmount === 'number' && !isNaN(rawAmount) ? rawAmount : 0;
+                                        updated[index].slab_id = selectedSlab;
+                                      }
+                                      setAdditionalPersons(updated);
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {feeCategories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id.toString()}>
+                                          {cat.name} - Rs {(selectedSlab && cat.fees[selectedSlab]) ? cat.fees[selectedSlab].toLocaleString() : '0'}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {person.amount > 0 && (
+                                <div className="text-sm text-muted-foreground">
+                                  Amount: <span className="font-semibold text-foreground">Rs {person.amount.toLocaleString()}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+
+                          <div className="pt-3 border-t border-border">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-muted-foreground">Additional Delegates Total:</span>
+                              <span className="font-semibold text-foreground">
+                                Rs {additionalPersons.reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-lg font-bold mt-2">
+                              <span className="text-foreground">Grand Total:</span>
+                              <span className="text-primary">
+                                Rs {(selectedAmount + additionalPersons.reduce((sum, p) => sum + (p.amount || 0), 0)).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* Address */}
-                  {currentStep === 'address' && (
-                    <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
-                      <h2 className="text-xl font-semibold text-foreground">Address Details</h2>
+                {/* Consent */}
+                {currentStep === 'consent' && (
+                  <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
+                    <h2 className="text-xl font-semibold text-foreground">Consent & Signature</h2>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>House/Flat No.</Label>
-                          <Input placeholder="Enter house/flat number" value={house} onChange={(e) => setHouse(e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Street</Label>
-                          <Input placeholder="Enter street" value={street} onChange={(e) => setStreet(e.target.value)} />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Landmark</Label>
-                        <Input placeholder="Enter landmark" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>City <span className="text-destructive">*</span></Label>
-                          <Input placeholder="Enter city" value={city} onChange={(e) => setCity(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>State <span className="text-destructive">*</span></Label>
-                          <Select value={state} onValueChange={setState} required>
-                            <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                            <SelectContent>
-                              {indianStates.map(s => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Country</Label>
-                          <Select value={country} onValueChange={setCountry}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="India">India</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>PIN Code (6 digits) <span className="text-destructive">*</span></Label>
-                          <Input
-                            placeholder="800001"
-                            value={pinCode}
-                            onChange={(e) => setPinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            maxLength={6}
-                            required
-                          />
-                        </div>
+                    <div className="p-6 bg-muted rounded-xl space-y-4">
+                      <h3 className="font-semibold text-foreground">Terms & Conditions</h3>
+                      <div className="h-40 overflow-y-auto text-sm text-muted-foreground space-y-2">
+                        <p>1. Registration fees once paid are non-refundable.</p>
+                        <p>2. BOA reserves the right to modify the program schedule.</p>
+                        <p>3. Participants must carry valid ID proof for entry.</p>
+                        <p>4. Photographs and videos may be captured during the event for promotional purposes.</p>
+                        <p>5. Participants are responsible for their own accommodation and travel arrangements.</p>
+                        <p>6. BOA is not liable for any personal loss or damage during the event.</p>
+                        <p>7. All intellectual property rights of presentations belong to respective authors.</p>
+                        <p>8. Participants must adhere to the code of conduct during the conference.</p>
                       </div>
                     </div>
-                  )}
 
-                  {/* Registration Details - Only show if NOT a BOA Member */}
-                  {currentStep === 'registration' && (
-                    <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
-                      <h2 className="text-xl font-semibold text-foreground">Registration Details</h2>
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        id="terms"
+                        checked={agreedToTerms}
+                        onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                      />
+                      <label htmlFor="terms" className="text-sm text-muted-foreground cursor-pointer">
+                        I have read and agree to the BOA rules, regulations, and terms & conditions for {activeSeminar.name}.
+                      </label>
+                    </div>
 
-                      <div className="space-y-2">
-                        <Label>Delegate Category <span className="text-destructive">*</span></Label>
-                        <Select value={delegateType} onValueChange={(value) => {
-                          setDelegateType(value);
-                        }} required>
-                          <SelectTrigger><SelectValue placeholder="Select delegate category" /></SelectTrigger>
-                          <SelectContent>
-                            {displayDelegateCategories
-                              .filter(cat => cat.value !== 'boa-member') // Hide BOA Member from delegate selection
-                              .map(cat => (
-                                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-sm text-muted-foreground">
-                          Select your delegate category for the seminar
+                    <div className="space-y-2">
+                      <Label>Digital Signature</Label>
+                      <div className="p-6 border-2 border-dashed border-border rounded-xl text-center">
+                        <p className="text-lg font-signature text-foreground italic">
+                          {fullName || 'Your Name Here'}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Your full name will be used as digital signature
                         </p>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* Fee Selection */}
-                  {currentStep === 'fee' && (
-                    <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
-                      <h2 className="text-xl font-semibold text-foreground">Registration Fee</h2>
-                      <p className="text-muted-foreground">
-                        Your registration fee based on current date and selected category
-                      </p>
+                {/* Payment */}
+                {currentStep === 'payment' && (
+                  <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
+                    <h2 className="text-xl font-semibold text-foreground">
+                      {paymentComplete ? 'Payment Successful!' : 'Payment Summary'}
+                    </h2>
 
-                      {selectedFee && selectedSlab && (
-                        <div className="p-6 rounded-xl border" style={{
-                          backgroundColor: 'rgba(55, 235, 121, 0.2)',
-                          borderColor: 'rgba(31, 236, 106, 0.3)'
-                        }}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-muted-foreground mb-1">
-                                Registration Fee
-                              </p>
-                              <p className="text-2xl font-bold text-primary">Rs {selectedAmount.toLocaleString()}</p>
-                              <p className="text-sm text-muted-foreground mt-2">
-                                Category: <span className="font-semibold text-foreground">{selectedFee.name}</span>
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Fee Slab: <span className="font-semibold text-foreground">{selectedSlabLabel}</span>
-                              </p>
+                    <div className="p-6 bg-muted rounded-xl space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Seminar</span>
+                        <span className="font-medium text-foreground">{activeSeminar.name}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Delegate Category</span>
+                        <span className="font-medium text-foreground capitalize">
+                          {delegateCategories.find(d => d.value === delegateType)?.label || '-'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Fee Category</span>
+                        <span className="font-medium text-foreground">{selectedFee?.name || '-'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Fee Slab</span>
+                        <span className="font-medium text-foreground">{selectedSlabLabel || '-'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Your Amount</span>
+                        <span className="font-medium text-foreground">Rs {selectedAmount.toLocaleString()}</span>
+                      </div>
+
+                      {additionalPersons.length > 0 && (
+                        <>
+                          <hr className="border-border" />
+                          <div className="space-y-2">
+                            <p className="text-sm font-semibold text-foreground">Additional Delegates ({additionalPersons.length})</p>
+                            {additionalPersons.map((person, index) => (
+                              <div key={index} className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">{person.name || `Person ${index + 1}`}</span>
+                                <span className="font-medium text-foreground">Rs {person.amount.toLocaleString()}</span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
+                              <span className="text-muted-foreground">Additional Total</span>
+                              <span className="font-medium text-foreground">Rs {additionalAmount.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      <hr className="border-border" />
+                      <div className="flex justify-between items-center text-lg">
+                        <span className="font-semibold text-foreground">Total Amount</span>
+                        <span className="font-bold text-primary">Rs {totalAmount.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {!paymentComplete ? (
+                      <div className="p-6 border border-border rounded-xl">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
+                            <CreditCard className="h-5 w-5 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">Razorpay Secure Checkout</p>
+                            <p className="text-sm text-muted-foreground">Card, UPI, Netbanking, Wallets</p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handlePayment}
+                          className="w-full gradient-primary text-primary-foreground h-12 text-base px-6"
+                          disabled={!agreedToTerms || !selectedCategory || !selectedSlab}
+                        >
+                          Pay Rs {totalAmount.toLocaleString()}
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Success Message */}
+                        <div className="p-6 border border-primary rounded-xl bg-primary/5 text-center space-y-4">
+                          <div className="h-16 w-16 mx-auto rounded-full gradient-primary flex items-center justify-center">
+                            <Check className="h-8 w-8 text-primary-foreground" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-foreground">Registration Complete!</h3>
+                          <p className="text-muted-foreground">Your payment has been processed successfully.</p>
+                        </div>
+
+                        {/* Detailed Registration Summary */}
+                        <div className="bg-card rounded-lg border p-6 space-y-6">
+                          <h4 className="text-lg font-semibold text-foreground border-b pb-2">Registration Summary</h4>
+
+                          {/* Personal Information */}
+                          <div className="space-y-3">
+                            <h5 className="font-medium text-foreground">Personal Details</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Name:</span>
+                                <span className="font-medium">{formatTitle(title)} {fullName} {surname}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Email:</span>
+                                <span className="font-medium">{email}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Mobile:</span>
+                                <span className="font-medium">{mobile}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Gender:</span>
+                                <span className="font-medium">{gender}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Address Information */}
+                          <div className="space-y-3">
+                            <h5 className="font-medium text-foreground">Address</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">City:</span>
+                                <span className="font-medium">{city}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">State:</span>
+                                <span className="font-medium">{state}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Registration Details */}
+                          <div className="space-y-3">
+                            <h5 className="font-medium text-foreground">Registration Details</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Delegate Category:</span>
+                                <span className="font-medium">{delegateCategories.find(d => d.value === delegateType)?.label || delegateType}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Registration Category:</span>
+                                <span className="font-medium">{selectedFee?.name}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Fee Slab:</span>
+                                <span className="font-medium">{selectedSlabLabel}</span>
+                              </div>
+                              {delegateType === 'boa-member' && membershipNo && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">BOA Membership:</span>
+                                  <span className="font-medium">{membershipNo}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Additional Persons */}
+                          {additionalPersons.length > 0 && (
+                            <div className="space-y-3">
+                              <h5 className="font-medium text-foreground">Additional Delegates ({additionalPersons.length})</h5>
+                              <div className="space-y-2">
+                                {additionalPersons.map((person, index) => {
+                                  const categoryName = feeCategories.find(c => c.id.toString() === person.category_id)?.name;
+                                  const slabName = feeSlabs.find(s => s.id.toString() === person.slab_id)?.label;
+                                  return (
+                                    <div key={index} className="p-3 bg-muted/30 rounded-lg">
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                        <div className="flex justify-between md:block">
+                                          <span className="text-muted-foreground md:hidden">Name:</span>
+                                          <span className="font-medium">{person.name || `Person ${index + 1}`}</span>
+                                        </div>
+                                        <div className="flex justify-between md:block">
+                                          <span className="text-muted-foreground md:hidden">Category:</span>
+                                          <span className="font-medium">{categoryName}</span>
+                                        </div>
+                                        <div className="flex justify-between md:block">
+                                          <span className="text-muted-foreground md:hidden">Amount:</span>
+                                          <span className="font-medium">₹{(person.amount || 0).toLocaleString()}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Payment Summary */}
+                          <div className="space-y-3 border-t pt-4">
+                            <h5 className="font-medium text-foreground">Payment Summary</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Main Registration:</span>
+                                <span className="font-medium">₹{selectedAmount.toLocaleString()}</span>
+                              </div>
+                              {additionalPersons.length > 0 && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Additional Delegates:</span>
+                                  <span className="font-medium">₹{additionalAmount.toLocaleString()}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between border-t pt-2 text-base font-semibold">
+                                <span className="text-foreground">Total Amount Paid:</span>
+                                <span className="text-primary">₹{totalAmount.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Transaction ID:</span>
+                                <span>TXN{Date.now()}</span>
+                              </div>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Payment Date:</span>
+                                <span>{new Date().toLocaleDateString()}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      )}
 
-                      {!selectedFee && (
-                        <div className="p-6 rounded-xl border border-yellow-300 bg-yellow-50">
-                          <p className="text-sm text-yellow-800">
-                            ⚠️ Fee structure not available for selected delegate category. Please contact admin.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Add Additional Delegates */}
-                      <div className="mt-8 p-6 bg-muted/50 rounded-xl border border-border">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h3 className="font-semibold text-foreground">Add Additional Delegates</h3>
-                            <p className="text-sm text-muted-foreground">Register spouse, colleagues, or other delegates</p>
-                          </div>
+                        {/* Action Buttons */}
+                        <div className="flex gap-3 justify-center">
                           <Button
-                            type="button"
-                            onClick={() => {
-                              setAdditionalPersons([...additionalPersons, {
-                                name: '',
-                                category_id: '',
-                                slab_id: selectedSlab,
-                                amount: 0
-                              }]);
-                            }}
+                            onClick={generatePaymentReceipt}
+                            className="gradient-primary text-primary-foreground h-11 text-sm px-5"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Receipt
+                          </Button>
+                          <Button
+                            onClick={() => navigate('/dashboard')}
                             variant="outline"
                             className="h-11 text-sm px-5"
                           >
-                            + Add Person
+                            Go to Dashboard
                           </Button>
                         </div>
-
-                        {additionalPersons.length > 0 && (
-                          <div className="space-y-4">
-                            {additionalPersons.map((person, index) => (
-                              <div key={index} className="p-4 bg-background rounded-lg border border-border space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="font-medium text-sm text-foreground">Person {index + 1}</h4>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      const updated = additionalPersons.filter((_, i) => i !== index);
-                                      setAdditionalPersons(updated);
-                                    }}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    Remove
-                                  </Button>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  <div className="space-y-2">
-                                    <Label>Full Name</Label>
-                                    <Input
-                                      placeholder="Enter full name"
-                                      value={person.name}
-                                      onChange={(e) => {
-                                        const updated = [...additionalPersons];
-                                        updated[index].name = e.target.value;
-                                        setAdditionalPersons(updated);
-                                      }}
-                                    />
-                                  </div>
-
-                                  <div className="space-y-2">
-                                    <Label>Category</Label>
-                                    <Select
-                                      value={person.category_id?.toString()}
-                                      onValueChange={(value) => {
-                                        const updated = [...additionalPersons];
-                                        updated[index].category_id = value;
-                                        const category = feeCategories.find(c => c.id.toString() === value);
-                                        if (category && selectedSlab) {
-                                          const rawAmount = category.fees[selectedSlab];
-                                          updated[index].amount = typeof rawAmount === 'number' && !isNaN(rawAmount) ? rawAmount : 0;
-                                          updated[index].slab_id = selectedSlab;
-                                        }
-                                        setAdditionalPersons(updated);
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select category" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {feeCategories.map(cat => (
-                                          <SelectItem key={cat.id} value={cat.id.toString()}>
-                                            {cat.name} - Rs {(selectedSlab && cat.fees[selectedSlab]) ? cat.fees[selectedSlab].toLocaleString() : '0'}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </div>
-
-                                {person.amount > 0 && (
-                                  <div className="text-sm text-muted-foreground">
-                                    Amount: <span className="font-semibold text-foreground">Rs {person.amount.toLocaleString()}</span>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-
-                            <div className="pt-3 border-t border-border">
-                              <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Additional Delegates Total:</span>
-                                <span className="font-semibold text-foreground">
-                                  Rs {additionalPersons.reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center text-lg font-bold mt-2">
-                                <span className="text-foreground">Grand Total:</span>
-                                <span className="text-primary">
-                                  Rs {(selectedAmount + additionalPersons.reduce((sum, p) => sum + (p.amount || 0), 0)).toLocaleString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Consent */}
-                  {currentStep === 'consent' && (
-                    <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
-                      <h2 className="text-xl font-semibold text-foreground">Consent & Signature</h2>
-
-                      <div className="p-6 bg-muted rounded-xl space-y-4">
-                        <h3 className="font-semibold text-foreground">Terms & Conditions</h3>
-                        <div className="h-40 overflow-y-auto text-sm text-muted-foreground space-y-2">
-                          <p>1. Registration fees once paid are non-refundable.</p>
-                          <p>2. BOA reserves the right to modify the program schedule.</p>
-                          <p>3. Participants must carry valid ID proof for entry.</p>
-                          <p>4. Photographs and videos may be captured during the event for promotional purposes.</p>
-                          <p>5. Participants are responsible for their own accommodation and travel arrangements.</p>
-                          <p>6. BOA is not liable for any personal loss or damage during the event.</p>
-                          <p>7. All intellectual property rights of presentations belong to respective authors.</p>
-                          <p>8. Participants must adhere to the code of conduct during the conference.</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="terms"
-                          checked={agreedToTerms}
-                          onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-                        />
-                        <label htmlFor="terms" className="text-sm text-muted-foreground cursor-pointer">
-                          I have read and agree to the BOA rules, regulations, and terms & conditions for {activeSeminar.name}.
-                        </label>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Digital Signature</Label>
-                        <div className="p-6 border-2 border-dashed border-border rounded-xl text-center">
-                          <p className="text-lg font-signature text-foreground italic">
-                            {fullName || 'Your Name Here'}
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Your full name will be used as digital signature
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Payment */}
-                  {currentStep === 'payment' && (
-                    <div className="space-y-6" style={{ animation: 'none', opacity: 1, visibility: 'visible' }}>
-                      <h2 className="text-xl font-semibold text-foreground">
-                        {paymentComplete ? 'Payment Successful!' : 'Payment Summary'}
-                      </h2>
-
-                      <div className="p-6 bg-muted rounded-xl space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Seminar</span>
-                          <span className="font-medium text-foreground">{activeSeminar.name}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Delegate Category</span>
-                          <span className="font-medium text-foreground capitalize">
-                            {delegateCategories.find(d => d.value === delegateType)?.label || '-'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Fee Category</span>
-                          <span className="font-medium text-foreground">{selectedFee?.name || '-'}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Fee Slab</span>
-                          <span className="font-medium text-foreground">{selectedSlabLabel || '-'}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Your Amount</span>
-                          <span className="font-medium text-foreground">Rs {selectedAmount.toLocaleString()}</span>
-                        </div>
-
-                        {additionalPersons.length > 0 && (
-                          <>
-                            <hr className="border-border" />
-                            <div className="space-y-2">
-                              <p className="text-sm font-semibold text-foreground">Additional Delegates ({additionalPersons.length})</p>
-                              {additionalPersons.map((person, index) => (
-                                <div key={index} className="flex justify-between items-center text-sm">
-                                  <span className="text-muted-foreground">{person.name || `Person ${index + 1}`}</span>
-                                  <span className="font-medium text-foreground">Rs {person.amount.toLocaleString()}</span>
-                                </div>
-                              ))}
-                              <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
-                                <span className="text-muted-foreground">Additional Total</span>
-                                <span className="font-medium text-foreground">Rs {additionalAmount.toLocaleString()}</span>
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        <hr className="border-border" />
-                        <div className="flex justify-between items-center text-lg">
-                          <span className="font-semibold text-foreground">Total Amount</span>
-                          <span className="font-bold text-primary">Rs {totalAmount.toLocaleString()}</span>
-                        </div>
-                      </div>
-
-                      {!paymentComplete ? (
-                        <div className="p-6 border border-border rounded-xl">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
-                              <CreditCard className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-foreground">Razorpay Secure Checkout</p>
-                              <p className="text-sm text-muted-foreground">Card, UPI, Netbanking, Wallets</p>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={handlePayment}
-                            className="w-full gradient-primary text-primary-foreground h-12 text-base px-6"
-                            disabled={!agreedToTerms || !selectedCategory || !selectedSlab}
-                          >
-                            Pay Rs {totalAmount.toLocaleString()}
-                            <ArrowRight className="ml-2 h-5 w-5" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-6">
-                          {/* Success Message */}
-                          <div className="p-6 border border-primary rounded-xl bg-primary/5 text-center space-y-4">
-                            <div className="h-16 w-16 mx-auto rounded-full gradient-primary flex items-center justify-center">
-                              <Check className="h-8 w-8 text-primary-foreground" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-foreground">Registration Complete!</h3>
-                            <p className="text-muted-foreground">Your payment has been processed successfully.</p>
-                          </div>
-
-                          {/* Detailed Registration Summary */}
-                          <div className="bg-card rounded-lg border p-6 space-y-6">
-                            <h4 className="text-lg font-semibold text-foreground border-b pb-2">Registration Summary</h4>
-
-                            {/* Personal Information */}
-                            <div className="space-y-3">
-                              <h5 className="font-medium text-foreground">Personal Details</h5>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Name:</span>
-                                  <span className="font-medium">{formatTitle(title)} {fullName} {surname}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Email:</span>
-                                  <span className="font-medium">{email}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Mobile:</span>
-                                  <span className="font-medium">{mobile}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Gender:</span>
-                                  <span className="font-medium">{gender}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Address Information */}
-                            <div className="space-y-3">
-                              <h5 className="font-medium text-foreground">Address</h5>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">City:</span>
-                                  <span className="font-medium">{city}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">State:</span>
-                                  <span className="font-medium">{state}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Registration Details */}
-                            <div className="space-y-3">
-                              <h5 className="font-medium text-foreground">Registration Details</h5>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Delegate Category:</span>
-                                  <span className="font-medium">{delegateCategories.find(d => d.value === delegateType)?.label || delegateType}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Registration Category:</span>
-                                  <span className="font-medium">{selectedFee?.name}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Fee Slab:</span>
-                                  <span className="font-medium">{selectedSlabLabel}</span>
-                                </div>
-                                {delegateType === 'boa-member' && membershipNo && (
-                                  <div className="flex justify-between">
-                                    <span className="text-muted-foreground">BOA Membership:</span>
-                                    <span className="font-medium">{membershipNo}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Additional Persons */}
-                            {additionalPersons.length > 0 && (
-                              <div className="space-y-3">
-                                <h5 className="font-medium text-foreground">Additional Delegates ({additionalPersons.length})</h5>
-                                <div className="space-y-2">
-                                  {additionalPersons.map((person, index) => {
-                                    const categoryName = feeCategories.find(c => c.id.toString() === person.category_id)?.name;
-                                    const slabName = feeSlabs.find(s => s.id.toString() === person.slab_id)?.label;
-                                    return (
-                                      <div key={index} className="p-3 bg-muted/30 rounded-lg">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                                          <div className="flex justify-between md:block">
-                                            <span className="text-muted-foreground md:hidden">Name:</span>
-                                            <span className="font-medium">{person.name || `Person ${index + 1}`}</span>
-                                          </div>
-                                          <div className="flex justify-between md:block">
-                                            <span className="text-muted-foreground md:hidden">Category:</span>
-                                            <span className="font-medium">{categoryName}</span>
-                                          </div>
-                                          <div className="flex justify-between md:block">
-                                            <span className="text-muted-foreground md:hidden">Amount:</span>
-                                            <span className="font-medium">₹{(person.amount || 0).toLocaleString()}</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Payment Summary */}
-                            <div className="space-y-3 border-t pt-4">
-                              <h5 className="font-medium text-foreground">Payment Summary</h5>
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Main Registration:</span>
-                                  <span className="font-medium">₹{selectedAmount.toLocaleString()}</span>
-                                </div>
-                                {additionalPersons.length > 0 && (
-                                  <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Additional Delegates:</span>
-                                    <span className="font-medium">₹{additionalAmount.toLocaleString()}</span>
-                                  </div>
-                                )}
-                                <div className="flex justify-between border-t pt-2 text-base font-semibold">
-                                  <span className="text-foreground">Total Amount Paid:</span>
-                                  <span className="text-primary">₹{totalAmount.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>Transaction ID:</span>
-                                  <span>TXN{Date.now()}</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>Payment Date:</span>
-                                  <span>{new Date().toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex gap-3 justify-center">
-                            <Button
-                              onClick={generatePaymentReceipt}
-                              className="gradient-primary text-primary-foreground h-11 text-sm px-5"
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              Download Receipt
-                            </Button>
-                            <Button
-                              onClick={() => navigate('/dashboard')}
-                              variant="outline"
-                              className="h-11 text-sm px-5"
-                            >
-                              Go to Dashboard
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Navigation */}
-                  <div className="flex justify-between mt-8 pt-6 border-t border-border">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleBack}
-                      disabled={currentIndex === 0}
-                      className="h-11 text-sm px-5"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-
-                    {currentStep !== 'payment' && (
-                      <Button
-                        type="button"
-                        onClick={handleNext}
-                        className="gradient-primary text-primary-foreground h-11 text-sm px-5"
-                        disabled={currentStep === 'fee' && (!selectedCategory || !selectedSlab)}
-                      >
-                        Continue
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
                     )}
                   </div>
-                </div>
-              </div>
+                )}
 
-              {/* Right Column - Download Form */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-6">
-                  {/* Offline Form Download */}
-                  <div className="bg-white rounded-lg shadow-lg border border-gray-200">
-                    <div className="px-6 py-4" style={{ background: '#0B3C5D' }}>
-                      <h3 className="text-lg font-semibold text-white">Offline Registration</h3>
-                    </div>
-                    <div className="p-6">
-                      <p className="text-sm text-gray-600 mb-4">
-                        Prefer to register offline? Download the printable registration form.
-                      </p>
-                      <Button
-                        onClick={generateOfflineRegistrationForm}
-                        variant="outline"
-                        className="w-full border-2"
-                        style={{ borderColor: '#0B3C5D', color: '#0B3C5D' }}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Offline Form (PDF)
-                      </Button>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Fill the form manually and submit at the registration desk.
-                      </p>
-                    </div>
-                  </div>
+                {/* Navigation */}
+                <div className="flex justify-between mt-8 pt-6 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={displayCurrentIndex === 0}
+                    className="h-11 text-sm px-5"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+
+                  {currentStep !== 'payment' && (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      className="gradient-primary text-primary-foreground h-11 text-sm px-5"
+                      disabled={currentStep === 'fee' && (!selectedCategory || !selectedSlab)}
+                    >
+                      Continue
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Committee Members Section */}
-            {committeeMembers.length > 0 && (
-              <section className="py-12 md:py-16" style={{ background: '#F9FAFB' }}>
-                <div className="container max-w-6xl px-4">
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl md:text-3xl font-semibold mb-4" style={{ color: '#1F2933' }}>
-                      Organizing Committee
-                    </h2>
-                    <div className="w-24 h-1 mx-auto mb-4" style={{ background: '#C9A227' }}></div>
+            {/* Right Column - Download Form */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-6">
+                {/* Offline Form Download */}
+                <div className="bg-white rounded-lg shadow-lg border border-gray-200">
+                  <div className="px-6 py-4" style={{ background: '#0B3C5D' }}>
+                    <h3 className="text-lg font-semibold text-white">Offline Registration</h3>
                   </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                    {committeeMembers.map((member) => (
-                      <div key={member.id} className="text-center">
-                        <div className="relative mb-4">
-                          <img
-                            src={member.image_url || '/api/placeholder/120/120'}
-                            alt={member.name}
-                            className="w-24 h-24 rounded-full mx-auto object-cover border-4"
-                            style={{ borderColor: '#C9A227' }}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = '/api/placeholder/120/120';
-                            }}
-                          />
-                        </div>
-                        <h3 className="font-semibold text-sm mb-1" style={{ color: '#1F2933' }}>
-                          {member.name}
-                        </h3>
-                        <p className="text-xs" style={{ color: '#616E7C' }}>
-                          {member.designation}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="p-6">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Prefer to register offline? Download the printable registration form.
+                    </p>
+                    <Button
+                      onClick={generateOfflineRegistrationForm}
+                      variant="outline"
+                      className="w-full border-2"
+                      style={{ borderColor: '#0B3C5D', color: '#0B3C5D' }}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Offline Form (PDF)
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Fill the form manually and submit at the registration desk.
+                    </p>
                   </div>
                 </div>
-              </section>
-            )}
+              </div>
+            </div>
           </div>
-        </div >
-      </main >
+
+          {/* Committee Members Section */}
+          {committeeMembers.length > 0 && (
+            <section className="py-12 md:py-16" style={{ background: '#F9FAFB' }}>
+              <div className="container max-w-6xl px-4">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl md:text-3xl font-semibold mb-4" style={{ color: '#1F2933' }}>
+                    Organizing Committee
+                  </h2>
+                  <div className="w-24 h-1 mx-auto mb-4" style={{ background: '#C9A227' }}></div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                  {committeeMembers.map((member) => (
+                    <div key={member.id} className="text-center">
+                      <div className="relative mb-4">
+                        <img
+                          src={member.image_url || '/api/placeholder/120/120'}
+                          alt={member.name}
+                          className="w-24 h-24 rounded-full mx-auto object-cover border-4"
+                          style={{ borderColor: '#C9A227' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/api/placeholder/120/120';
+                          }}
+                        />
+                      </div>
+                      <h3 className="font-semibold text-sm mb-1" style={{ color: '#1F2933' }}>
+                        {member.name}
+                      </h3>
+                      <p className="text-xs" style={{ color: '#616E7C' }}>
+                        {member.designation}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
       <Footer />
-    </div >
+    </>
   );
 }

@@ -90,15 +90,29 @@ export default function UpcomingEventsTab() {
       return;
     }
 
+    // Convert date inputs to MySQL datetime format
+    const formatDateForStorage = (dateString: string) => {
+      if (!dateString) return null;
+      // Convert to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
+      return dateString + ' 00:00:00';
+    };
+
+    const submissionData = {
+      ...formData,
+      start_date: formatDateForStorage(formData.start_date),
+      end_date: formatDateForStorage(formData.end_date),
+      is_active: true
+    };
+
     try {
       if (editingEvent) {
         await axios.put(`http://localhost:5000/api/admin/upcoming-events/${editingEvent.id}`, 
-          { ...formData, is_active: true },
+          submissionData,
           { headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }}
         );
         toast({ title: 'Success', description: 'Event updated successfully' });
       } else {
-        await axios.post('http://localhost:5000/api/admin/upcoming-events', formData, {
+        await axios.post('http://localhost:5000/api/admin/upcoming-events', submissionData, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
         });
         toast({ title: 'Success', description: 'Event added successfully' });
@@ -117,12 +131,24 @@ export default function UpcomingEventsTab() {
 
   const handleEdit = (event: any) => {
     setEditingEvent(event);
+    
+    // Convert UTC dates to local date format for input fields
+    const formatDateForInput = (dateString: string) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      // Use UTC methods to get the correct date
+      const year = date.getUTCFullYear();
+      const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+      const day = date.getUTCDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
     setFormData({
       title: event.title || '',
       description: event.description || '',
       location: event.location || '',
-      start_date: event.start_date ? event.start_date.split('T')[0] : '',
-      end_date: event.end_date ? event.end_date.split('T')[0] : '',
+      start_date: formatDateForInput(event.start_date),
+      end_date: formatDateForInput(event.end_date),
       image_url: event.image_url || '',
       link_url: event.link_url || '',
       display_order: event.display_order || 0

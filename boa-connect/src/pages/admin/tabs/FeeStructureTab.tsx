@@ -65,7 +65,10 @@ export default function FeeStructureTab() {
   const loadFeeStructure = async () => {
     setIsLoading(true);
     try {
-      const response = await adminAPI.get(`/admin/fee-structure/${selectedSeminar}`);
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await adminAPI.get(`/admin/fee-structure/${selectedSeminar}?t=${timestamp}`);
+      console.log('Loaded fee structure:', response);
       setCategories(response.categories || []);
       setSlabs(response.slabs || []);
       setFees(response.fees || []);
@@ -129,13 +132,22 @@ export default function FeeStructureTab() {
   const handleUpdateSlab = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await adminAPI.put(`/admin/fee-slabs/${editingSlab.id}`, slabForm);
+      console.log('Updating slab with data:', slabForm);
+      console.log('Slab ID:', editingSlab.id);
+      
+      const response = await adminAPI.put(`/admin/fee-slabs/${editingSlab.id}`, slabForm);
+      console.log('Update response:', response);
+      
       toast({ title: 'Success', description: 'Fee slab updated successfully' });
       setIsSlabDialogOpen(false);
       resetSlabForm();
-      loadFeeStructure();
+      
+      // Force refresh by clearing state first
+      setSlabs([]);
+      await loadFeeStructure();
     } catch (error: any) {
-      toast({ title: 'Error', description: 'Failed to update slab', variant: 'destructive' });
+      console.error('Update slab error:', error);
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update slab', variant: 'destructive' });
     }
   };
 
@@ -398,16 +410,56 @@ export default function FeeStructureTab() {
                 </div>
                 <div>
                   <Label>Date Range *</Label>
-                  <Input value={slabForm.date_range} onChange={(e) => setSlabForm({...slabForm, date_range: e.target.value})} required />
+                  <Input 
+                    value={slabForm.date_range} 
+                    onChange={(e) => setSlabForm({...slabForm, date_range: e.target.value})} 
+                    placeholder="e.g., 1 May - 15 May"
+                    required 
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">This will auto-update when you change dates below</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Start Date *</Label>
-                    <Input type="date" value={slabForm.start_date} onChange={(e) => setSlabForm({...slabForm, start_date: e.target.value})} required />
+                    <Input 
+                      type="date" 
+                      value={slabForm.start_date} 
+                      onChange={(e) => {
+                        const newStartDate = e.target.value;
+                        // Auto-update date_range
+                        if (newStartDate && slabForm.end_date) {
+                          const start = new Date(newStartDate);
+                          const end = new Date(slabForm.end_date);
+                          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          const dateRange = `${start.getDate()} ${months[start.getMonth()]} - ${end.getDate()} ${months[end.getMonth()]}`;
+                          setSlabForm({...slabForm, start_date: newStartDate, date_range: dateRange});
+                        } else {
+                          setSlabForm({...slabForm, start_date: newStartDate});
+                        }
+                      }} 
+                      required 
+                    />
                   </div>
                   <div>
                     <Label>End Date *</Label>
-                    <Input type="date" value={slabForm.end_date} onChange={(e) => setSlabForm({...slabForm, end_date: e.target.value})} required />
+                    <Input 
+                      type="date" 
+                      value={slabForm.end_date} 
+                      onChange={(e) => {
+                        const newEndDate = e.target.value;
+                        // Auto-update date_range
+                        if (slabForm.start_date && newEndDate) {
+                          const start = new Date(slabForm.start_date);
+                          const end = new Date(newEndDate);
+                          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          const dateRange = `${start.getDate()} ${months[start.getMonth()]} - ${end.getDate()} ${months[end.getMonth()]}`;
+                          setSlabForm({...slabForm, end_date: newEndDate, date_range: dateRange});
+                        } else {
+                          setSlabForm({...slabForm, end_date: newEndDate});
+                        }
+                      }} 
+                      required 
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">

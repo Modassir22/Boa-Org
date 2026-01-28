@@ -28,7 +28,7 @@ export function SeminarPopup() {
 
       // Load upcoming events
       try {
-        const response = await fetch('/api/upcoming-events');
+        const response = await fetch('http://localhost:5000/api/upcoming-events');
         const data = await response.json();
 
         if (data.success && data.events && data.events.length > 0) {
@@ -101,12 +101,28 @@ export function SeminarPopup() {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
+    
     const date = new Date(dateString);
+    
     return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
+      day: 'numeric',
+      month: 'long',
       year: 'numeric'
     });
+  };
+
+  const formatDateRange = (startDate: string, endDate: string) => {
+    if (!startDate) return 'Date TBD';
+    
+    const startFormatted = formatDate(startDate);
+    
+    // If no end date or same as start date, show only start date
+    if (!endDate || startDate === endDate) {
+      return startFormatted;
+    }
+    
+    const endFormatted = formatDate(endDate);
+    return `${startFormatted} to ${endFormatted}`;
   };
 
   return (
@@ -161,7 +177,7 @@ export function SeminarPopup() {
                 <div className="flex items-center gap-2 text-sm text-gray-700">
                   <Calendar className="h-4 w-4" style={{ color: upcomingEvent.color || '#2563eb' }} />
                   <span className="font-medium">Date:</span>
-                  <span>{formatDate(upcomingEvent.start_date)}</span>
+                  <span>{formatDateRange(upcomingEvent.start_date, upcomingEvent.end_date)}</span>
                 </div>
 
                 {upcomingEvent.location && (
@@ -234,18 +250,7 @@ export function SeminarPopup() {
                   <div>
                     <p className="text-sm text-muted-foreground">Date</p>
                     <p className="font-medium text-foreground">
-                      {new Date(activeSeminar.start_date).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                      {activeSeminar.start_date !== activeSeminar.end_date && (
-                        <> - {new Date(activeSeminar.end_date).toLocaleDateString('en-GB', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })}</>
-                      )}
+                      {formatDateRange(activeSeminar.start_date, activeSeminar.end_date)}
                     </p>
                   </div>
                 </div>

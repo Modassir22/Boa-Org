@@ -106,11 +106,7 @@ export function SeminarsSection() {
                   <div className="flex items-center gap-2 text-sm" style={{color: '#616E7C'}}>
                     <Calendar className="h-4 w-4" style={{color: '#0B3C5D'}} />
                     <span>
-                      {new Date(seminar.start_date).toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric' 
-                      })} - {new Date(seminar.end_date).toLocaleDateString('en-IN', { 
+                      {new Date(seminar.end_date).toLocaleDateString('en-IN', { 
                         day: 'numeric', 
                         month: 'short', 
                         year: 'numeric' 

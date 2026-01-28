@@ -25,9 +25,30 @@ class HtmlToPdfService {
   }
 
   async convertHtmlToPdf(html, options = {}) {
+    let browser = null;
+    let page = null;
+    
     try {
-      const browser = await this.initBrowser();
-      const page = await browser.newPage();
+      // Create fresh browser instance for each conversion to avoid caching
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-cache',
+          '--disk-cache-size=0'
+        ]
+      });
+      
+      page = await browser.newPage();
+
+      // Disable cache
+      await page.setCacheEnabled(false);
 
       // Set content with proper encoding
       await page.setContent(html, {
@@ -51,12 +72,14 @@ class HtmlToPdfService {
       // Generate PDF buffer
       const pdfBuffer = await page.pdf(pdfOptions);
 
-      await page.close();
-
       return pdfBuffer;
     } catch (error) {
       console.error('HTML to PDF conversion error:', error);
       throw new Error('Failed to convert HTML to PDF');
+    } finally {
+      // Always close page and browser
+      if (page) await page.close();
+      if (browser) await browser.close();
     }
   }
 
@@ -168,7 +191,9 @@ class HtmlToPdfService {
       return await this.convertHtmlToPdf(processedHtml, {
         format: 'A4',
         printBackground: true,
-        margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
+        margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+        preferCSSPageSize: true,
+        displayHeaderFooter: false
       });
     } catch (error) {
       console.error('Membership form PDF generation error:', error);
@@ -178,6 +203,11 @@ class HtmlToPdfService {
 
   async generateSeminarFormPdf(htmlTemplate, seminarData = {}) {
     try {
+      console.log('=== GENERATING SEMINAR PDF ===');
+      console.log('HTML Template length:', htmlTemplate?.length);
+      console.log('Seminar:', seminarData.name);
+      console.log('First 300 chars of HTML:', htmlTemplate?.substring(0, 300));
+      
       let processedHtml = htmlTemplate;
 
       // Replace seminar-specific placeholders
@@ -202,6 +232,8 @@ class HtmlToPdfService {
         const regex = new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g');
         processedHtml = processedHtml.replace(regex, placeholders[placeholder]);
       });
+      
+      console.log('After placeholder replacement, length:', processedHtml?.length);
 
       // Add BOA styling if not present
       if (!processedHtml.includes('<style>') && !processedHtml.includes('stylesheet')) {
@@ -296,7 +328,9 @@ class HtmlToPdfService {
       return await this.convertHtmlToPdf(processedHtml, {
         format: 'A4',
         printBackground: true,
-        margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
+        margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+        preferCSSPageSize: true,
+        displayHeaderFooter: false
       });
     } catch (error) {
       console.error('Seminar form PDF generation error:', error);

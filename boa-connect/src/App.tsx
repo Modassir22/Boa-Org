@@ -46,48 +46,17 @@ function ScrollToTop() {
   return null;
 }
 
-// App content with conditional navbar
-function AppContent() {
+// Conditional Navbar - hide on admin routes
+function ConditionalNavbar() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin') || 
-                       location.pathname === '/admin-login';
+  const isAdminRoute = location.pathname.startsWith('/admin');
   
-  return (
-    <>
-      {!isAdminRoute && <Navbar />}
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/register" element={<RegisterSimple />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/certificates" element={<Certificates />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/seminars" element={<Seminars />} />
-        <Route path="/seminar/:id" element={<SeminarDetail />} />
-        <Route path="/seminar/:id/register" element={<SeminarRegistration />} />
-        <Route path="/membership" element={<Membership />} />
-        <Route path="/membership-details" element={<MembershipDetails />} />
-        <Route path="/membership-form" element={<MembershipForm />} />
-        <Route path="/resources" element={<Resources />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/admin/profile" element={<AdminProfile />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/offline-form" element={<OfflineFormSettings />} />
-        <Route path="/admin/*" element={<AdminPanel />} />
-        <Route path="/test-config" element={<TestConfig />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
-  );
+  // Don't render anything on admin routes
+  if (isAdminRoute) {
+    return null;
+  }
+  
+  return <Navbar />;
 }
 
 const App = () => (
@@ -96,7 +65,38 @@ const App = () => (
       <Toaster />
       <SonnerToaster />
       <BrowserRouter>
-        <AppContent />
+        <ConditionalNavbar />
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/register" element={<RegisterSimple />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/certificates" element={<Certificates />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/seminars" element={<Seminars />} />
+          <Route path="/seminar/:id" element={<SeminarDetail />} />
+          <Route path="/seminar/:id/register" element={<SeminarRegistration />} />
+          <Route path="/membership" element={<Membership />} />
+          <Route path="/membership-details" element={<MembershipDetails />} />
+          <Route path="/membership-form" element={<MembershipForm />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/offline-form" element={<OfflineFormSettings />} />
+          <Route path="/admin/*" element={<AdminPanel />} />
+          <Route path="/test-config" element={<TestConfig />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

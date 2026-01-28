@@ -74,7 +74,6 @@ export function HeroSection() {
 
   const seminarStartDate = new Date(activeSeminar.start_date);
   const seminarEndDate = new Date(activeSeminar.end_date);
-  const dateRange = `${seminarStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}-${seminarEndDate.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`;
 
   return (
     <section className="relative overflow-hidden" style={{ background: '#F9FAFB' }}>
@@ -159,7 +158,7 @@ export function HeroSection() {
         </div>
       )}
 
-      <div className="container relative py-5 md:py-30">
+      <div className="container relative p md:py-30">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
           <div className="space-y-8">
@@ -207,10 +206,10 @@ export function HeroSection() {
 
           {/* Hero Visual */}
           <div className="relative hidden lg:block">
-            <div className="relative aspect-square">
-              {/* Main Circle with Image - Simple design */}
-              <div className="absolute inset-8 rounded-full" style={{ background: '#E3F2FD' }} />
-              <div className="absolute inset-16 rounded-full bg-white overflow-hidden border-4" style={{ borderColor: '#0B3C5D' }}>
+            <div className="relative w-full max-w-[80vh] h-[80vh] mx-auto" style={{ aspectRatio: '1/1' }}>
+              {/* Main Circle with Image - Smaller design */}
+              <div className="absolute inset-6 rounded-full" style={{ background: '#E3F2FD' }} />
+              <div className="absolute inset-12 rounded-full bg-white overflow-hidden border-3" style={{ borderColor: '#0B3C5D' }}>
                 {config.hero_circle_image_url && (
                   <img
                     src={config.hero_circle_image_url}
@@ -220,39 +219,39 @@ export function HeroSection() {
                 )}
               </div>
 
-              {/* Simple Info Cards */}
-              <div className="absolute top-12 left-0 gov-card p-4 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded flex items-center justify-center" style={{ background: '#0B3C5D' }}>
-                    <Calendar className="h-6 w-6 text-white" />
+              {/* Smaller Info Cards */}
+              <div className="absolute top-8 left-0 gov-card p-2 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded flex items-center justify-center" style={{ background: '#0B3C5D' }}>
+                    <Calendar className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium" style={{ color: '#1F2933' }}>Best Conference</p>
-                    <p className="text-sm" style={{ color: '#616E7C' }}>Feel Free Here</p>
+                    <p className="text-xs font-medium" style={{ color: '#1F2933' }}>Best Conference</p>
+                    <p className="text-xs" style={{ color: '#616E7C' }}>Feel Free Here</p>
                   </div>
                 </div>
               </div>
 
-              <div className="absolute bottom-20 right-0 gov-card p-4 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded flex items-center justify-center" style={{ background: '#C9A227' }}>
-                    <Award className="h-6 w-6 text-white" />
+              <div className="absolute bottom-16 right-0 gov-card p-2 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded flex items-center justify-center" style={{ background: '#C9A227' }}>
+                    <Award className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium" style={{ color: '#1F2933' }}>CME Points</p>
-                    <p className="text-sm" style={{ color: '#616E7C' }}>Certified Programs</p>
+                    <p className="text-xs font-medium" style={{ color: '#1F2933' }}>CME Points</p>
+                    <p className="text-xs" style={{ color: '#616E7C' }}>Certified Programs</p>
                   </div>
                 </div>
               </div>
 
-              <div className="absolute bottom-8 left-12 gov-card p-4 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded flex items-center justify-center" style={{ background: '#E8F5E9' }}>
-                    <Users className="h-6 w-6" style={{ color: '#2E7D32' }} />
+              <div className="absolute bottom-6 left-8 gov-card p-2 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded flex items-center justify-center" style={{ background: '#E8F5E9' }}>
+                    <Users className="h-4 w-4" style={{ color: '#2E7D32' }} />
                   </div>
                   <div>
-                    <p className="font-medium" style={{ color: '#1F2933' }}>Register Now</p>
-                    <p className="text-sm" style={{ color: '#616E7C' }}>Limited Seats</p>
+                    <p className="text-xs font-medium" style={{ color: '#1F2933' }}>Register Now</p>
+                    <p className="text-xs" style={{ color: '#616E7C' }}>Limited Seats</p>
                   </div>
                 </div>
               </div>

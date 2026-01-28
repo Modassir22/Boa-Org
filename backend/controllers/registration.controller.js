@@ -11,7 +11,7 @@ const generateRegistrationNo = () => {
 // Generate membership number
 const generateMembershipNo = async (connection) => {
   const year = new Date().getFullYear();
-  
+
   // Get the last membership number for this year
   const [lastMembership] = await connection.query(
     `SELECT membership_no FROM users 
@@ -34,7 +34,7 @@ const generateMembershipNo = async (connection) => {
 // Create registration
 exports.createRegistration = async (req, res) => {
   let connection;
-  
+
   try {
     connection = await promisePool.getConnection();
     await connection.beginTransaction();
@@ -56,7 +56,7 @@ exports.createRegistration = async (req, res) => {
       .toLowerCase()
       .trim()
       .replace(/\s+/g, '-');
-    
+
     // Handle special case for "boa" to ensure it stays as "boa-member" not "b-o-a-member"
     normalizedDelegateType = normalizedDelegateType
       .replace('b-o-a', 'boa')
@@ -78,12 +78,14 @@ exports.createRegistration = async (req, res) => {
     // If user doesn't have membership number, generate one
     if (!membershipNo) {
       membershipNo = await generateMembershipNo(connection);
-      
+
       // Update user with membership number
       await connection.query(
         'UPDATE users SET membership_no = ?, is_boa_member = TRUE WHERE id = ?',
         [membershipNo, userId]
       );
+
+    } else {
     }
 
     // Determine payment status based on Razorpay data
@@ -97,12 +99,12 @@ exports.createRegistration = async (req, res) => {
         payment_method, payment_date, razorpay_order_id, razorpay_payment_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        registration_no, 
-        userId, 
-        seminar_id, 
-        category_id, 
-        slab_id, 
-        normalizedDelegateType, 
+        registration_no,
+        userId,
+        seminar_id,
+        category_id,
+        slab_id,
+        normalizedDelegateType,
         totalAmount,
         paymentStatus,
         paymentMethod,
@@ -138,7 +140,7 @@ exports.createRegistration = async (req, res) => {
       'SELECT CONCAT(first_name, " ", surname) as full_name FROM users WHERE id = ?',
       [userId]
     );
-    
+
     const [seminarDetails] = await connection.query(
       'SELECT name FROM seminars WHERE id = ?',
       [seminar_id]

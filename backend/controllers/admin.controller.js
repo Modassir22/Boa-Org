@@ -143,6 +143,11 @@ exports.updateSeminar = async (req, res) => {
       color, online_registration_enabled
     } = req.body;
 
+    console.log('=== UPDATE SEMINAR DEBUG ===');
+    console.log('Seminar ID:', id);
+    console.log('offline_form_html length:', offline_form_html?.length || 0);
+    console.log('First 200 chars:', offline_form_html?.substring(0, 200));
+
     await promisePool.query(
       `UPDATE seminars SET name = ?, title = ?, location = ?, venue = ?, start_date = ?, 
        end_date = ?, registration_start = ?, registration_end = ?, 
@@ -152,6 +157,8 @@ exports.updateSeminar = async (req, res) => {
        registration_end, description, offline_form_html || '', image_url, is_active, status || 'active',
        color || '#0B3C5D', online_registration_enabled !== false ? 1 : 0, id]
     );
+    
+    console.log('Seminar updated successfully');
 
     // Check if notification exists for this seminar
     const [existingNotif] = await promisePool.query(
@@ -2329,7 +2336,7 @@ exports.updateMembershipFormConfig = async (req, res) => {
 // Get offline forms configuration
 exports.getOfflineFormsConfig = async (req, res) => {
   try {
-    const [config] = await promisePool.query('SELECT * FROM offline_forms_config LIMIT 1');
+    const [config] = await promisePool.query('SELECT * FROM offline_forms_config ORDER BY id DESC LIMIT 1');
     
     res.json({
       success: true,
@@ -2353,10 +2360,16 @@ exports.updateOfflineFormsConfig = async (req, res) => {
   try {
     const { membership_form_html, seminar_form_html } = req.body;
 
+    console.log('=== UPDATE OFFLINE FORMS CONFIG DEBUG ===');
+    console.log('membership_form_html length:', membership_form_html?.length || 0);
+    console.log('seminar_form_html length:', seminar_form_html?.length || 0);
+    console.log('First 200 chars of membership HTML:', membership_form_html?.substring(0, 200));
+
     // Check if config exists
-    const [existing] = await promisePool.query('SELECT id FROM offline_forms_config LIMIT 1');
+    const [existing] = await promisePool.query('SELECT id FROM offline_forms_config ORDER BY id DESC LIMIT 1');
 
     if (existing.length > 0) {
+      console.log('Updating existing config ID:', existing[0].id);
       // Update existing
       await promisePool.query(
         `UPDATE offline_forms_config SET 
@@ -2366,6 +2379,7 @@ exports.updateOfflineFormsConfig = async (req, res) => {
         [membership_form_html || '', seminar_form_html || '', existing[0].id]
       );
     } else {
+      console.log('Inserting new config');
       // Insert new
       await promisePool.query(
         `INSERT INTO offline_forms_config (membership_form_html, seminar_form_html)
@@ -2373,6 +2387,8 @@ exports.updateOfflineFormsConfig = async (req, res) => {
         [membership_form_html || '', seminar_form_html || '']
       );
     }
+
+    console.log('✓ Offline forms config updated successfully');
 
     res.json({
       success: true,

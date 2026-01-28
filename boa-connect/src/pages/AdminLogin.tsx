@@ -54,9 +54,9 @@ export default function AdminLogin() {
         description: `Welcome back, ${response.admin.full_name || response.admin.username}!`,
       });
       
-      // Redirect to admin panel
+      // Reload and redirect to admin panel
       setTimeout(() => {
-        navigate('/admin');
+        window.location.href = '/admin';
       }, 500);
       
     } catch (error: any) {
