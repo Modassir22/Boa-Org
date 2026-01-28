@@ -82,7 +82,7 @@ export function UpcomingEventsCarousel() {
 
   const loadEvents = async () => {
     try {
-      const response = await fetch('/api/upcoming-events');
+      const response = await fetch('http://localhost:5000/api/upcoming-events');
       const data = await response.json();
       if (data.success) {
         setEvents(data.events || []);
@@ -96,10 +96,12 @@ export function UpcomingEventsCarousel() {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
+    
     const date = new Date(dateString);
+    
     return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
+      day: 'numeric',
+      month: 'long',
       year: 'numeric'
     });
   };
@@ -200,14 +202,10 @@ export function UpcomingEventsCarousel() {
         return;
       }
 
-      const eventDate = event.start_date ? new Date(event.start_date).toLocaleDateString('en-IN', { 
-        day: 'numeric', 
-        month: 'long', 
-        year: 'numeric' 
-      }) : 'Date TBA';
+      const eventDate = event.start_date ? formatDate(event.start_date) : 'Date TBA';
 
       const endDate = event.end_date && event.end_date !== event.start_date ? 
-        ` - ${new Date(event.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}` : '';
+        ` - ${formatDate(event.end_date)}` : '';
 
       const htmlContent = `
         <!DOCTYPE html>

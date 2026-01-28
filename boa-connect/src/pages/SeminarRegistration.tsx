@@ -1066,7 +1066,7 @@ export default function SeminarRegistration() {
                           }} 
                         />
                         <Label htmlFor="lifeMember" className="text-sm font-medium">
-                          I am a Life Member of Bihar Ophthalmic Association
+                          I am a Life Member
                         </Label>
                       </div>
 

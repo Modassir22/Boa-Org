@@ -15,7 +15,7 @@ export default function Notifications() {
 
   const loadNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications');
+      const response = await fetch('http://localhost:5000/api/notifications');
       const data = await response.json();
       if (data.success) {
         // Filter only active notifications
@@ -31,7 +31,7 @@ export default function Notifications() {
 
   const handleDownloadForm = async (seminarId: number, seminarName: string) => {
     try {
-      const response = await fetch(`/api/generate-seminar-pdf/${seminarId}`);
+      const response = await fetch(`http://localhost:5000/api/generate-seminar-pdf/${seminarId}`);
       
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
@@ -58,6 +58,32 @@ export default function Notifications() {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const formatDateRange = (startDate: string, endDate: string) => {
+    if (!startDate) return 'Date TBD';
+    
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : null;
+    
+    const startFormatted = start.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    
+    // If no end date or same as start date, show only start date
+    if (!end || startDate === endDate) {
+      return startFormatted;
+    }
+    
+    const endFormatted = end.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    
+    return `${startFormatted} - ${endFormatted}`;
   };
 
   if (isLoading) {
@@ -130,7 +156,12 @@ export default function Notifications() {
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Clock className="h-4 w-4" />
-                            <span>{formatDate(notification.created_at)}</span>
+                            <span>
+                              {notification.start_date 
+                                ? formatDateRange(notification.start_date, notification.end_date)
+                                : formatDate(notification.created_at)
+                              }
+                            </span>
                             <Badge className="bg-green-100 text-green-700 border-green-200">
                               Active
                             </Badge>
