@@ -60,17 +60,8 @@ app.use(cors({
 }));
 
 // Handle preflight requests
-app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Debug CORS middleware (temporary)
-app.use((req, res, next) => {
-  console.log('Request Origin:', req.headers.origin);
-  console.log('Request Method:', req.method);
-  console.log('Request Headers:', req.headers);
-  next();
-});
 
 // Test route
 app.get('/', (req, res) => {
@@ -109,50 +100,39 @@ app.get('/api/server-info', (req, res) => {
 try {
   const authRoutes = require('./routes/auth.routes');
   app.use('/api/auth', authRoutes);
-  console.log('✓ Auth routes loaded');
 
   const forgotPasswordRoutes = require('./routes/forgot-password.routes');
   app.use('/api/auth/forgot-password', forgotPasswordRoutes);
-  console.log('✓ Forgot password routes loaded');
 
   const adminAuthRoutes = require('./routes/admin-auth.routes');
   app.use('/api/admin-auth', adminAuthRoutes);
-  console.log('✓ Admin auth routes loaded at /api/admin-auth');
 
   const userRoutes = require('./routes/user.routes');
   app.use('/api/users', userRoutes);
-  console.log('✓ User routes loaded');
 
   const seminarRoutes = require('./routes/seminar.routes');
   app.use('/api/seminars', seminarRoutes);
-  console.log('✓ Seminar routes loaded');
 
   const registrationRoutes = require('./routes/registration.routes');
   app.use('/api/registrations', registrationRoutes);
-  console.log('✓ Registration routes loaded');
 
   const notificationRoutes = require('./routes/notification.routes');
   app.use('/api/notifications', notificationRoutes);
-  console.log('✓ Notification routes loaded');
 
   const adminRoutes = require('./routes/admin.routes');
   app.use('/api/admin', adminRoutes);
-  console.log('✓ Admin routes loaded');
 
   // Payment routes
   const paymentRoutes = require('./routes/payment.routes');
   app.use('/api/payment', paymentRoutes);
-  console.log('✓ Payment routes loaded');
 
   // Certificate routes
   const certificateRoutes = require('./routes/certificate.routes');
   app.use('/api/certificates', certificateRoutes);
-  console.log('✓ Certificate routes loaded');
 
   // Contact routes
   const contactRoutes = require('./routes/contact.routes');
   app.use('/api/contact', contactRoutes);
-  console.log('✓ Contact routes loaded');
 
   // Public committee members route
   app.get('/api/committee-members', async (req, res) => {
@@ -279,8 +259,10 @@ try {
     }
   });
 
-  // Generate PDF from HTML template routes
-  app.get('/api/generate-membership-pdf', async (req, res) => {
+  // Generate PDF from HTML template routes (PROTECTED)
+  const authMiddleware = require('./middleware/auth.middleware');
+  
+  app.get('/api/generate-membership-pdf', authMiddleware, async (req, res) => {
     try {
       // Set cache control headers to prevent caching
       res.set({
@@ -292,13 +274,10 @@ try {
       const { promisePool } = require('./config/database');
       const htmlToPdfService = require('./services/htmlToPdf.service');
       
-      console.log('=== MEMBERSHIP PDF GENERATION DEBUG ===');
-      
       // Get HTML template from database
       const [config] = await promisePool.query('SELECT membership_form_html FROM offline_forms_config ORDER BY id DESC LIMIT 1');
       
       if (!config[0] || !config[0].membership_form_html) {
-        console.log('No membership form template found in database');
         return res.status(404).json({
           success: false,
           message: 'Membership form template not found'
@@ -306,13 +285,9 @@ try {
       }
 
       const htmlTemplate = config[0].membership_form_html;
-      console.log('Membership form HTML length:', htmlTemplate?.length || 0);
-      console.log('First 300 chars:', htmlTemplate?.substring(0, 300));
 
       // Generate PDF from HTML template
       const pdfBuffer = await htmlToPdfService.generateMembershipFormPdf(htmlTemplate);
-      
-      console.log('Membership PDF generated successfully, size:', pdfBuffer.length);
       
       // Set response headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
@@ -329,7 +304,7 @@ try {
     }
   });
 
-  app.get('/api/generate-seminar-pdf/:seminarId', async (req, res) => {
+  app.get('/api/generate-seminar-pdf/:seminarId', authMiddleware, async (req, res) => {
     try {
       // Set cache control headers to prevent caching
       res.set({
@@ -340,9 +315,6 @@ try {
 
       const { promisePool } = require('./config/database');
       const { seminarId } = req.params;
-      
-      console.log('=== PDF GENERATION DEBUG ===');
-      console.log('Seminar ID:', seminarId);
       
       // Get seminar details and HTML template
       const [seminars] = await promisePool.query('SELECT * FROM seminars WHERE id = ?', [seminarId]);
@@ -357,18 +329,14 @@ try {
       const seminar = seminars[0];
       let htmlTemplate = seminar.offline_form_html;
       
-      console.log('Seminar offline_form_html length:', htmlTemplate?.length || 0);
-
       // If seminar doesn't have custom template, use global template
       if (!htmlTemplate) {
         const [config] = await promisePool.query('SELECT seminar_form_html FROM offline_forms_config ORDER BY id DESC LIMIT 1');
         htmlTemplate = config[0]?.seminar_form_html || '';
-        console.log('Using global template, length:', htmlTemplate?.length || 0);
       }
 
       // If still no template, create a basic one
       if (!htmlTemplate) {
-        console.log('No template found, creating basic template');
         htmlTemplate = `
           <!DOCTYPE html>
           <html lang="en">
@@ -484,85 +452,92 @@ try {
         `;
       }
 
-      console.log('Attempting PDF generation...');
+      // Use the improved PDF service with automatic fallback
+      const htmlToPdfService = require('./services/htmlToPdf.service');
+      const pdfBuffer = await htmlToPdfService.generateSeminarFormPdf(htmlTemplate, seminar);
       
-      // Try PDF generation with multiple fallback strategies
-      try {
-        // Strategy 1: Try Puppeteer PDF generation
-        const htmlToPdfService = require('./services/htmlToPdf.service');
-        const pdfBuffer = await htmlToPdfService.generateSeminarFormPdf(htmlTemplate, seminar);
-        
-        console.log('PDF generated successfully with Puppeteer, size:', pdfBuffer.length);
-        
-        // Set response headers for PDF download
-        const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        res.setHeader('Content-Length', pdfBuffer.length);
-        
-        return res.send(pdfBuffer);
-        
-      } catch (puppeteerError) {
-        console.error('Puppeteer PDF generation failed:', puppeteerError.message);
-        
-        // Strategy 2: Try simple PDF generation with PDFKit
-        try {
-          const PDFDocument = require('pdfkit');
-          const doc = new PDFDocument();
-          
-          let buffers = [];
-          doc.on('data', buffers.push.bind(buffers));
-          doc.on('end', () => {
-            const pdfBuffer = Buffer.concat(buffers);
-            console.log('PDF generated successfully with PDFKit, size:', pdfBuffer.length);
-            
-            const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-            res.setHeader('Content-Length', pdfBuffer.length);
-            
-            res.send(pdfBuffer);
-          });
-          
-          // Generate simple PDF content
-          doc.fontSize(20).text('Bihar Ophthalmic Association', 50, 50);
-          doc.fontSize(16).text(seminar.name, 50, 80);
-          doc.fontSize(12).text(`Venue: ${seminar.venue || 'TBA'}`, 50, 110);
-          doc.fontSize(12).text(`Date: ${seminar.start_date ? new Date(seminar.start_date).toLocaleDateString('en-IN') : 'TBA'}`, 50, 130);
-          
-          doc.text('Registration Form', 50, 170);
-          doc.text('Name: ________________________', 50, 200);
-          doc.text('Email: ________________________', 50, 220);
-          doc.text('Phone: ________________________', 50, 240);
-          doc.text('Institution: ________________________', 50, 260);
-          doc.text('Designation: ________________________', 50, 280);
-          
-          doc.text('Declaration: I hereby register for this seminar and agree to the terms and conditions.', 50, 320);
-          doc.text('Date: ____________    Signature: ____________', 50, 360);
-          
-          doc.end();
-          return; // Exit here, response will be sent in the 'end' event
-          
-        } catch (pdfkitError) {
-          console.error('PDFKit generation also failed:', pdfkitError.message);
-          
-          // Strategy 3: Fallback to HTML download
-          console.log('Falling back to HTML download');
-          const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.html`;
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-          return res.send(htmlTemplate);
-        }
-      }
+      // Set response headers for PDF download
+      const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      return res.send(pdfBuffer);
       
     } catch (error) {
+      console.error('PDF Error stack:', error.stack);
       console.error('Failed to generate seminar PDF:', error);
-      console.error('Error stack:', error.stack);
+      
+      // Final fallback: Return HTML for manual printing
+      try {
+        const { promisePool } = require('./config/database');
+        const { seminarId } = req.params;
+        const [seminars] = await promisePool.query('SELECT * FROM seminars WHERE id = ?', [seminarId]);
+        
+        if (seminars[0]) {
+          const seminar = seminars[0];
+          const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.html`;
+          
+          const basicHtml = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <title>${seminar.name} - Registration Form</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0B3C5D; padding-bottom: 20px; }
+                .header h1 { color: #0B3C5D; }
+                .header h2 { color: #C9A227; }
+                .form-section { margin-bottom: 25px; padding: 15px; border: 1px solid #ddd; }
+                .section-title { font-weight: bold; color: #0B3C5D; margin-bottom: 15px; }
+                .form-field { margin-bottom: 15px; }
+                .field-label { font-weight: bold; }
+                .field-line { border-bottom: 1px solid #333; min-height: 20px; display: inline-block; min-width: 200px; }
+                @media print { body { margin: 0; padding: 10px; } }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>Bihar Ophthalmic Association</h1>
+                <h2>${seminar.name}</h2>
+                <p><strong>Venue:</strong> ${seminar.venue || 'TBA'}</p>
+                <p><strong>Date:</strong> ${seminar.start_date ? new Date(seminar.start_date).toLocaleDateString('en-IN') : 'TBA'}</p>
+              </div>
+              
+              <div class="form-section">
+                <div class="section-title">Personal Information</div>
+                <div class="form-field">Name: <span class="field-line"></span></div>
+                <div class="form-field">Email: <span class="field-line"></span></div>
+                <div class="form-field">Phone: <span class="field-line"></span></div>
+              </div>
+              
+              <div class="form-section">
+                <div class="section-title">Professional Information</div>
+                <div class="form-field">Institution: <span class="field-line"></span></div>
+                <div class="form-field">Designation: <span class="field-line"></span></div>
+              </div>
+              
+              <p style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
+                Bihar Ophthalmic Association | www.boabihar.org | info@boabihar.org
+              </p>
+            </body>
+            </html>
+          `;
+          
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+          return res.send(basicHtml);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback HTML generation also failed:', fallbackError);
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Failed to generate PDF',
         error: error.message,
-        details: 'Please try again or contact support if the issue persists.'
+        details: 'PDF generation service is temporarily unavailable. Please try again later or contact support.'
       });
     }
   });
@@ -601,6 +576,130 @@ try {
     }
   });
 
+  // Admin membership categories management routes
+  const adminAuthMiddleware = require('./middleware/admin-auth.middleware');
+  
+  // Get all membership categories (admin)
+  app.get('/api/admin/membership-categories', adminAuthMiddleware, async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      
+      const [categories] = await promisePool.query(
+        'SELECT * FROM membership_categories ORDER BY display_order, id'
+      );
+      
+      const parsedCategories = categories.map(cat => ({
+        ...cat,
+        features: JSON.parse(cat.features || '[]')
+      }));
+      
+      res.json({ success: true, categories: parsedCategories });
+    } catch (error) {
+      console.error('Admin membership categories error:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch membership categories' });
+    }
+  });
+
+  // Create membership category (admin)
+  app.post('/api/admin/membership-categories', adminAuthMiddleware, async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const { title, price, student_price } = req.body;
+      
+      if (!title || !price) {
+        return res.status(400).json({ success: false, message: 'Title and price are required' });
+      }
+
+      // Get next display order
+      const [maxOrder] = await promisePool.query('SELECT MAX(display_order) as max_order FROM membership_categories');
+      const displayOrder = (maxOrder[0].max_order || 0) + 1;
+
+      const [result] = await promisePool.query(
+        `INSERT INTO membership_categories 
+         (title, icon, category, price, student_price, duration, features, is_recommended, display_order, is_active) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          title,
+          'Award', // Default icon
+          'membership_fee', // Default category
+          price,
+          student_price || null,
+          'Yearly', // Default duration
+          JSON.stringify(['Access to all BOA events', 'Networking opportunities', 'Professional development']),
+          false, // Default not recommended
+          displayOrder,
+          true // Default active
+        ]
+      );
+
+      res.json({ success: true, id: result.insertId, message: 'Category created successfully' });
+    } catch (error) {
+      console.error('Create membership category error:', error);
+      res.status(500).json({ success: false, message: 'Failed to create category' });
+    }
+  });
+
+  // Update membership category (admin)
+  app.put('/api/admin/membership-categories/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const { id } = req.params;
+      const { title, price, student_price, is_active } = req.body;
+
+      // Build dynamic update query
+      const updates = [];
+      const values = [];
+
+      if (title !== undefined) {
+        updates.push('title = ?');
+        values.push(title);
+      }
+      if (price !== undefined) {
+        updates.push('price = ?');
+        values.push(price);
+      }
+      if (student_price !== undefined) {
+        updates.push('student_price = ?');
+        values.push(student_price);
+      }
+      if (is_active !== undefined) {
+        updates.push('is_active = ?');
+        values.push(is_active);
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ success: false, message: 'No fields to update' });
+      }
+
+      values.push(id);
+      
+      await promisePool.query(
+        `UPDATE membership_categories SET ${updates.join(', ')} WHERE id = ?`,
+        values
+      );
+
+      res.json({ success: true, message: 'Category updated successfully' });
+    } catch (error) {
+      console.error('Update membership category error:', error);
+      res.status(500).json({ success: false, message: 'Failed to update category' });
+    }
+  });
+
+  // Delete membership category (admin)
+  app.delete('/api/admin/membership-categories/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+      const { promisePool } = require('./config/database');
+      const { id } = req.params;
+
+      await promisePool.query('DELETE FROM membership_categories WHERE id = ?', [id]);
+
+      res.json({ success: true, message: 'Category deleted successfully' });
+    } catch (error) {
+      console.error('Delete membership category error:', error);
+      res.status(500).json({ success: false, message: 'Failed to delete category' });
+    }
+  });
+
   // Public membership categories route
   app.get('/api/membership-categories', async (req, res) => {
     try {
@@ -620,7 +719,7 @@ try {
       // Parse features JSON string to array
       const parsedCategories = categories.map(cat => ({
         ...cat,
-        features: JSON.parse(cat.features)
+        features: JSON.parse(cat.features || '[]')
       }));
       
       res.json({ success: true, categories: parsedCategories });
@@ -737,7 +836,6 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
-      console.log('=== SERVER STARTED - CONSOLE LOG TEST ===');
       
       // Start BOA Member Sync Service
       boaSyncService.start();

@@ -25,6 +25,7 @@ interface MembershipCategory {
   icon: string;
   category: string;
   price: string;
+  student_price?: string; // Added student_price field
   duration: string;
   features: string[];
   is_recommended: boolean;
@@ -78,7 +79,7 @@ export default function MembershipCategoriesTab() {
       setFormData({
         title: category.title,
         price: category.price,
-        student_price: (category as any).student_price || '',
+        student_price: category.student_price || '',
       });
     } else {
       setEditingCategory(null);
@@ -277,6 +278,11 @@ export default function MembershipCategoriesTab() {
             <div>
               <div className="text-3xl font-bold">₹{category.price}</div>
               <div className="text-sm text-muted-foreground">{category.duration}</div>
+              {(category as any).student_price && parseFloat((category as any).student_price) > 0 && (
+                <div className="text-lg font-semibold text-green-600 mt-1">
+                  Student: ₹{parseFloat((category as any).student_price).toLocaleString()}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

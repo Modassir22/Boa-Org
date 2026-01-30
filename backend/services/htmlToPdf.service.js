@@ -1,15 +1,20 @@
 const puppeteer = require('puppeteer');
-const path = require('path');
 
 class HtmlToPdfService {
   constructor() {
     this.browser = null;
+    this.puppeteerAvailable = null;
   }
 
-  async initBrowser() {
-    if (!this.browser) {
-      this.browser = await puppeteer.launch({
-        headless: true,
+  async checkPuppeteerAvailability() {
+    if (this.puppeteerAvailable !== null) {
+      return this.puppeteerAvailable;
+    }
+
+    try {
+      console.log('Testing Puppeteer availability...');
+      const browser = await puppeteer.launch({
+        headless: 'new',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -17,21 +22,56 @@ class HtmlToPdfService {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--disable-gpu'
-        ]
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--single-process'
+        ],
+        timeout: 10000
       });
+      
+      await browser.close();
+      console.log('✓ Puppeteer is available');
+      this.puppeteerAvailable = true;
+      return true;
+    } catch (error) {
+      console.error('✗ Puppeteer not available:', error.message);
+      this.puppeteerAvailable = false;
+      return false;
     }
-    return this.browser;
   }
 
   async convertHtmlToPdf(html, options = {}) {
+    // Strategy 1: Try Puppeteer if available
+    const puppeteerAvailable = await this.checkPuppeteerAvailability();
+    
+    if (puppeteerAvailable) {
+      try {
+        return await this.convertWithPuppeteer(html, options);
+      } catch (error) {
+        console.error('Puppeteer PDF generation failed:', error.message);
+        console.log('Falling back to PDFKit...');
+      }
+    }
+
+    // Strategy 2: Fallback to PDFKit
+    try {
+      return await this.convertWithPDFKit(html, options);
+    } catch (error) {
+      console.error('PDFKit PDF generation failed:', error.message);
+      throw new Error('All PDF generation methods failed');
+    }
+  }
+
+  async convertWithPuppeteer(html, options = {}) {
     let browser = null;
     let page = null;
     
     try {
-      // Create fresh browser instance for each conversion to avoid caching
+      console.log('Generating PDF with Puppeteer...');
+      
       browser = await puppeteer.launch({
-        headless: true,
+        headless: 'new',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -41,22 +81,27 @@ class HtmlToPdfService {
           '--no-zygote',
           '--disable-gpu',
           '--disable-cache',
-          '--disk-cache-size=0'
-        ]
+          '--disk-cache-size=0',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--disable-background-networking',
+          '--disable-background-timer-throttling',
+          '--disable-renderer-backgrounding',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-ipc-flooding-protection',
+          '--single-process'
+        ],
+        executablePath: process.env.CHROME_BIN || undefined,
+        timeout: 60000
       });
       
       page = await browser.newPage();
-
-      // Disable cache
       await page.setCacheEnabled(false);
-
-      // Set content with proper encoding
       await page.setContent(html, {
         waitUntil: 'networkidle0',
         timeout: 30000
       });
 
-      // Default PDF options
       const pdfOptions = {
         format: 'A4',
         printBackground: true,
@@ -69,18 +114,73 @@ class HtmlToPdfService {
         ...options
       };
 
-      // Generate PDF buffer
       const pdfBuffer = await page.pdf(pdfOptions);
-
+      console.log('✓ PDF generated with Puppeteer, size:', pdfBuffer.length);
       return pdfBuffer;
-    } catch (error) {
-      console.error('HTML to PDF conversion error:', error);
-      throw new Error('Failed to convert HTML to PDF');
+      
     } finally {
-      // Always close page and browser
       if (page) await page.close();
       if (browser) await browser.close();
     }
+  }
+
+  async convertWithPDFKit(html, options = {}) {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('Generating PDF with PDFKit fallback...');
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({
+          size: 'A4',
+          margin: 50
+        });
+        
+        let buffers = [];
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => {
+          const pdfBuffer = Buffer.concat(buffers);
+          console.log('✓ PDF generated with PDFKit, size:', pdfBuffer.length);
+          resolve(pdfBuffer);
+        });
+        doc.on('error', reject);
+
+        // Extract text content from HTML (basic parsing)
+        const textContent = this.extractTextFromHtml(html);
+        
+        // Add content to PDF
+        doc.fontSize(16).text('Bihar Ophthalmic Association', { align: 'center' });
+        doc.moveDown();
+        
+        // Split content into lines and add to PDF
+        const lines = textContent.split('\n').filter(line => line.trim());
+        lines.forEach(line => {
+          if (line.trim()) {
+            doc.fontSize(10).text(line.trim(), { width: 500 });
+            doc.moveDown(0.5);
+          }
+        });
+        
+        doc.end();
+        
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  extractTextFromHtml(html) {
+    // Basic HTML to text conversion
+    return html
+      .replace(/<style[^>]*>.*?<\/style>/gis, '') // Remove style tags
+      .replace(/<script[^>]*>.*?<\/script>/gis, '') // Remove script tags
+      .replace(/<[^>]*>/g, ' ') // Remove HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace &nbsp;
+      .replace(/&amp;/g, '&') // Replace &amp;
+      .replace(/&lt;/g, '<') // Replace &lt;
+      .replace(/&gt;/g, '>') // Replace &gt;
+      .replace(/&quot;/g, '"') // Replace &quot;
+      .replace(/&#39;/g, "'") // Replace &#39;
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
   }
 
   async generateMembershipFormPdf(htmlTemplate, membershipData = {}) {

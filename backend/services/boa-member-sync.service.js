@@ -49,12 +49,10 @@ class BOAMemberSyncService {
 
   start() {
     if (this.intervalId) {
-      console.log('[BOA Sync] Service already running');
       return;
     }
 
-    console.log('[BOA Sync] 🚀 Starting BOA Member Sync Service');
-    console.log('[BOA Sync] 📋 Checking every 5 seconds');
+    console.log('[BOA Sync] 🚀 Service started');
     
     // Run immediately
     this.syncMembers();

@@ -463,9 +463,28 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
           isSidebarOpen ? 'lg:pl-64' : 'lg:pl-16'
         }`}
       >
-        <div className="p-6">
+        <div className="p-6 min-h-[calc(100vh-4rem)]">
           {children}
         </div>
+        
+        {/* Admin Footer */}
+        <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
+          <div className="px-6 py-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <LayoutDashboard className="h-4 w-4" />
+                <span>BOA Admin Panel</span>
+                <span>•</span>
+                <span>Bihar Ophthalmic Association</span>
+              </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>© {new Date().getFullYear()} BOA. All rights reserved.</span>
+                <span>•</span>
+                <span>Version 1.0.0</span>
+              </div>
+            </div>
+          </div>
+        </footer>
       </main>
     </div>
   );

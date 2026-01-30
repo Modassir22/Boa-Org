@@ -28,21 +28,38 @@ export default function MembershipForm() {
     address: '',
     mobile: '',
     email: '',
-    membership_type: ''
+    membership_duration: '', // Will store category ID
+    payment_type: '' // 'passout' or 'student'
   });
 
   useEffect(() => {
     loadCategories();
+    // Also reload categories when component becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadCategories();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const loadCategories = async () => {
     try {
+      // Force fresh data with timestamp and no-cache headers
       const timestamp = new Date().getTime();
       const response = await fetch(`${API_BASE_URL}/api/membership-categories?t=${timestamp}`, {
-        cache: 'no-cache'
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        cache: 'no-store'
       });
       const data = await response.json();
       if (data.success) {
+        console.log('Loaded categories:', data.categories); // Debug log
         setCategories(data.categories || []);
       }
     } catch (error) {
@@ -55,6 +72,15 @@ export default function MembershipForm() {
   };
 
   const handleDownloadOfflineForm = () => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      toast.error('Please login to download the offline form');
+      return;
+    }
+
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 15;
@@ -230,28 +256,22 @@ export default function MembershipForm() {
     doc.setFont('helvetica', 'normal');
     
     // Generate dynamic fee structure from categories
-    const studentCategories = categories.filter(cat => cat.category === 'student_fee');
-    const passoutCategories = categories.filter(cat => cat.category === 'passout_fee');
-    
     const feeStructure = [];
     
-    if (studentCategories.length > 0) {
-      const studentFees = studentCategories.map(cat => 
-        `Rs ${parseFloat(cat.price).toLocaleString()}/${cat.duration.toLowerCase()}`
-      ).join(' or ');
-      feeStructure.push(`1. For student: ${studentFees}`);
-    }
-    
-    if (passoutCategories.length > 0) {
-      const passoutFees = passoutCategories.map(cat => 
-        `Rs ${parseFloat(cat.price).toLocaleString()}/${cat.duration.toLowerCase()}`
-      ).join(' or ');
-      feeStructure.push(`2. For passout/professionals: ${passoutFees}`);
-    }
+    categories.forEach((cat, index) => {
+      const professionalFee = `Rs ${parseFloat(cat.price).toLocaleString()}`;
+      const studentFee = cat.student_price && parseFloat(cat.student_price) > 0 
+        ? `Rs ${parseFloat(cat.student_price).toLocaleString()}` 
+        : 'N/A';
+      
+      feeStructure.push(`${index + 1}. ${cat.title}:`);
+      feeStructure.push(`   Professional/Passout: ${professionalFee}`);
+      feeStructure.push(`   Student: ${studentFee}`);
+    });
 
     feeStructure.forEach(item => {
       doc.text(item, margin, yPos);
-      yPos += 5;
+      yPos += 4;
     });
 
     // Footer
@@ -269,8 +289,13 @@ export default function MembershipForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.membership_type) {
-      toast.error('Please select a membership type');
+    if (!formData.membership_duration) {
+      toast.error('Please select a membership duration');
+      return;
+    }
+
+    if (!formData.payment_type) {
+      toast.error('Please select a payment type');
       return;
     }
 
@@ -285,25 +310,37 @@ export default function MembershipForm() {
     setLoading(true);
 
     try {
-      // Create dynamic amount map from categories
-      const amountMap: Record<string, number> = {
-        'test': 1
-      };
+      let selectedCategory = null;
+      let selectedPrice = 0;
       
-      // Add dynamic amounts from categories
-      categories.forEach(cat => {
-        const key = cat.title.toLowerCase().replace(/\s+/g, '_');
-        amountMap[key] = parseFloat(cat.price);
-      });
+      if (formData.membership_duration === 'test') {
+        selectedPrice = 1; // Test payment
+      } else {
+        selectedCategory = categories.find(cat => cat.id.toString() === formData.membership_duration);
 
-      const amount = amountMap[formData.membership_type] || 0;
+        if (selectedCategory) {
+          if (formData.payment_type === 'student' && selectedCategory.student_price && parseFloat(selectedCategory.student_price) > 0) {
+            selectedPrice = parseFloat(selectedCategory.student_price);
+          } else {
+            selectedPrice = parseFloat(selectedCategory.price);
+          }
+        }
+      }
 
-      if (amount === 0) {
-        toast.error('Invalid membership type selected');
+      console.log('Selected membership duration:', formData.membership_duration);
+      console.log('Selected payment type:', formData.payment_type);
+      console.log('Selected category:', selectedCategory);
+      console.log('Payment amount:', selectedPrice);
+
+      if (selectedPrice === 0) {
+        toast.error('Invalid membership selection or price not available');
         return;
       }
 
-      const paymentResult = await razorpayService.processMembershipPayment(amount, formData);
+      const paymentResult = await razorpayService.processMembershipPayment(selectedPrice, {
+        ...formData,
+        category_id: selectedCategory?.id
+      });
 
       if (paymentResult.success) {
         toast.success('Payment successful! Membership form submitted.');
@@ -321,7 +358,8 @@ export default function MembershipForm() {
           address: '',
           mobile: '',
           email: '',
-          membership_type: ''
+          membership_duration: '',
+          payment_type: ''
         });
       }
 
@@ -502,24 +540,91 @@ export default function MembershipForm() {
                     </div>
 
                     <div className="space-y-4 pt-4 border-t">
-                      <h3 className="text-lg font-semibold text-[#0B3C5D]">Membership Selection</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-[#0B3C5D]">Membership Selection</h3>
+                      </div>
 
                       <div>
-                        <Label htmlFor="membership_type" className="text-sm">Select Membership Type *</Label>
-                        <Select value={formData.membership_type} onValueChange={(value) => handleChange('membership_type', value)}>
+                        <Label htmlFor="membership_duration" className="text-sm">Select Membership Duration *</Label>
+                        <Select value={formData.membership_duration} onValueChange={(value) => handleChange('membership_duration', value)}>
                           <SelectTrigger className="h-10">
-                            <SelectValue placeholder="Select membership type" />
+                            <SelectValue placeholder="Select membership duration" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="test">Test Payment (₹1)</SelectItem>
                             {categories.map(cat => (
-                              <SelectItem key={cat.id} value={cat.title.toLowerCase().replace(/\s+/g, '_')}>
-                                {cat.title} - {cat.category === 'student_fee' ? 'Student' : 'Passout'} (₹{parseFloat(cat.price).toLocaleString()})
+                              <SelectItem key={cat.id} value={cat.id.toString()}>
+                                {cat.title}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        {categories.length === 0 && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Loading membership categories...
+                          </p>
+                        )}
                       </div>
+
+                      <div>
+                        <Label className="text-sm">Select Payment Type *</Label>
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => handleChange('payment_type', 'passout')}
+                            className={`p-4 border-2 rounded-lg text-center transition-all ${
+                              formData.payment_type === 'passout'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="font-semibold">I'm Passout</div>
+                            <div className="text-sm text-gray-600 mt-1">Professional/Graduate</div>
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleChange('payment_type', 'student')}
+                            className={`p-4 border-2 rounded-lg text-center transition-all ${
+                              formData.payment_type === 'student'
+                                ? 'border-green-500 bg-green-50 text-green-700'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="font-semibold">I'm Student</div>
+                            <div className="text-sm text-gray-600 mt-1">Currently Studying</div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Dynamic Price Display */}
+                      {formData.membership_duration && formData.payment_type && formData.membership_duration !== 'test' && (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h4 className="font-semibold text-blue-900 mb-2">Selected Plan Summary</h4>
+                          {(() => {
+                            const selectedCategory = categories.find(cat => cat.id.toString() === formData.membership_duration);
+                            
+                            if (!selectedCategory) return null;
+                            
+                            const currentPrice = formData.payment_type === 'student' && selectedCategory.student_price && parseFloat(selectedCategory.student_price) > 0
+                              ? parseFloat(selectedCategory.student_price)
+                              : parseFloat(selectedCategory.price);
+                            
+                            return (
+                              <div className="space-y-2">
+                                <p className="text-sm">
+                                  <span className="font-medium">Duration:</span> {selectedCategory.title}
+                                </p>
+                                <p className="text-sm">
+                                  <span className="font-medium">Type:</span> {formData.payment_type === 'student' ? 'Student' : 'Professional/Passout'}
+                                </p>
+                                <p className="text-xl font-bold text-blue-900">
+                                  Total Amount: ₹{currentPrice.toLocaleString()}
+                                </p>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
 
                     <Button type="submit" className="w-full gradient-primary text-primary-foreground h-11" disabled={loading}>

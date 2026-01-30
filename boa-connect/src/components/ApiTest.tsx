@@ -29,7 +29,19 @@ export function ApiTest() {
       console.log('Testing PDF generation at:', `${API_BASE_URL}/api/generate-seminar-pdf/8`);
       setTestResult('Testing PDF generation...');
       
-      const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/8`);
+      // Check if user is authenticated for testing
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setTestResult('PDF Test Error: Authentication required. Please login first.');
+        return;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/8`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       console.log('PDF Response status:', response.status);
       console.log('PDF Response headers:', Object.fromEntries(response.headers.entries()));
       

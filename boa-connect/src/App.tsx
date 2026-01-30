@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminLogin from "./pages/AdminLogin";
@@ -74,15 +75,39 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/register" element={<RegisterSimple />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/certificates" element={<Certificates />} />
-          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/certificates" element={
+            <ProtectedRoute>
+              <Certificates />
+            </ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          } />
           <Route path="/seminars" element={<Seminars />} />
           <Route path="/seminar/:id" element={<SeminarDetail />} />
-          <Route path="/seminar/:id/register" element={<SeminarRegistration />} />
+          <Route path="/seminar/:id/register" element={
+            <ProtectedRoute>
+              <SeminarRegistration />
+            </ProtectedRoute>
+          } />
           <Route path="/membership" element={<Membership />} />
-          <Route path="/membership-details" element={<MembershipDetails />} />
-          <Route path="/membership-form" element={<MembershipForm />} />
+          <Route path="/membership-details" element={
+            <ProtectedRoute>
+              <MembershipDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/membership-form" element={
+            <ProtectedRoute>
+              <MembershipForm />
+            </ProtectedRoute>
+          } />
           <Route path="/resources" element={<Resources />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />

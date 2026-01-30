@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import { Calendar, Bell, Download, ArrowRight, Clock } from 'lucide-react';
+import { Calendar, Bell, Download, ArrowRight, Clock, Lock, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/utils';
 
 export default function Notifications() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     loadNotifications();
+    checkAuthentication();
   }, []);
+
+  const checkAuthentication = () => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    setIsAuthenticated(!!(token && user));
+  };
 
   const loadNotifications = async () => {
     try {
@@ -31,10 +41,32 @@ export default function Notifications() {
   };
 
   const handleDownloadForm = async (seminarId: number, seminarName: string) => {
+    // Strict authentication check
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user || !isAuthenticated) {
+      toast.error('Please login to download seminar forms');
+      navigate('/login', { state: { from: '/notifications' } });
+      return;
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/${seminarId}`);
+      const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/${seminarId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          toast.error('Authentication expired. Please login again.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login', { state: { from: '/notifications' } });
+          return;
+        }
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
@@ -51,10 +83,11 @@ export default function Notifications() {
       if (isHtml) {
         // If HTML fallback, download as HTML file
         link.download = `${seminarName.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.html`;
-        alert('PDF generation issue. Downloaded as HTML file. Please print from browser.');
+        toast.info('PDF generation issue. Downloaded as HTML file. Please print from browser.');
       } else {
         // Normal PDF download
         link.download = `${seminarName.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
+        toast.success('Form downloaded successfully!');
       }
       
       document.body.appendChild(link);
@@ -63,7 +96,7 @@ export default function Notifications() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to download form:', error);
-      alert(`Failed to download form: ${error.message}. Please try again.`);
+      toast.error(`Failed to download form: ${error.message}. Please try again.`);
     }
   };
 
@@ -206,14 +239,29 @@ export default function Notifications() {
                             </Button>
                           </Link>
                         )}
-                        <Button 
-                          variant="outline"
-                          className="w-full sm:w-auto h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5"
-                          onClick={() => handleDownloadForm(notification.seminar_id, notification.seminar_name || notification.title)}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Download Form
-                        </Button>
+                        
+                        {isAuthenticated ? (
+                          <Button 
+                            variant="outline"
+                            className="w-full sm:w-auto h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5"
+                            onClick={() => handleDownloadForm(notification.seminar_id, notification.seminar_name || notification.title)}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Form
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline"
+                            className="w-full sm:w-auto h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5 opacity-75"
+                            onClick={() => {
+                              toast.error('Please login to download seminar forms');
+                              navigate('/login', { state: { from: '/notifications' } });
+                            }}
+                          >
+                            <LogIn className="mr-2 h-4 w-4" />
+                            Login to Download
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

@@ -315,6 +315,20 @@ export default function SeminarRegistration() {
   };
 
   const generateOfflineRegistrationForm = async () => {
+    // Check authentication first
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please login to download the registration form',
+        variant: 'destructive',
+      });
+      navigate('/login', { state: { from: `/seminar/${seminar?.id}/register` } });
+      return;
+    }
+
     try {
       if (!seminar?.id) {
         toast({
@@ -328,10 +342,25 @@ export default function SeminarRegistration() {
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
       const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/${seminar.id}?t=${timestamp}`, {
-        cache: 'no-cache'
+        cache: 'no-cache',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          toast({
+            title: 'Authentication Expired',
+            description: 'Please login again to download the form',
+            variant: 'destructive',
+          });
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login', { state: { from: `/seminar/${seminar.id}/register` } });
+          return;
+        }
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
@@ -370,11 +399,6 @@ export default function SeminarRegistration() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
-      toast({
-        title: 'Success!',
-        description: 'Offline registration form downloaded as PDF',
-      });
     } catch (error) {
       console.error('Failed to download form:', error);
       toast({
