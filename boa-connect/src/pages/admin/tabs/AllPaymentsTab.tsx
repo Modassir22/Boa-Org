@@ -12,13 +12,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-import { API_BASE_URL } from '@/lib/utils';
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { API_BASE_URL } from '@/lib/utils';
 
 // Helper function to convert delegate_type to readable format
 const formatDelegateType = (delegateType: string) => {

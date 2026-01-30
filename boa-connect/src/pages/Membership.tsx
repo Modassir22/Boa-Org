@@ -3,7 +3,6 @@ import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '@/lib/utils';
 import {
   Award,
   Users,
@@ -18,6 +17,7 @@ import {
   GraduationCap,
   Briefcase
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/utils';
 
 export default function Membership() {
   const navigate = useNavigate();

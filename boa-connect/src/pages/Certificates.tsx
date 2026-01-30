@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Award, Calendar, FileText, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/utils';
 import jsPDF from 'jspdf';
+import { API_BASE_URL } from '@/lib/utils';
 
 export default function Certificates() {
   const navigate = useNavigate();

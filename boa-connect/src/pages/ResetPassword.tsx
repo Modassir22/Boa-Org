@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/utils';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export default function ResetPassword() {
 
   const verifyToken = async () => {
     try {
-      const response = await fetch('/api/auth/forgot-password/verify-token', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password/verify-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })

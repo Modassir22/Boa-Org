@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Image as ImageIcon, Video, X } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
-import { API_BASE_URL } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { API_BASE_URL } from '@/lib/utils';
 
 export default function Gallery() {
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
