@@ -1,7 +1,7 @@
 import { Users, Calendar, Award, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { API_BASE_URL } from '@/lib/utils';
 
 export function StatsSection() {
   const [stats, setStats] = useState({
@@ -19,12 +19,32 @@ export function StatsSection() {
   const loadStats = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading stats from /api/stats...');
-      const response = await axios.get('/api/stats');
-      console.log('Stats API response:', response.data);
-      if (response.data.success) {
-        setStats(response.data.stats);
-        console.log('Stats loaded successfully:', response.data.stats);
+      console.log('Loading stats from:', `${API_BASE_URL}/api/stats`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/stats`);
+      
+      if (!response.ok) {
+        console.error('Stats API error:', response.status, response.statusText);
+        return;
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const responseText = await response.text();
+        console.error('Stats API response:', responseText.substring(0, 500));
+        
+        if (responseText.includes('<!doctype') || responseText.includes('<html')) {
+          console.error('Stats API returned HTML instead of JSON - API server misconfigured');
+          return;
+        }
+      }
+      
+      const data = await response.json();
+      console.log('Stats API response:', data);
+      
+      if (data.success) {
+        setStats(data.stats);
+        console.log('Stats loaded successfully:', data.stats);
       } else {
         console.error('API returned success: false');
       }

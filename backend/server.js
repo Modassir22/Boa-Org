@@ -280,7 +280,6 @@ try {
       });
 
       const { promisePool } = require('./config/database');
-      const htmlToPdfService = require('./services/htmlToPdf.service');
       const { seminarId } = req.params;
       
       console.log('=== PDF GENERATION DEBUG ===');
@@ -308,32 +307,103 @@ try {
         console.log('Using global template, length:', htmlTemplate?.length || 0);
       }
 
+      // If still no template, create a basic one
       if (!htmlTemplate) {
-        return res.status(404).json({
-          success: false,
-          message: 'Seminar form template not found'
-        });
+        console.log('No template found, creating basic template');
+        htmlTemplate = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${seminar.name} - Registration Form</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .form-field { margin-bottom: 15px; }
+              .field-label { font-weight: bold; }
+              .field-line { border-bottom: 1px solid #333; min-height: 20px; display: inline-block; min-width: 200px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Bihar Ophthalmic Association</h1>
+              <h2>${seminar.name}</h2>
+              <p><strong>Venue:</strong> ${seminar.venue || 'TBA'}</p>
+              <p><strong>Date:</strong> ${seminar.start_date ? new Date(seminar.start_date).toLocaleDateString('en-IN') : 'TBA'}</p>
+            </div>
+            
+            <h3>Registration Form</h3>
+            
+            <div class="form-field">
+              <div class="field-label">Name:</div>
+              <div class="field-line"></div>
+            </div>
+            
+            <div class="form-field">
+              <div class="field-label">Email:</div>
+              <div class="field-line"></div>
+            </div>
+            
+            <div class="form-field">
+              <div class="field-label">Phone:</div>
+              <div class="field-line"></div>
+            </div>
+            
+            <div class="form-field">
+              <div class="field-label">Institution:</div>
+              <div class="field-line"></div>
+            </div>
+            
+            <div class="form-field">
+              <div class="field-label">Designation:</div>
+              <div class="field-line"></div>
+            </div>
+            
+            <div style="margin-top: 50px;">
+              <p><strong>Declaration:</strong> I hereby register for the above seminar and agree to abide by the terms and conditions.</p>
+              <br><br>
+              <div style="display: flex; justify-content: space-between;">
+                <div>Date: _______________</div>
+                <div>Signature: _______________</div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
       }
 
       console.log('Generating PDF from HTML template...');
       
-      // Generate PDF from HTML template with seminar data
-      const pdfBuffer = await htmlToPdfService.generateSeminarFormPdf(htmlTemplate, seminar);
-      
-      console.log('PDF generated successfully, size:', pdfBuffer.length);
-      
-      // Set response headers for PDF download
-      const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      res.send(pdfBuffer);
+      try {
+        // Try to use the HTML to PDF service
+        const htmlToPdfService = require('./services/htmlToPdf.service');
+        const pdfBuffer = await htmlToPdfService.generateSeminarFormPdf(htmlTemplate, seminar);
+        
+        console.log('PDF generated successfully, size:', pdfBuffer.length);
+        
+        // Set response headers for PDF download
+        const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        
+        res.send(pdfBuffer);
+      } catch (pdfError) {
+        console.error('PDF generation failed, trying fallback:', pdfError);
+        
+        // Fallback: Return the HTML content as a downloadable file
+        const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.html`;
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.send(htmlTemplate);
+      }
     } catch (error) {
       console.error('Failed to generate seminar PDF:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to generate PDF'
+        message: 'Failed to generate PDF',
+        error: error.message
       });
     }
   });

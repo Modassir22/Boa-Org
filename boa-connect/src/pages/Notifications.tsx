@@ -35,21 +35,35 @@ export default function Notifications() {
       const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/${seminarId}`);
       
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const pdfBlob = await response.blob();
-      const url = window.URL.createObjectURL(pdfBlob);
+      // Check if response is actually a PDF or HTML fallback
+      const contentType = response.headers.get('content-type');
+      const isHtml = contentType && contentType.includes('text/html');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${seminarName.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
+      
+      if (isHtml) {
+        // If HTML fallback, download as HTML file
+        link.download = `${seminarName.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.html`;
+        alert('PDF generation issue. Downloaded as HTML file. Please print from browser.');
+      } else {
+        // Normal PDF download
+        link.download = `${seminarName.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.pdf`;
+      }
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to download form:', error);
-      alert('Failed to download form. Please try again.');
+      alert(`Failed to download form: ${error.message}. Please try again.`);
     }
   };
 

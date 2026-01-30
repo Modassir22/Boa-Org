@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/utils';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/forgot-password/send-link', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password/send-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

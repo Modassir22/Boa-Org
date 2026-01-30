@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/lib/utils';
 
 export default function Contact() {
   const [contactInfo, setContactInfo] = useState<any>(null);
@@ -106,7 +107,7 @@ export default function Contact() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/contact/send', {
+      const response = await fetch(`${API_BASE_URL}/api/contact/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

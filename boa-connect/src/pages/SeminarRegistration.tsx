@@ -332,17 +332,40 @@ export default function SeminarRegistration() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Get PDF blob
-      const pdfBlob = await response.blob();
+      // Check if response is actually a PDF or HTML fallback
+      const contentType = response.headers.get('content-type');
+      const isHtml = contentType && contentType.includes('text/html');
+      
+      // Get blob
+      const blob = await response.blob();
 
       // Create download link with timestamp in filename
-      const url = window.URL.createObjectURL(pdfBlob);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form_${timestamp}.pdf`;
+      
+      if (isHtml) {
+        // If HTML fallback, download as HTML file
+        link.download = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form_${timestamp}.html`;
+        toast({
+          title: "PDF Generation Issue",
+          description: "Downloaded as HTML file. Please print from browser.",
+          variant: "default"
+        });
+      } else {
+        // Normal PDF download
+        link.download = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form_${timestamp}.pdf`;
+        toast({
+          title: "Success",
+          description: "Registration form downloaded successfully!",
+          variant: "default"
+        });
+      }
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

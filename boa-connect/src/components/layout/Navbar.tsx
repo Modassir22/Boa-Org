@@ -67,7 +67,7 @@ export function Navbar() {
 
   const loadContactInfo = async () => {
     try {
-      const response = await fetch('/api/contact-info');
+      const response = await fetch(`${API_BASE_URL}/api/contact-info`);
       const data = await response.json();
       if (data.success && data.contactInfo) {
         setContactInfo(data.contactInfo);
