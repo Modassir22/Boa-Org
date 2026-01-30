@@ -17,23 +17,58 @@ function logToFile(message) {
 }
 
 // Middleware
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://boabihar.org',
+  'https://www.boabihar.org',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:8080'
+].filter(Boolean); // Remove any undefined values
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        process.env.FRONTEND_URL,
-        'https://boa-connect.vercel.app',
-        'https://boabihar.org',
-        'https://www.boabihar.org'
-      ].filter(Boolean)
-    : ['http://localhost:8080', 'http://localhost:5173'],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.error('CORS blocked origin:', origin);
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization', 
+    'Cache-Control',
+    'Pragma',
+    'Expires',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'User-Agent',
+    'DNT',
+    'Keep-Alive',
+    'X-Requested-With',
+    'If-Modified-Since',
+    'X-CSRF-Token'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Log all requests
+// Debug CORS middleware (temporary)
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
+  console.log('Request Origin:', req.headers.origin);
+  console.log('Request Method:', req.method);
+  console.log('Request Headers:', req.headers);
   next();
 });
 
@@ -42,7 +77,18 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'BOA Connect API Server',
     version: '1.0.0',
-    status: 'running'
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Health check route
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
@@ -390,13 +436,22 @@ try {
         
         res.send(pdfBuffer);
       } catch (pdfError) {
-        console.error('PDF generation failed, trying fallback:', pdfError);
+        console.error('PDF generation failed:', pdfError);
+        console.error('PDF Error stack:', pdfError.stack);
         
-        // Fallback: Return the HTML content as a downloadable file
-        const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.html`;
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        res.send(htmlTemplate);
+        // Check if it's a Puppeteer-specific error
+        if (pdfError.message.includes('puppeteer') || pdfError.message.includes('browser') || pdfError.message.includes('chrome')) {
+          console.log('Puppeteer error detected, providing HTML fallback');
+          
+          // Fallback: Return the HTML content as a downloadable file
+          const fileName = `${seminar.name.replace(/[^a-zA-Z0-9]/g, '_')}_Registration_Form.html`;
+          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+          res.send(htmlTemplate);
+        } else {
+          // For other errors, return JSON error response
+          throw pdfError;
+        }
       }
     } catch (error) {
       console.error('Failed to generate seminar PDF:', error);

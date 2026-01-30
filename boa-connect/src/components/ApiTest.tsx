@@ -24,12 +24,45 @@ export function ApiTest() {
     }
   };
 
+  const testPdfGeneration = async () => {
+    try {
+      console.log('Testing PDF generation at:', `${API_BASE_URL}/api/generate-seminar-pdf/8`);
+      setTestResult('Testing PDF generation...');
+      
+      const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/8`);
+      console.log('PDF Response status:', response.status);
+      console.log('PDF Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('PDF Error response:', errorText);
+        setTestResult(`PDF Error - Status: ${response.status}\nResponse: ${errorText.substring(0, 300)}...`);
+        return;
+      }
+      
+      const contentType = response.headers.get('content-type');
+      const contentLength = response.headers.get('content-length');
+      
+      setTestResult(`PDF Success!\nStatus: ${response.status}\nContent-Type: ${contentType}\nContent-Length: ${contentLength}`);
+    } catch (error) {
+      console.error('PDF Test Error:', error);
+      setTestResult(`PDF Error: ${error}`);
+    }
+  };
+
   return (
     <div style={{ padding: '20px', border: '1px solid #ccc', margin: '20px' }}>
       <h3>API Test</h3>
-      <p>API Base URL: {API_BASE_URL}</p>
-      <button onClick={testApi}>Test API</button>
-      <pre style={{ background: '#f5f5f5', padding: '10px', marginTop: '10px' }}>
+      <p><strong>Current API Base URL:</strong> {API_BASE_URL}</p>
+      <p><strong>Environment:</strong> {import.meta.env.MODE}</p>
+      <p><strong>VITE_API_URL:</strong> {import.meta.env.VITE_API_URL}</p>
+      
+      <div style={{ marginTop: '10px' }}>
+        <button onClick={testApi} style={{ marginRight: '10px' }}>Test API Connection</button>
+        <button onClick={testPdfGeneration}>Test PDF Generation</button>
+      </div>
+      
+      <pre style={{ background: '#f5f5f5', padding: '10px', marginTop: '10px', whiteSpace: 'pre-wrap' }}>
         {testResult}
       </pre>
     </div>
