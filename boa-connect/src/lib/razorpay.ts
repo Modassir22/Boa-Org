@@ -22,6 +22,15 @@ export interface RazorpayOptions {
     contact?: string;
   };
   notes?: Record<string, any>;
+  config?: {
+    display?: {
+      blocks?: Record<string, any>;
+      sequence?: string[];
+      preferences?: {
+        show_default_blocks?: boolean;
+      };
+    };
+  };
   theme?: {
     color?: string;
   };
@@ -259,6 +268,48 @@ class RazorpayService {
             email: userDetails.email,
             contact: userDetails.mobile
           },
+          config: {
+            display: {
+              blocks: {
+                banks: {
+                  name: 'Pay using Netbanking',
+                  instruments: [
+                    {
+                      method: 'netbanking'
+                    }
+                  ]
+                },
+                card: {
+                  name: 'Pay using Cards',
+                  instruments: [
+                    {
+                      method: 'card'
+                    }
+                  ]
+                },
+                upi: {
+                  name: 'Pay using UPI',
+                  instruments: [
+                    {
+                      method: 'upi'
+                    }
+                  ]
+                },
+                wallet: {
+                  name: 'Pay using Wallets',
+                  instruments: [
+                    {
+                      method: 'wallet'
+                    }
+                  ]
+                }
+              },
+              sequence: ['block.upi', 'block.card', 'block.banks', 'block.wallet'],
+              preferences: {
+                show_default_blocks: true
+              }
+            }
+          },
           theme: {
             color: '#0B3C5D'
           },
@@ -322,6 +373,48 @@ class RazorpayService {
             name: membershipData.name,
             email: membershipData.email,
             contact: membershipData.mobile
+          },
+          config: {
+            display: {
+              blocks: {
+                banks: {
+                  name: 'Pay using Netbanking',
+                  instruments: [
+                    {
+                      method: 'netbanking'
+                    }
+                  ]
+                },
+                card: {
+                  name: 'Pay using Cards',
+                  instruments: [
+                    {
+                      method: 'card'
+                    }
+                  ]
+                },
+                upi: {
+                  name: 'Pay using UPI',
+                  instruments: [
+                    {
+                      method: 'upi'
+                    }
+                  ]
+                },
+                wallet: {
+                  name: 'Pay using Wallets',
+                  instruments: [
+                    {
+                      method: 'wallet'
+                    }
+                  ]
+                }
+              },
+              sequence: ['block.upi', 'block.card', 'block.banks', 'block.wallet'],
+              preferences: {
+                show_default_blocks: true
+              }
+            }
           },
           theme: {
             color: '#0B3C5D'

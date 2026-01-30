@@ -1,3 +1,0 @@
-@echo off
-echo Testing registration endpoint...
-curl -X POST http://localhost:5000/api/registrations -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsImlhdCI6MTc2ODY1NjkwNSwiZXhwIjoxNzY5MjYxNzA1fQ.OHjH7yeZ9wx62AN2a_J2nbC_6FaSV5MA5dXv9_v34aU" -d "{\"seminar_id\":4,\"category_id\":16,\"slab_id\":11,\"delegate_type\":\"BOA Member\",\"amount\":1000}"

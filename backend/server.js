@@ -18,7 +18,14 @@ function logToFile(message) {
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: process.env.NODE_ENV === 'production' 
+    ? [
+        process.env.FRONTEND_URL,
+        'https://boa-connect.vercel.app',
+        'https://boabihar.org',
+        'https://www.boabihar.org'
+      ].filter(Boolean)
+    : ['http://localhost:8080', 'http://localhost:5173'],
   credentials: true
 }));
 app.use(express.json());
