@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   FileText,

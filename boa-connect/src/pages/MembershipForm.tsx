@@ -59,7 +59,6 @@ export default function MembershipForm() {
       });
       const data = await response.json();
       if (data.success) {
-        console.log('Loaded categories:', data.categories); // Debug log
         setCategories(data.categories || []);
       }
     } catch (error) {
@@ -72,15 +71,6 @@ export default function MembershipForm() {
   };
 
   const handleDownloadOfflineForm = () => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (!token || !user) {
-      toast.error('Please login to download the offline form');
-      return;
-    }
-
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 15;
@@ -327,11 +317,6 @@ export default function MembershipForm() {
         }
       }
 
-      console.log('Selected membership duration:', formData.membership_duration);
-      console.log('Selected payment type:', formData.payment_type);
-      console.log('Selected category:', selectedCategory);
-      console.log('Payment amount:', selectedPrice);
-
       if (selectedPrice === 0) {
         toast.error('Invalid membership selection or price not available');
         return;
@@ -378,108 +363,108 @@ export default function MembershipForm() {
 
   return (
     <Layout>
-      <div className="container py-8">
+      <div className="container py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="lg:col-span-2">
               <Card>
-                <CardHeader>
-                  <CardTitle>Online Membership Registration</CardTitle>
-                  <CardDescription>
+                <CardHeader className="pb-4 sm:pb-6">
+                  <CardTitle className="text-xl sm:text-2xl">Online Membership Registration</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
                     Fill the form below to register for BOA membership
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#0B3C5D]">Personal Information</h3>
+                <CardContent className="px-4 sm:px-6">
+                  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
+                    <div className="space-y-3 sm:space-y-4">
+                      <h3 className="text-base sm:text-lg font-semibold text-[#0B3C5D]">Personal Information</h3>
                       
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <Label htmlFor="name" className="text-sm">Name *</Label>
+                          <Label htmlFor="name" className="text-xs sm:text-sm">Name *</Label>
                           <Input
                             id="name"
                             value={formData.name}
                             onChange={(e) => handleChange('name', e.target.value)}
                             required
-                            className="h-10"
+                            className="h-9 sm:h-10 text-sm"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="father_name" className="text-sm">Father's/Husband Name *</Label>
+                          <Label htmlFor="father_name" className="text-xs sm:text-sm">Father's/Husband Name *</Label>
                           <Input
                             id="father_name"
                             value={formData.father_name}
                             onChange={(e) => handleChange('father_name', e.target.value)}
                             required
-                            className="h-10"
+                            className="h-9 sm:h-10 text-sm"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <Label htmlFor="qualification" className="text-sm">Academic Qualification *</Label>
+                        <Label htmlFor="qualification" className="text-xs sm:text-sm">Academic Qualification *</Label>
                         <Input
                           id="qualification"
                           value={formData.qualification}
                           onChange={(e) => handleChange('qualification', e.target.value)}
                           required
-                          className="h-10"
+                          className="h-9 sm:h-10 text-sm"
                         />
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <Label htmlFor="year_passing" className="text-sm">Year of Passing *</Label>
+                          <Label htmlFor="year_passing" className="text-xs sm:text-sm">Year of Passing *</Label>
                           <Input
                             id="year_passing"
                             type="number"
                             value={formData.year_passing}
                             onChange={(e) => handleChange('year_passing', e.target.value)}
                             required
-                            className="h-10"
+                            className="h-9 sm:h-10 text-sm"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="dob" className="text-sm">Date of Birth *</Label>
+                          <Label htmlFor="dob" className="text-xs sm:text-sm">Date of Birth *</Label>
                           <Input
                             id="dob"
                             type="date"
                             value={formData.dob}
                             onChange={(e) => handleChange('dob', e.target.value)}
                             required
-                            className="h-10"
+                            className="h-9 sm:h-10 text-sm"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <Label htmlFor="institution" className="text-sm">Name of Institution *</Label>
+                        <Label htmlFor="institution" className="text-xs sm:text-sm">Name of Institution *</Label>
                         <Input
                           id="institution"
                           value={formData.institution}
                           onChange={(e) => handleChange('institution', e.target.value)}
                           required
-                          className="h-10"
+                          className="h-9 sm:h-10 text-sm"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="working_place" className="text-sm">Working Place *</Label>
+                        <Label htmlFor="working_place" className="text-xs sm:text-sm">Working Place *</Label>
                         <Input
                           id="working_place"
                           value={formData.working_place}
                           onChange={(e) => handleChange('working_place', e.target.value)}
                           required
-                          className="h-10"
+                          className="h-9 sm:h-10 text-sm"
                         />
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <Label htmlFor="sex" className="text-sm">Sex *</Label>
+                          <Label htmlFor="sex" className="text-xs sm:text-sm">Sex *</Label>
                           <Select value={formData.sex} onValueChange={(value) => handleChange('sex', value)}>
-                            <SelectTrigger className="h-10">
+                            <SelectTrigger className="h-9 sm:h-10 text-sm">
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
@@ -490,64 +475,65 @@ export default function MembershipForm() {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="age" className="text-sm">Age *</Label>
+                          <Label htmlFor="age" className="text-xs sm:text-sm">Age *</Label>
                           <Input
                             id="age"
                             type="number"
                             value={formData.age}
                             onChange={(e) => handleChange('age', e.target.value)}
                             required
-                            className="h-10"
+                            className="h-9 sm:h-10 text-sm"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <Label htmlFor="address" className="text-sm">Address *</Label>
+                        <Label htmlFor="address" className="text-xs sm:text-sm">Address *</Label>
                         <Textarea
                           id="address"
                           value={formData.address}
                           onChange={(e) => handleChange('address', e.target.value)}
                           rows={3}
                           required
+                          className="text-sm"
                         />
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <Label htmlFor="mobile" className="text-sm">Mobile *</Label>
+                          <Label htmlFor="mobile" className="text-xs sm:text-sm">Mobile *</Label>
                           <Input
                             id="mobile"
                             type="tel"
                             value={formData.mobile}
                             onChange={(e) => handleChange('mobile', e.target.value)}
                             required
-                            className="h-10"
+                            className="h-9 sm:h-10 text-sm"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="email" className="text-sm">Email *</Label>
+                          <Label htmlFor="email" className="text-xs sm:text-sm">Email *</Label>
                           <Input
                             id="email"
                             type="email"
                             value={formData.email}
                             onChange={(e) => handleChange('email', e.target.value)}
                             required
-                            className="h-10"
+                            className="h-9 sm:h-10 text-sm"
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-4 border-t">
+                    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-[#0B3C5D]">Membership Selection</h3>
+                        <h3 className="text-base sm:text-lg font-semibold text-[#0B3C5D]">Membership Selection</h3>
                       </div>
 
                       <div>
-                        <Label htmlFor="membership_duration" className="text-sm">Select Membership Duration *</Label>
+                        <Label htmlFor="membership_duration" className="text-xs sm:text-sm">Select Membership Duration *</Label>
                         <Select value={formData.membership_duration} onValueChange={(value) => handleChange('membership_duration', value)}>
-                          <SelectTrigger className="h-10">
+                          <SelectTrigger className="h-9 sm:h-10 text-sm">
                             <SelectValue placeholder="Select membership duration" />
                           </SelectTrigger>
                           <SelectContent>
@@ -559,47 +545,47 @@ export default function MembershipForm() {
                           </SelectContent>
                         </Select>
                         {categories.length === 0 && (
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                             Loading membership categories...
                           </p>
                         )}
                       </div>
 
                       <div>
-                        <Label className="text-sm">Select Payment Type *</Label>
-                        <div className="grid grid-cols-2 gap-4 mt-2">
+                        <Label className="text-xs sm:text-sm">Select Payment Type *</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-2">
                           <button
                             type="button"
                             onClick={() => handleChange('payment_type', 'passout')}
-                            className={`p-4 border-2 rounded-lg text-center transition-all ${
+                            className={`p-3 sm:p-4 border-2 rounded-lg text-center transition-all ${
                               formData.payment_type === 'passout'
                                 ? 'border-blue-500 bg-blue-50 text-blue-700'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className="font-semibold">I'm Passout</div>
-                            <div className="text-sm text-gray-600 mt-1">Professional/Graduate</div>
+                            <div className="font-semibold text-sm sm:text-base">I'm Passout</div>
+                            <div className="text-xs sm:text-sm text-gray-600 mt-1">Professional/Graduate</div>
                           </button>
                           
                           <button
                             type="button"
                             onClick={() => handleChange('payment_type', 'student')}
-                            className={`p-4 border-2 rounded-lg text-center transition-all ${
+                            className={`p-3 sm:p-4 border-2 rounded-lg text-center transition-all ${
                               formData.payment_type === 'student'
                                 ? 'border-green-500 bg-green-50 text-green-700'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className="font-semibold">I'm Student</div>
-                            <div className="text-sm text-gray-600 mt-1">Currently Studying</div>
+                            <div className="font-semibold text-sm sm:text-base">I'm Student</div>
+                            <div className="text-xs sm:text-sm text-gray-600 mt-1">Currently Studying</div>
                           </button>
                         </div>
                       </div>
 
                       {/* Dynamic Price Display */}
                       {formData.membership_duration && formData.payment_type && formData.membership_duration !== 'test' && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h4 className="font-semibold text-blue-900 mb-2">Selected Plan Summary</h4>
+                        <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h4 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Selected Plan Summary</h4>
                           {(() => {
                             const selectedCategory = categories.find(cat => cat.id.toString() === formData.membership_duration);
                             
@@ -610,14 +596,14 @@ export default function MembershipForm() {
                               : parseFloat(selectedCategory.price);
                             
                             return (
-                              <div className="space-y-2">
-                                <p className="text-sm">
+                              <div className="space-y-1 sm:space-y-2">
+                                <p className="text-xs sm:text-sm">
                                   <span className="font-medium">Duration:</span> {selectedCategory.title}
                                 </p>
-                                <p className="text-sm">
+                                <p className="text-xs sm:text-sm">
                                   <span className="font-medium">Type:</span> {formData.payment_type === 'student' ? 'Student' : 'Professional/Passout'}
                                 </p>
-                                <p className="text-xl font-bold text-blue-900">
+                                <p className="text-lg sm:text-xl font-bold text-blue-900">
                                   Total Amount: ₹{currentPrice.toLocaleString()}
                                 </p>
                               </div>
@@ -627,8 +613,8 @@ export default function MembershipForm() {
                       )}
                     </div>
 
-                    <Button type="submit" className="w-full gradient-primary text-primary-foreground h-11" disabled={loading}>
-                      <Send className="mr-2 h-5 w-5" />
+                    <Button type="submit" className="w-full gradient-primary text-primary-foreground h-10 sm:h-11 text-sm sm:text-base" disabled={loading}>
+                      <Send className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                       {loading ? 'Processing Payment...' : 'Pay Now'}
                     </Button>
                   </form>
@@ -636,23 +622,23 @@ export default function MembershipForm() {
               </Card>
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 mt-6 lg:mt-0">
               <div className="sticky top-6 space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Offline Form</CardTitle>
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-sm sm:text-base">Offline Form</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">
+                  <CardContent className="pt-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                       Prefer to fill the form offline? Download the printable form.
                     </p>
                     <Button 
                       onClick={handleDownloadOfflineForm}
                       variant="outline" 
-                      className="w-full"
+                      className="w-full text-xs sm:text-sm h-9 sm:h-10"
                       size="sm"
                     >
-                      <Download className="mr-2 h-4 w-4" />
+                      <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                       Download Offline Form
                     </Button>
                   </CardContent>

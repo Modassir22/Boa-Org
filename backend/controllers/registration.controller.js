@@ -1,5 +1,6 @@
 const { promisePool } = require('../config/database');
 const { ACTIVITY_TYPES, createActivityNotification } = require('../utils/activity-logger');
+const { sendSeminarRegistrationConfirmation } = require('../config/email.config');
 
 // Generate registration number
 const generateRegistrationNo = () => {
@@ -135,14 +136,14 @@ exports.createRegistration = async (req, res) => {
 
     await connection.commit();
 
-    // Get user and seminar details for notification
+    // Get user and seminar details for notification and email
     const [userDetails] = await connection.query(
-      'SELECT CONCAT(first_name, " ", surname) as full_name FROM users WHERE id = ?',
+      'SELECT CONCAT(first_name, " ", surname) as full_name, email, mobile, title FROM users WHERE id = ?',
       [userId]
     );
 
     const [seminarDetails] = await connection.query(
-      'SELECT name FROM seminars WHERE id = ?',
+      'SELECT name, start_date, end_date, venue, location FROM seminars WHERE id = ?',
       [seminar_id]
     );
 
@@ -153,6 +154,27 @@ exports.createRegistration = async (req, res) => {
         seminar_name: seminarDetails[0]?.name || 'Seminar',
         seminar_id: seminar_id
       });
+
+      // Send confirmation email to user
+      try {
+        const registrationData = {
+          user_info: {
+            title: userDetails[0]?.title,
+            full_name: userDetails[0]?.full_name?.split(' ')[0] || 'User',
+            surname: userDetails[0]?.full_name?.split(' ').slice(1).join(' ') || '',
+            email: userDetails[0]?.email,
+            mobile: userDetails[0]?.mobile,
+            organization: 'Not specified' // You can add this field to users table if needed
+          },
+          amount: totalAmount
+        };
+
+        await sendSeminarRegistrationConfirmation(registrationData, seminarDetails[0]);
+        console.log('Seminar registration confirmation email sent to:', userDetails[0]?.email);
+      } catch (emailError) {
+        console.error('Failed to send registration confirmation email:', emailError.message);
+        // Don't fail the registration if email fails
+      }
     }
 
     res.status(201).json({

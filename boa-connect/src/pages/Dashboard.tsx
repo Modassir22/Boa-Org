@@ -61,7 +61,7 @@ export default function Dashboard() {
         const membershipResponse = await userAPI.getMembershipDetails();
         setMembershipData(membershipResponse.membership);
       } catch (error) {
-        console.log('No membership data found');
+        console.error('No membership data found',error);
       }
 
       // Load registrations
@@ -73,7 +73,7 @@ export default function Dashboard() {
         const seminarResponse = await seminarAPI.getActive();
         setActiveSeminar(seminarResponse.seminar);
       } catch (error) {
-        console.log('No active seminar found');
+        console.error('No active seminar found',error);
       }
 
     } catch (error: any) {

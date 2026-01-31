@@ -3593,3 +3593,90 @@ exports.toggleTestimonialActive = async (req, res) => {
     });
   }
 };
+
+// Delete payment (seminar registration or membership)
+exports.deletePayment = async (req, res) => {
+  const connection = await promisePool.getConnection();
+  
+  try {
+    const { id } = req.params;
+    
+    // Parse payment ID to determine type
+    const [type, paymentId] = id.split('_');
+    
+    if (!type || !paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment ID format'
+      });
+    }
+
+    await connection.beginTransaction();
+
+    if (type === 'sem') {
+      // Delete seminar registration payment
+      
+      // First, delete additional persons if any
+      await connection.query(
+        `DELETE ap FROM additional_persons ap
+         INNER JOIN registrations r ON ap.registration_id = r.id
+         WHERE r.id = ?`,
+        [paymentId]
+      );
+
+      // Then delete the registration
+      const [result] = await connection.query(
+        'DELETE FROM registrations WHERE id = ?',
+        [paymentId]
+      );
+
+      if (result.affectedRows === 0) {
+        await connection.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Seminar registration payment not found'
+        });
+      }
+
+    } else if (type === 'mem') {
+      // Delete membership registration payment
+      const [result] = await connection.query(
+        'DELETE FROM membership_registrations WHERE id = ?',
+        [paymentId]
+      );
+
+      if (result.affectedRows === 0) {
+        await connection.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Membership registration payment not found'
+        });
+      }
+
+    } else {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment type'
+      });
+    }
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: 'Payment deleted successfully'
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('Delete payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete payment',
+      error: error.message
+    });
+  } finally {
+    connection.release();
+  }
+};

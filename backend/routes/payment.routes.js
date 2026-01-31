@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { promisePool } = require('../config/database');
 const razorpayService = require('../services/razorpay.service');
+const { sendMembershipConfirmation, sendSeminarRegistrationConfirmation, sendMembershipAdminNotification, sendSeminarAdminNotification } = require('../config/email.config');
 
 // Helper function to log to file
 function logToFile(message) {
@@ -242,12 +243,18 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
 
     const {
       user_id,
+      user_info,
       seminar_id,
       category_id,
       slab_id,
       delegate_type,
       additional_persons = []
     } = registrationData;
+
+    logToFile(`Extracted user_id: ${user_id}, user_info: ${JSON.stringify(user_info)}`);
+
+    // We don't create users in payment flow - just process the registration
+    // user_id will be null for guest registrations, which is fine
 
     // Transform delegate_type to match database enum values
     let normalizedDelegateType = 'non-boa-member'; // Default fallback
@@ -305,7 +312,7 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
 
     logToFile(`Generated registration number: ${registration_no}`);
 
-    // Insert main registration
+    // Insert main registration (user_id can be null for guest registrations)
     const [regResult] = await connection.query(
       `INSERT INTO registrations 
        (registration_no, user_id, seminar_id, category_id, slab_id, delegate_type, category_name,
@@ -313,7 +320,7 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
       [
         registration_no,
-        user_id,
+        user_id || null, // Explicitly set to null if user_id is falsy
         seminar_id,
         category_id,
         slab_id,
@@ -352,6 +359,45 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
 
     await connection.commit();
     logToFile('Registration transaction committed successfully');
+
+    // Send confirmation email to user
+    try {
+      if (user_info && user_info.email) {
+        // Get seminar details for email
+        const [seminarDetails] = await connection.query(
+          'SELECT name, start_date, end_date, venue, location FROM seminars WHERE id = ?',
+          [seminar_id]
+        );
+
+        if (seminarDetails.length > 0) {
+          const registrationEmailData = {
+            user_info: {
+              title: user_info.title,
+              full_name: user_info.full_name,
+              surname: user_info.surname,
+              email: user_info.email,
+              mobile: user_info.mobile,
+              organization: user_info.organization || 'Not specified'
+            },
+            amount: paymentInfo.amount
+          };
+
+          await sendSeminarRegistrationConfirmation(registrationEmailData, seminarDetails[0]);
+          logToFile(`Seminar registration confirmation email sent to: ${user_info.email}`);
+          
+          // Send admin notification
+          try {
+            await sendSeminarAdminNotification(registrationEmailData, seminarDetails[0]);
+            logToFile('Seminar admin notification email sent successfully');
+          } catch (adminEmailError) {
+            logToFile(`Failed to send seminar admin notification: ${adminEmailError.message}`);
+          }
+        }
+      }
+    } catch (emailError) {
+      logToFile(`Failed to send seminar confirmation email: ${emailError.message}`);
+      // Don't fail the registration if email fails
+    }
 
     return {
       registration_id: registrationId,
@@ -404,6 +450,32 @@ async function processMembershipRegistration(membershipData, paymentInfo) {
     );
 
     logToFile(`Membership registration inserted with ID: ${result.insertId}`);
+
+    // Send confirmation email to user
+    try {
+      const membershipConfirmationData = {
+        name: membershipData.name,
+        email: membershipData.email,
+        mobile: membershipData.mobile,
+        membership_duration: membershipData.membership_type,
+        payment_type: membershipData.payment_type || 'professional', // Default to professional if not specified
+        amount: paymentInfo.amount
+      };
+
+      await sendMembershipConfirmation(membershipConfirmationData);
+      logToFile(`Membership confirmation email sent to: ${membershipData.email}`);
+      
+      // Send admin notification
+      try {
+        await sendMembershipAdminNotification(membershipConfirmationData);
+        logToFile('Membership admin notification email sent successfully');
+      } catch (adminEmailError) {
+        logToFile(`Failed to send membership admin notification: ${adminEmailError.message}`);
+      }
+    } catch (emailError) {
+      logToFile(`Failed to send membership confirmation email: ${emailError.message}`);
+      // Don't fail the registration if email fails
+    }
 
     return {
       membership_id: result.insertId
@@ -557,6 +629,33 @@ router.post('/check-payment', async (req, res) => {
           transaction_id
         ]
       );
+
+      // Send confirmation emails
+      try {
+        const membershipConfirmationData = {
+          name: userData.name,
+          email: userData.email,
+          mobile: userData.mobile,
+          membership_duration: userData.membership_type,
+          payment_type: userData.payment_type || 'professional',
+          amount: payment.amount || 0
+        };
+
+        // Send user confirmation
+        await sendMembershipConfirmation(membershipConfirmationData);
+        logToFile(`Membership confirmation email sent to: ${userData.email}`);
+        
+        // Send admin notification
+        try {
+          await sendMembershipAdminNotification(membershipConfirmationData);
+          logToFile('Membership admin notification email sent successfully');
+        } catch (adminEmailError) {
+          logToFile(`Failed to send membership admin notification: ${adminEmailError.message}`);
+        }
+      } catch (emailError) {
+        logToFile(`Failed to send membership confirmation email: ${emailError.message}`);
+        // Don't fail the registration if email fails
+      }
 
       // Remove from pending
       pendingPayments.delete(transaction_id);

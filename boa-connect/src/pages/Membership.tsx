@@ -17,8 +17,7 @@ import {
   CreditCard,
   GraduationCap,
   Briefcase,
-  Lock,
-  LogIn
+  Lock
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/utils';
 
@@ -26,11 +25,9 @@ export default function Membership() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     loadCategories();
-    checkAuthentication();
     
     // Also reload when page becomes visible
     const handleVisibilityChange = () => {
@@ -41,12 +38,6 @@ export default function Membership() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
-
-  const checkAuthentication = () => {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    setIsAuthenticated(!!(token && user));
-  };
 
   const loadCategories = async () => {
     try {
@@ -63,7 +54,6 @@ export default function Membership() {
       });
       const data = await response.json();
       if (data.success) {
-        console.log('Membership page loaded categories:', data.categories); // Debug log
         setCategories(data.categories || []);
       }
     } catch (error) {
@@ -74,35 +64,17 @@ export default function Membership() {
   };
 
   const handleDownloadOfflineForm = async () => {
-    // Strict authentication check
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (!token || !user || !isAuthenticated) {
-      toast.error('Please login to download the offline form');
-      navigate('/login', { state: { from: '/membership' } });
-      return;
-    }
-
     try {
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
       const response = await fetch(`${API_BASE_URL}/api/generate-membership-pdf?t=${timestamp}`, {
         cache: 'no-cache',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          toast.error('Authentication expired. Please login again.');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login', { state: { from: '/membership' } });
-          return;
-        }
         throw new Error('Failed to generate PDF');
       }
 
@@ -242,59 +214,30 @@ export default function Membership() {
             Join Bihar's premier ophthalmology association and advance your career while serving the community
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            {isAuthenticated ? (
-              <Button
-                size="lg"
-                className="gradient-primary text-primary-foreground"
-                onClick={() => {
-                  navigate('/membership-form');
-                  // Trigger form to open automatically
-                  setTimeout(() => {
-                    const event = new CustomEvent('openMembershipForm');
-                    window.dispatchEvent(event);
-                  }, 100);
-                }}
-              >
-                Apply Online
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            ) : (
-              <Button
-                size="lg"
-                className="gradient-primary text-primary-foreground"
-                onClick={() => {
-                  toast.error('Please login to apply for membership');
-                  navigate('/login', { state: { from: '/membership' } });
-                }}
-              >
-                <LogIn className="mr-2 h-5 w-5" />
-                Apply Online
-              </Button>
-            )}
+            <Button
+              size="lg"
+              className="gradient-primary text-primary-foreground"
+              onClick={() => {
+                navigate('/membership-form');
+                // Trigger form to open automatically
+                setTimeout(() => {
+                  const event = new CustomEvent('openMembershipForm');
+                  window.dispatchEvent(event);
+                }, 100);
+              }}
+            >
+              Apply Online
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
             
-            {isAuthenticated ? (
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={handleDownloadOfflineForm}
-              >
-                <Download className="mr-2 h-5 w-5" />
-                Download Form
-              </Button>
-            ) : (
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => {
-                  toast.error('Please login to download the offline form');
-                  navigate('/login', { state: { from: '/membership' } });
-                }}
-                className="opacity-75"
-              >
-                <Download className="mr-2 h-5 w-5" />
-                Download Form
-              </Button>
-            )}
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={handleDownloadOfflineForm}
+            >
+              <Download className="mr-2 h-5 w-5" />
+              Download Form
+            </Button>
           </div>
         </div>
       </section>
@@ -422,26 +365,12 @@ export default function Membership() {
           </div>
 
           <div className="text-center mt-12">
-            {isAuthenticated ? (
-              <Link to="/membership-form">
-                <Button size="lg" className="gradient-primary text-primary-foreground">
-                  Start Your Application
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            ) : (
-              <Button 
-                size="lg" 
-                className="gradient-primary text-primary-foreground"
-                onClick={() => {
-                  toast.error('Please login to start your application');
-                  navigate('/login', { state: { from: '/membership' } });
-                }}
-              >
-                <LogIn className="mr-2 h-5 w-5" />
-                Login to Start Application
+            <Link to="/membership-form">
+              <Button size="lg" className="gradient-primary text-primary-foreground">
+                Start Your Application
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            )}
+            </Link>
           </div>
         </div>
       </section>

@@ -19,7 +19,6 @@ export function StatsSection() {
   const loadStats = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading stats from:', `${API_BASE_URL}/api/stats`);
       
       const response = await fetch(`${API_BASE_URL}/api/stats`);
       
@@ -40,11 +39,9 @@ export function StatsSection() {
       }
       
       const data = await response.json();
-      console.log('Stats API response:', data);
       
       if (data.success) {
         setStats(data.stats);
-        console.log('Stats loaded successfully:', data.stats);
       } else {
         console.error('API returned success: false');
       }
@@ -97,16 +94,16 @@ export function StatsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="gov-card p-6 text-center">
-                <div className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4" style={{background: '#E3F2FD'}}>
-                  <Icon className="h-8 w-8" style={{color: '#0B3C5D'}} />
+              <div key={index} className="gov-card p-4 sm:p-6 text-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded flex items-center justify-center mx-auto mb-3 sm:mb-4" style={{background: '#E3F2FD'}}>
+                  <Icon className="h-6 w-6 sm:h-8 sm:w-8" style={{color: '#0B3C5D'}} />
                 </div>
-                <div className="text-3xl font-semibold mb-2" style={{color: '#1F2933'}}>{stat.value}</div>
-                <div className="text-sm" style={{color: '#616E7C'}}>{stat.label}</div>
+                <div className="text-2xl sm:text-3xl font-semibold mb-1 sm:mb-2" style={{color: '#1F2933'}}>{stat.value}</div>
+                <div className="text-xs sm:text-sm" style={{color: '#616E7C'}}>{stat.label}</div>
               </div>
             );
           })}

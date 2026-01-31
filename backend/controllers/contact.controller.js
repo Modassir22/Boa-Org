@@ -1,4 +1,4 @@
-const { sendContactEmail } = require('../config/email.config');
+const { sendContactEmail, sendContactConfirmationEmail } = require('../config/email.config');
 
 // Send contact form email
 exports.sendContactForm = async (req, res) => {
@@ -32,6 +32,7 @@ exports.sendContactForm = async (req, res) => {
 
     // Send email
     try {
+      // Send email to admin
       await sendContactEmail({
         firstName,
         lastName,
@@ -40,6 +41,20 @@ exports.sendContactForm = async (req, res) => {
         subject,
         message
       });
+
+      // Send confirmation email to user
+      try {
+        await sendContactConfirmationEmail({
+          firstName,
+          lastName,
+          email,
+          subject
+        });
+        console.log('Contact confirmation email sent to user:', email);
+      } catch (confirmationError) {
+        console.error('Failed to send confirmation email to user:', confirmationError.message);
+        // Don't fail the main request if confirmation email fails
+      }
 
       res.json({
         success: true,

@@ -11,12 +11,8 @@ export function CommitteeSection() {
 
   const loadCommitteeMembers = async () => {
     try {
-      console.log('Loading committee members...');
-      console.log('API URL:', `${API_BASE_URL}/api/committee-members?page_type=home`);
       
       const response = await fetch(`${API_BASE_URL}/api/committee-members?page_type=home`);
-      console.log('Response status:', response.status);
-      console.log('Response content-type:', response.headers.get('content-type'));
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -48,7 +44,6 @@ export function CommitteeSection() {
       }
       
       const data = await response.json();
-      console.log('Committee data:', data);
       if (data.success) {
         setCommitteeMembers(data.members || []);
       } else {
@@ -90,25 +85,25 @@ export function CommitteeSection() {
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center items-center gap-10 max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto">
           {committeeMembers.map((member) => (
-            <div key={member.id} className="text-center gov-card p-6 w-full max-w-[200px] transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1">
+            <div key={member.id} className="text-center gov-card p-3 sm:p-4 lg:p-6 transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1">
               {member.image_url ? (
                 <img 
                   src={member.image_url} 
                   alt={member.name}
-                  className="h-32 w-32 rounded-full mx-auto mb-4 object-cover object-center border-4 border-[#0B3C5D] transition-transform duration-300 ease-in-out hover:scale-105"
+                  className="h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32 rounded-full mx-auto mb-2 sm:mb-3 lg:mb-4 object-cover object-center border-2 sm:border-3 lg:border-4 border-[#0B3C5D] transition-transform duration-300 ease-in-out hover:scale-105"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                   }}
                 />
               ) : null}
-              <div className={`h-32 w-32 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-semibold text-white border-4 border-[#0B3C5D] transition-transform duration-300 ease-in-out hover:scale-105 ${member.image_url ? 'hidden' : ''}`} style={{background: '#0B3C5D'}}>
+              <div className={`h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32 rounded-full mx-auto mb-2 sm:mb-3 lg:mb-4 flex items-center justify-center text-xl sm:text-2xl lg:text-3xl font-semibold text-white border-2 sm:border-3 lg:border-4 border-[#0B3C5D] transition-transform duration-300 ease-in-out hover:scale-105 ${member.image_url ? 'hidden' : ''}`} style={{background: '#0B3C5D'}}>
                 {member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
               </div>
-              <h3 className="font-semibold text-base leading-tight mb-2" style={{color: '#1F2933'}}>{member.name}</h3>
-              <p className="font-medium text-sm" style={{color: '#0B3C5D'}}>{member.profession}</p>
+              <h3 className="font-semibold text-xs sm:text-sm lg:text-base leading-tight mb-1 sm:mb-2" style={{color: '#1F2933'}}>{member.name}</h3>
+              <p className="font-medium text-xs sm:text-sm" style={{color: '#0B3C5D'}}>{member.profession}</p>
             </div>
           ))}
         </div>

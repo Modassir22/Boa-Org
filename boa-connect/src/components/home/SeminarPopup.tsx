@@ -6,19 +6,47 @@ import { seminarAPI } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/utils';
 
 const POPUP_DISMISSED_KEY = 'boa_seminar_popup_dismissed';
-const RELOAD_POPUP_SHOWN_KEY = 'boa_reload_popup_shown';
 
 export function SeminarPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSeminar, setActiveSeminar] = useState<any>(null);
   const [showReloadPopup, setShowReloadPopup] = useState(false);
   const [upcomingEvent, setUpcomingEvent] = useState<any>(null);
+  const [isPageReady, setIsPageReady] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadActiveSeminar();
+    // Wait for page to be fully loaded before showing popup
+    const checkPageReady = () => {
+      // Check if document is ready and navbar is likely loaded
+      if (document.readyState === 'complete') {
+        const timer = setTimeout(() => {
+          setIsPageReady(true);
+        }, 1000); // 1 second delay after page is complete
+        return () => clearTimeout(timer);
+      } else {
+        // If not ready, wait for load event
+        const handleLoad = () => {
+          setTimeout(() => {
+            setIsPageReady(true);
+          }, 1000);
+        };
+        window.addEventListener('load', handleLoad);
+        return () => window.removeEventListener('load', handleLoad);
+      }
+    };
+
+    const cleanup = checkPageReady();
     checkReloadPopup();
+
+    return cleanup;
   }, []);
+
+  useEffect(() => {
+    if (isPageReady) {
+      loadActiveSeminar();
+    }
+  }, [isPageReady]);
 
   const checkReloadPopup = async () => {
     const wasReloaded = sessionStorage.getItem('pageReloaded');
@@ -66,18 +94,18 @@ export function SeminarPopup() {
   const loadActiveSeminar = async () => {
     try {
       const dismissed = localStorage.getItem(POPUP_DISMISSED_KEY);
-      if (dismissed) {
-        console.log('Popup was previously dismissed');
+      if (dismissed || !isPageReady) {
         return;
       }
 
       const response = await seminarAPI.getActive();
-      console.log('Active seminar response:', response);
 
       if (response.success && response.seminar && response.seminar.is_active) {
         setActiveSeminar(response.seminar);
-        setIsOpen(true);
-        console.log('Popup opened with seminar:', response.seminar.name);
+        // Add another small delay to ensure smooth animation
+        setTimeout(() => {
+          setIsOpen(true);
+        }, 300);
       } else {
         console.log('No active seminar found or seminar not active');
       }

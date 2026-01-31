@@ -159,23 +159,23 @@ export default function Contact() {
 
   return (
     <Layout>
-      <div className="py-20 px-4">
+      <div className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h1 className="text-4xl font-bold text-foreground mb-4">Contact Us</h1>
-            <p className="text-lg text-muted-foreground">
+          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 sm:mb-4">Contact Us</h1>
+            <p className="text-base sm:text-lg text-muted-foreground">
               Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 max-w-5xl mx-auto">
             {/* Contact Form */}
-            <div className="bg-card rounded-2xl border border-border p-8 shadow-card">
-              <h2 className="text-xl font-semibold text-foreground mb-6">Send us a message</h2>
-              <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
+            <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 lg:p-8 shadow-card">
+              <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Send us a message</h2>
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6" noValidate>
+                <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1 sm:space-y-2">
+                    <Label htmlFor="firstName" className="text-xs sm:text-sm">First Name</Label>
                     <Input 
                       id="firstName" 
                       placeholder="John" 
@@ -183,10 +183,11 @@ export default function Contact() {
                       onChange={handleChange}
                       required 
                       disabled={isLoading}
+                      className="h-9 sm:h-10 text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
+                  <div className="space-y-1 sm:space-y-2">
+                    <Label htmlFor="lastName" className="text-xs sm:text-sm">Last Name</Label>
                     <Input 
                       id="lastName" 
                       placeholder="Doe" 
@@ -194,12 +195,13 @@ export default function Contact() {
                       onChange={handleChange}
                       required 
                       disabled={isLoading}
+                      className="h-9 sm:h-10 text-sm"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
                   <Input 
                     id="email" 
                     type="email" 
@@ -208,11 +210,12 @@ export default function Contact() {
                     onChange={handleChange}
                     required 
                     disabled={isLoading}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone (Optional)</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="phone" className="text-xs sm:text-sm">Phone (Optional)</Label>
                   <Input 
                     id="phone" 
                     type="tel" 
@@ -220,11 +223,12 @@ export default function Contact() {
                     value={formData.phone}
                     onChange={handleChange}
                     disabled={isLoading}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="subject" className="text-xs sm:text-sm">Subject</Label>
                   <Input 
                     id="subject" 
                     placeholder="How can we help?" 
@@ -232,37 +236,39 @@ export default function Contact() {
                     onChange={handleChange}
                     required 
                     disabled={isLoading}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="message" className="text-xs sm:text-sm">Message</Label>
                   <Textarea 
                     id="message" 
                     placeholder="Your message..." 
-                    rows={5}
+                    rows={4}
                     value={formData.message}
                     onChange={handleChange}
                     required 
                     disabled={isLoading}
+                    className="text-sm"
                   />
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full gradient-primary text-primary-foreground" 
+                  className="w-full gradient-primary text-primary-foreground text-sm sm:text-base h-10 sm:h-11" 
                   size="lg"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2" />
                       Sending...
                     </>
                   ) : (
                     <>
                       Send Message
-                      <Send className="ml-2 h-5 w-5" />
+                      <Send className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                     </>
                   )}
                 </Button>
@@ -270,17 +276,17 @@ export default function Contact() {
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               <div>
-                <h2 className="text-xl font-semibold text-foreground mb-6">Get in touch</h2>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center shrink-0">
-                      <MapPin className="h-6 w-6 text-primary-foreground" />
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Get in touch</h2>
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+                      <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Registered Office</h3>
-                      <p className="text-muted-foreground">
+                      <h3 className="font-semibold text-foreground text-sm sm:text-base">Registered Office</h3>
+                      <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
                         {contactInfo ? (
                           <>
                             {contactInfo.address}<br />
@@ -299,13 +305,13 @@ export default function Contact() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl gradient-gold flex items-center justify-center shrink-0">
-                      <Phone className="h-6 w-6 text-secondary-foreground" />
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl gradient-gold flex items-center justify-center shrink-0">
+                      <Phone className="h-5 w-5 sm:h-6 sm:w-6 text-secondary-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Phone</h3>
-                      <p className="text-muted-foreground">
+                      <h3 className="font-semibold text-foreground text-sm sm:text-base">Phone</h3>
+                      <p className="text-muted-foreground text-xs sm:text-sm">
                         {contactInfo?.mobile || '+91-XXXX-XXXXXX'}
                         {contactInfo?.phone && (
                           <>
@@ -317,13 +323,13 @@ export default function Contact() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center shrink-0">
-                      <Mail className="h-6 w-6 text-accent-foreground" />
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-accent flex items-center justify-center shrink-0">
+                      <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-accent-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Email</h3>
-                      <p className="text-muted-foreground">
+                      <h3 className="font-semibold text-foreground text-sm sm:text-base">Email</h3>
+                      <p className="text-muted-foreground text-xs sm:text-sm">
                         {contactInfo?.email || 'info@boabihar.org'}
                       </p>
                     </div>
@@ -332,9 +338,9 @@ export default function Contact() {
               </div>
 
               {/* Office Hours */}
-              <div className="bg-muted rounded-2xl p-6">
-                <h3 className="font-semibold text-foreground mb-4">Office Hours</h3>
-                <div className="space-y-2 text-sm">
+              <div className="bg-muted rounded-2xl p-4 sm:p-6">
+                <h3 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Office Hours</h3>
+                <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Monday - Friday</span>
                     <span className="text-foreground">10:00 AM - 5:00 PM</span>
@@ -355,7 +361,7 @@ export default function Contact() {
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3597.726!2d85.1376!3d25.6093!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjXCsDM2JzMzLjUiTiA4NcKwMDgnMTUuNCJF!5e0!3m2!1sen!2sin!4v1234567890"
                   width="100%"
-                  height="200"
+                  height="180"
                   style={{ border: 0 }}
                   allowFullScreen
                   loading="lazy"

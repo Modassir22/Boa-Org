@@ -41,14 +41,10 @@ export function Navbar() {
     const token = localStorage.getItem('token');
     const cachedUserData = localStorage.getItem('user');
     
-    console.log('=== NAVBAR MOUNT DEBUG ===');
-    console.log('Token exists:', !!token);
-    console.log('User data exists:', !!cachedUserData);
     
     if (cachedUserData && token) {
       try {
         const userData = JSON.parse(cachedUserData);
-        console.log('Setting user from localStorage:', userData.email);
         setUser(userData);
       } catch (error) {
         console.error('Failed to parse user data:', error);
@@ -94,7 +90,6 @@ export function Navbar() {
     if (cachedUserData && token) {
       try {
         const userData = JSON.parse(cachedUserData);
-        console.log('User loaded from localStorage:', userData.email);
         setUser(userData);
         setIsAuthLoading(false);
       } catch (error) {
@@ -201,12 +196,12 @@ export function Navbar() {
   return (
     <>
       {/* Top Contact Bar */}
-      <div className="bg-gray-800 text-gray-300 py-2 gov-fade-in" style={{ opacity: 1, visibility: 'visible' }}>
+      <div className="bg-gray-800 text-gray-300 py-1.5 sm:py-2 gov-fade-in hidden sm:block" style={{ opacity: 1, visibility: 'visible' }}>
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center text-sm">
-            <div className="flex items-center gap-6">
+          <div className="flex justify-between items-center text-xs sm:text-sm">
+            <div className="flex items-center gap-4 sm:gap-6">
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
+                <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
                 <a
                   href={`mailto:${contactInfo?.email || 'info@boa.org.in'}`}
                   className="gov-transition-colors hover:text-white"
@@ -215,7 +210,7 @@ export function Navbar() {
                 </a>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
+                <Phone className="h-3 w-3 sm:h-4 sm:w-4" />
                 <a
                   href={`tel:${contactInfo?.mobile || '+916121234567'}`}
                   className="gov-transition-colors hover:text-white"
@@ -224,7 +219,7 @@ export function Navbar() {
                 </a>
               </div>
             </div>
-            <div className="text-xs text-gray-300 hidden md:block">
+            <div className="text-xs text-gray-300 hidden lg:block">
               Government Recognized Medical Association | Est. 1975
             </div>
           </div>
@@ -234,36 +229,36 @@ export function Navbar() {
       {/* Main Navbar */}
       <header className="sticky top-0 z-50 w-full bg-blue-900 border-b border-blue-800 shadow-sm navbar-sticky">
         <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-14 sm:h-16 items-center justify-between">
 
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3">
               {config.logo_url ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <img
                     src={config.logo_url}
                     alt="BOA Logo"
-                    className="h-10 w-auto object-contain"
+                    className="h-8 sm:h-10 w-auto object-contain"
                   />
                   <div className="hidden sm:flex flex-col">
-                    <span className="text-lg font-semibold text-white leading-tight">
+                    <span className="text-base sm:text-lg font-semibold text-white leading-tight">
                       Bihar Ophthalmic Association
                     </span>
-                    <span className="text-xs text-blue-200">
+                    <span className="text-xs text-blue-200 hidden md:block">
                       Government Recognized Medical Association
                     </span>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-800 border-2 border-blue-700">
-                    <Eye className="h-6 w-6 text-white" />
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-md bg-blue-800 border-2 border-blue-700">
+                    <Eye className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                   </div>
                   <div className="hidden sm:flex flex-col">
-                    <span className="text-lg font-semibold text-white leading-tight">
+                    <span className="text-base sm:text-lg font-semibold text-white leading-tight">
                       Bihar Ophthalmic Association
                     </span>
-                    <span className="text-xs text-blue-200">
+                    <span className="text-xs text-blue-200 hidden md:block">
                       Government Recognized Medical Association
                     </span>
                   </div>
@@ -277,7 +272,7 @@ export function Navbar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`navbar-link px-4 py-2 text-sm font-medium border-b-2 border-transparent gov-transition-colors ${isActive(item.path)
+                  className={`navbar-link px-3 xl:px-4 py-2 text-sm font-medium border-b-2 border-transparent gov-transition-colors ${isActive(item.path)
                       ? 'text-white border-blue-300 active'
                       : 'text-blue-100 hover:text-blue-200'
                     }`}
@@ -288,17 +283,17 @@ export function Navbar() {
             </nav>
 
             {/* Right Side */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
 
               {/* Notifications - Separate with Indicator */}
               <Link to="/notifications" className="relative">
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-md gov-transition-colors ${isActive('/notifications')
+                <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md gov-transition-colors ${isActive('/notifications')
                     ? 'bg-blue-800 text-white'
                     : 'text-blue-100 hover:bg-blue-800 hover:text-white'
                   }`}>
                   <div className="relative">
                     <svg
-                      className="h-5 w-5"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -313,7 +308,7 @@ export function Navbar() {
 
                     {/* Notification Badge - Only number */}
                     {unreadNotifications > 0 && (
-                      <span className="notification-badge absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white border-2 border-blue-900">
+                      <span className="notification-badge absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white border-2 border-blue-900">
                         {unreadNotifications > 9 ? '9+' : unreadNotifications}
                       </span>
                     )}
@@ -325,8 +320,8 @@ export function Navbar() {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-800 transition-colors">
-                      <Avatar className="h-8 w-8 border border-orange-300">
+                    <button className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md hover:bg-blue-800 transition-colors">
+                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border border-orange-300">
                         <AvatarImage src={user.avatar} alt={getUserName()} />
                         <AvatarFallback className="text-xs font-semibold bg-orange-500 text-white">
                           {getUserInitials()}
@@ -335,7 +330,7 @@ export function Navbar() {
                       <span className="hidden sm:block text-sm font-medium text-white">
                         {getUserName().split(' ')[0]}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-blue-200" />
+                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-200" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-60" align="end">
@@ -380,15 +375,15 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <Link to="/login">
-                    <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white">
+                    <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9">
                       Login
                     </Button>
                   </Link>
-                  <span className="text-blue-400">|</span>
+                  <span className="text-blue-400 text-xs">|</span>
                   <Link to="/admin/login">
-                    <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white">
+                    <Button variant="ghost" size="sm" className="gov-button text-blue-100 hover:bg-blue-800 hover:text-white text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9">
                       Admin
                     </Button>
                   </Link>
@@ -397,21 +392,21 @@ export function Navbar() {
 
               {/* Mobile Menu */}
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                <SheetTrigger asChild className="lg:hidden ml-2">
-                  <Button variant="ghost" size="icon" className="text-white hover:bg-blue-800">
-                    <Menu className="h-5 w-5" />
+                <SheetTrigger asChild className="lg:hidden ml-1 sm:ml-2">
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-blue-800 h-8 w-8 sm:h-9 sm:w-9">
+                    <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px]">
-                  <div className="flex flex-col gap-1 mt-6">
+                <SheetContent side="right" className="w-[280px] sm:w-[300px]">
+                  <div className="flex flex-col gap-1 mt-4 sm:mt-6">
 
                     {/* Mobile User Info */}
                     {user && (
-                      <div className="mb-6">
-                        <div className="flex items-center gap-3 px-4 py-4 bg-gray-50 rounded-lg border">
-                          <Avatar className="h-12 w-12 border-2 border-orange-400">
+                      <div className="mb-4 sm:mb-6">
+                        <div className="flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 rounded-lg border">
+                          <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-orange-400">
                             <AvatarImage src={user.avatar} alt={getUserName()} />
-                            <AvatarFallback className="bg-orange-500 text-white font-semibold">
+                            <AvatarFallback className="bg-orange-500 text-white font-semibold text-sm">
                               {getUserInitials()}
                             </AvatarFallback>
                           </Avatar>
@@ -427,7 +422,7 @@ export function Navbar() {
                     <Link
                       to="/notifications"
                       onClick={() => setMobileOpen(false)}
-                      className={`flex items-center justify-between px-4 py-3 mb-4 text-sm font-medium rounded-lg border-2 transition-colors ${isActive('/notifications')
+                      className={`flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 mb-3 sm:mb-4 text-sm font-medium rounded-lg border-2 transition-colors ${isActive('/notifications')
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : 'text-gray-700 hover:bg-gray-50 border-gray-200'
                         }`}
@@ -435,7 +430,7 @@ export function Navbar() {
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <svg
-                            className="h-5 w-5"
+                            className="h-4 w-4 sm:h-5 sm:w-5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -450,17 +445,17 @@ export function Navbar() {
                           {/* Pulsing indicator for mobile */}
                           {unreadNotifications > 0 && (
                             <div className="absolute -top-1 -right-1">
-                              <span className="flex h-3 w-3">
+                              <span className="flex h-2.5 w-2.5 sm:h-3 sm:w-3">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-red-500"></span>
                               </span>
                             </div>
                           )}
                         </div>
-                        <span>Notifications</span>
+                        <span className="text-sm">Notifications</span>
                       </div>
                       {unreadNotifications > 0 && (
-                        <Badge className="h-6 px-2 text-xs bg-red-600 text-white font-bold border-2 border-white">
+                        <Badge className="h-5 px-2 text-xs bg-red-600 text-white font-bold border-2 border-white">
                           {unreadNotifications > 9 ? '9+' : unreadNotifications}
                         </Badge>
                       )}
@@ -473,7 +468,7 @@ export function Navbar() {
                           key={item.path}
                           to={item.path}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors ${isActive(item.path)
+                          className={`flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium rounded-lg transition-colors ${isActive(item.path)
                               ? 'bg-blue-50 text-blue-700'
                               : 'text-gray-700 hover:bg-gray-50'
                             }`}
@@ -484,7 +479,7 @@ export function Navbar() {
                     </div>
 
                     {/* Mobile User Actions */}
-                    <div className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
                       {user ? (
                         <div className="space-y-2">
                           {user.membership_no && (
@@ -495,14 +490,14 @@ export function Navbar() {
                             </div>
                           )}
                           <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
-                            <Button variant="outline" className="w-full justify-start">
+                            <Button variant="outline" className="w-full justify-start text-sm h-9">
                               <LayoutDashboard className="mr-2 h-4 w-4" />
                               Dashboard
                             </Button>
                           </Link>
                           <Button
                             variant="destructive"
-                            className="w-full justify-start bg-red-50 text-red-600 hover:bg-red-100 border-0"
+                            className="w-full justify-start bg-red-50 text-red-600 hover:bg-red-100 border-0 text-sm h-9"
                             onClick={() => {
                               handleLogout();
                               setMobileOpen(false);
@@ -515,12 +510,12 @@ export function Navbar() {
                       ) : (
                         <div className="space-y-2">
                           <Link to="/login" onClick={() => setMobileOpen(false)}>
-                            <Button variant="outline" className="w-full">
+                            <Button variant="outline" className="w-full text-sm h-9">
                               Login
                             </Button>
                           </Link>
                           <Link to="/admin/login" onClick={() => setMobileOpen(false)}>
-                            <Button className="w-full bg-blue-600 text-white hover:bg-blue-700">
+                            <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 text-sm h-9">
                               Admin Login
                             </Button>
                           </Link>

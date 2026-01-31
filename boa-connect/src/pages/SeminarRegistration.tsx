@@ -72,18 +72,6 @@ export default function SeminarRegistration() {
     // Test backend connection
     razorpayService.testConnection();
 
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast({
-        title: 'Login Required',
-        description: 'Please login to register for seminars',
-        variant: 'destructive',
-      });
-      navigate('/login');
-      return;
-    }
-
     loadSeminarData();
   }, [id]);
 
@@ -91,7 +79,6 @@ export default function SeminarRegistration() {
   useEffect(() => {
     // Don't run if slabs or categories aren't loaded yet
     if (feeSlabs.length === 0 || feeCategories.length === 0) {
-      console.log('Waiting for slabs and categories to load...');
       return;
     }
 
@@ -103,20 +90,15 @@ export default function SeminarRegistration() {
     if (delegateType) {
       const categoryName = delegateType;
 
-      console.log('=== FEE CATEGORY MATCHING DEBUG ===');
-      console.log('Looking for category:', categoryName);
-      console.log('Available categories:', feeCategories.map(c => ({ id: c.id, name: c.name })));
 
       // Find matching fee category with flexible matching
       const matchingFeeCategory = feeCategories.find(cat => {
         const catNameNormalized = cat.name.toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
         const searchNameNormalized = categoryName.toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
 
-        console.log(`Comparing: "${catNameNormalized}" with "${searchNameNormalized}"`);
 
         // Try exact match first
         if (catNameNormalized === searchNameNormalized) {
-          console.log(`✓ Exact match found: ${cat.name}`);
           return true;
         }
 
@@ -124,7 +106,7 @@ export default function SeminarRegistration() {
         if (searchNameNormalized === 'life-member' || searchNameNormalized.includes('life')) {
           // Must match exactly "life-member" or "life member" 
           if (catNameNormalized.includes('life') && catNameNormalized.includes('member')) {
-            console.log(`✓ Life Member exact match: ${cat.name}`);
+            
             return true;
           }
           return false;
@@ -133,7 +115,7 @@ export default function SeminarRegistration() {
         // Special case: non-boa-member should match "Non-BOA Member"
         if (searchNameNormalized.includes('non-boa') || searchNameNormalized.includes('non-member')) {
           if (catNameNormalized.includes('non') && catNameNormalized.includes('boa')) {
-            console.log(`✓ Non-BOA Member match: ${cat.name}`);
+            
             return true;
           }
           return false;
@@ -142,7 +124,7 @@ export default function SeminarRegistration() {
         // Try partial match (contains) - but exclude specific cases handled above
         if (!searchNameNormalized.includes('life') && !searchNameNormalized.includes('boa') && 
             (catNameNormalized.includes(searchNameNormalized) || searchNameNormalized.includes(catNameNormalized))) {
-          console.log(`✓ Partial match found: ${cat.name}`);
+          
           return true;
         }
 
@@ -150,7 +132,7 @@ export default function SeminarRegistration() {
       });
 
       if (matchingFeeCategory) {
-        console.log(`Selected fee category: ${matchingFeeCategory.name} (ID: ${matchingFeeCategory.id})`);
+       
         setSelectedCategory(matchingFeeCategory.id.toString());
 
         // Auto-select current slab based on date
@@ -158,15 +140,8 @@ export default function SeminarRegistration() {
         today.setHours(0, 0, 0, 0); // Start of today
         let currentSlab = null;
 
-        console.log('=== AUTO SLAB SELECTION DEBUG ===');
-        console.log('Today:', today.toISOString());
-        console.log('Available slabs:', feeSlabs);
 
         for (const slab of feeSlabs) {
-          console.log(`Checking slab: ${slab.label}`);
-          console.log(`  dateRange: ${slab.dateRange}`);
-          console.log(`  startDate: ${slab.startDate}`);
-          console.log(`  endDate: ${slab.endDate}`);
 
           // Use database dates if available, otherwise parse text
           let endDate = null;
@@ -175,7 +150,7 @@ export default function SeminarRegistration() {
             // Use database end_date field
             endDate = new Date(slab.endDate);
             endDate.setHours(23, 59, 59, 999); // End of day
-            console.log(`  Using database endDate: ${endDate.toISOString()}`);
+           
           } else {
             // Fallback: Parse date range text
             const dateRange = slab.dateRange;
@@ -193,18 +168,15 @@ export default function SeminarRegistration() {
                 const monthNum = months[month.toLowerCase().substring(0, 3)];
                 endDate = new Date(parseInt(year), monthNum, parseInt(day));
                 endDate.setHours(23, 59, 59, 999);
-                console.log(`  Parsed from text: ${endDate.toISOString()}`);
+               
               }
             }
           }
 
           if (endDate) {
-            console.log(`  Comparing: today (${today.toISOString()}) <= endDate (${endDate.toISOString()})`);
-            console.log(`  Result: ${today <= endDate}`);
 
             if (today <= endDate) {
               currentSlab = slab;
-              console.log(`  ✓ SELECTED SLAB: ${slab.label}`);
               break;
             } else {
               console.log(`  ✗ Date passed, skipping`);
@@ -217,12 +189,12 @@ export default function SeminarRegistration() {
         // If no slab found (all dates passed), use last slab (Spot registration)
         if (!currentSlab && feeSlabs.length > 0) {
           currentSlab = feeSlabs[feeSlabs.length - 1];
-          console.log(`No matching slab found, using last slab: ${currentSlab.label}`);
+          
         }
 
         if (currentSlab) {
           setSelectedSlab(currentSlab.id.toString());
-          console.log(`Final selected slab ID: ${currentSlab.id}`);
+          
         }
       } else {
         // If no exact match, clear selections
@@ -253,10 +225,6 @@ export default function SeminarRegistration() {
         fees: cat.fees || {}
       }));
 
-      console.log('=== FEE STRUCTURE DEBUG ===');
-      console.log('Raw seminar data:', response.seminar);
-      console.log('Transformed categories:', categories);
-      console.log('Categories with fees:', categories.map(c => ({ id: c.id, name: c.name, fees: c.fees })));
 
       setFeeCategories(categories);
 
@@ -269,9 +237,6 @@ export default function SeminarRegistration() {
         endDate: slab.end_date
       }));
 
-      console.log('=== FEE SLABS DEBUG ===');
-      console.log('Transformed slabs:', slabs);
-      console.log('Current date:', new Date().toISOString());
 
       setFeeSlabs(slabs);
 
@@ -315,20 +280,6 @@ export default function SeminarRegistration() {
   };
 
   const generateOfflineRegistrationForm = async () => {
-    // Check authentication first
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (!token || !user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please login to download the registration form',
-        variant: 'destructive',
-      });
-      navigate('/login', { state: { from: `/seminar/${seminar?.id}/register` } });
-      return;
-    }
-
     try {
       if (!seminar?.id) {
         toast({
@@ -344,23 +295,11 @@ export default function SeminarRegistration() {
       const response = await fetch(`${API_BASE_URL}/api/generate-seminar-pdf/${seminar.id}?t=${timestamp}`, {
         cache: 'no-cache',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          toast({
-            title: 'Authentication Expired',
-            description: 'Please login again to download the form',
-            variant: 'destructive',
-          });
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login', { state: { from: `/seminar/${seminar.id}/register` } });
-          return;
-        }
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
@@ -881,25 +820,20 @@ export default function SeminarRegistration() {
 
   const handlePayment = async () => {
     try {
-      // Get user ID from token
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast({
-          title: 'Authentication Error',
-          description: 'Please login to continue',
-          variant: 'destructive',
-        });
-        navigate('/login');
-        return;
-      }
-
-      // Decode user ID from token (simple decode, in production use proper JWT decode)
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const userId = payload.id;
-
-      // Prepare registration data
+      // Prepare registration data using form information instead of user token
       const registrationData = {
-        user_id: userId,
+        // Use form data instead of user_id from token
+        user_info: {
+          title: title,
+          full_name: fullName,
+          surname: surname,
+          email: email,
+          mobile: mobile,
+          address: `${house} ${street} ${landmark}`.trim(),
+          city: city,
+          state: state,
+          pincode: pinCode
+        },
         seminar_id: seminar.id,
         category_id: parseInt(selectedCategory),
         slab_id: parseInt(selectedSlab),
@@ -1172,6 +1106,7 @@ export default function SeminarRegistration() {
                       <Label>Landmark</Label>
                       <Input placeholder="Enter landmark" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
                     </div>
+
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">

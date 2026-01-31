@@ -116,9 +116,10 @@ router.delete('/resources/:id', adminAuth, adminController.deleteResource);
 // All Payments
 router.get('/payments/all', adminAuth, adminController.getAllPayments);
 router.get('/payments/latest', adminAuth, adminController.getLatestPayments);
+router.get('/payments/export-all', adminAuth, adminController.exportAllPayments);
 router.get('/payments/:id/details', adminAuth, adminController.getPaymentDetails);
 router.get('/payments/:id/pdf', adminAuth, adminController.downloadPaymentPDF);
-router.get('/payments/export-all', adminAuth, adminController.exportAllPayments);
+router.delete('/payments/:id', adminAuth, adminController.deletePayment);
 
 // Testimonials Management
 router.get('/testimonials', adminAuth, adminController.getAllTestimonials);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Download, Eye, FileText, Filter } from 'lucide-react';
+import { Search, Download, Eye, FileText, Filter, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { exportToCSV, formatPaymentForExport } from '@/lib/exportUtils';
 import {
@@ -11,6 +11,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -56,6 +66,9 @@ export default function AllPaymentsTab() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
@@ -177,6 +190,51 @@ export default function AllPaymentsTab() {
       title: 'Success',
       description: `Exported ${dataToExport.length} payments to CSV`,
     });
+  };
+
+  const handleDeletePayment = (payment: Payment) => {
+    setPaymentToDelete(payment);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePayment = async () => {
+    if (!paymentToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`${API_BASE_URL}/api/admin/payments/${paymentToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Remove the payment from the local state
+        setPayments(prev => prev.filter(p => p.id !== paymentToDelete.id));
+        
+        toast({
+          title: 'Success',
+          description: 'Payment deleted successfully',
+        });
+      } else {
+        throw new Error(data.message || 'Failed to delete payment');
+      }
+    } catch (error) {
+      console.error('Delete payment error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete payment. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setPaymentToDelete(null);
+    }
   };
 
   if (isLoading) {
@@ -331,6 +389,7 @@ export default function AllPaymentsTab() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleViewDetails(payment)}
+                          title="View Details"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -338,8 +397,18 @@ export default function AllPaymentsTab() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDownloadPDF(payment.id)}
+                          title="Download Receipt"
                         >
                           <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePayment(payment)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Delete Payment"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </td>
@@ -489,6 +558,36 @@ export default function AllPaymentsTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this payment? This action cannot be undone.
+              {paymentToDelete && (
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <p><strong>User:</strong> {paymentToDelete.user_name}</p>
+                  <p><strong>Amount:</strong> ₹{paymentToDelete.amount.toLocaleString()}</p>
+                  <p><strong>Type:</strong> {paymentToDelete.payment_type}</p>
+                  <p><strong>Transaction ID:</strong> {paymentToDelete.transaction_id}</p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeletePayment}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Payment'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

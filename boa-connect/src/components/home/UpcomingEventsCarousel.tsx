@@ -133,7 +133,6 @@ export function UpcomingEventsCarousel() {
   };
 
   const handleEventAction = (event: any, actionType: 'details' | 'download') => {
-    console.log('Event action triggered:', actionType, event);
     
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
@@ -152,30 +151,19 @@ export function UpcomingEventsCarousel() {
     }
 
     if (actionType === 'details') {
-      console.log('Navigating to event details for:', event.title);
-      console.log('Event object:', event);
-      console.log('Seminar ID:', event.seminar_id);
-      console.log('Link URL:', event.link_url);
       
       // Navigate to seminar detail page
       if (event.seminar_id) {
-        console.log('Navigating to seminar detail:', event.seminar_id);
         navigate(`/seminar/${event.seminar_id}`);
       } else if (event.id) {
-        // Try using event.id if seminar_id is not available
-        console.log('Using event.id for navigation:', event.id);
         navigate(`/seminar/${event.id}`);
       } else if (event.link_url) {
-        console.log('Opening external link:', event.link_url);
         if (event.link_url.startsWith('http://') || event.link_url.startsWith('https://')) {
           window.open(event.link_url, '_blank');
         } else {
           navigate(event.link_url);
         }
       } else {
-        // Default - show event info and try to navigate anyway
-        console.log('No seminar_id or link_url found, showing event info');
-        console.log('Available event properties:', Object.keys(event));
         
         toast({
           title: 'Navigation Issue',
@@ -184,7 +172,6 @@ export function UpcomingEventsCarousel() {
         });
       }
     } else if (actionType === 'download') {
-      console.log('Generating PDF circular for:', event.title);
       // Generate and download PDF circular
       generateEventCircularPDF(event);
     }

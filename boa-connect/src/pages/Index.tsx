@@ -11,7 +11,7 @@ import { SeminarPopup } from '@/components/home/SeminarPopup';
 const Index = () => {
   return (
     <Layout>
-      <div className="page-enter p-10">
+      <div className="page-enter px-4 sm:px-6 lg:px-10">
         <HeroSection />
         <div className="section-enter">
           <StatsSection />
