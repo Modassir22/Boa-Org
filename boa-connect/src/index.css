@@ -1273,6 +1273,67 @@ button[role="switch"] path,
     max-width: 100%;
   }
 }
+/* ==================== NEWS GALLERY SECTION IMAGE FIX ==================== */
+
+/* Ensure gallery images in NewsGallerySection start from absolute top */
+.aspect-square {
+  line-height: 0 !important;
+  font-size: 0 !important;
+  position: relative !important;
+}
+
+.aspect-square img {
+  display: block !important;
+  vertical-align: top !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Remove any default spacing from image containers */
+.aspect-square::before,
+.aspect-square::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Force remove any inherited spacing */
+.grid .aspect-square,
+.grid .aspect-square img {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Reset any Tailwind aspect-ratio pseudo-elements */
+.aspect-square::before {
+  display: none !important;
+  content: none !important;
+  padding-bottom: 0 !important;
+}
+
+/* Additional aggressive reset for gallery images */
+.grid .bg-white .aspect-square {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.grid .bg-white .aspect-square img {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
 /* ==================== IMAGE OBJECT-FIT FIXES ==================== */
 
 /* Fix for news and gallery images to show complete images */

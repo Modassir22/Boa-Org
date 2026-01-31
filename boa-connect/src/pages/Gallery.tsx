@@ -102,7 +102,7 @@ export default function Gallery() {
           <div className="absolute bottom-10 right-10 w-20 h-20 bg-purple-500/5 rounded-full blur-xl hero-decorative" style={{animationDelay: '2s'}}></div>
         </div>
 
-        <div className="container mx-auto px-12 pb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-12 pb-12">
 
           {/* Optimized Gallery Grid */}
           {galleryImages.length === 0 ? (
@@ -111,92 +111,144 @@ export default function Gallery() {
               <h3 className="text-xl font-semibold text-muted-foreground mb-2">No Images Available</h3>
               <p className="text-muted-foreground">Check back later for new gallery images.</p>
             </div>
-          ) : galleryImages.length <= 6 ? (
-            // Simple grid for fewer images to avoid empty spaces
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {galleryImages.map((image) => (
-                <div
-                  key={image.id}
-                  className="aspect-square group cursor-pointer overflow-hidden rounded-xl bg-gray-100 hover:shadow-xl transition-all duration-300 relative"
-                  style={{ backgroundColor: '#f8f9fa' }}
-                  onClick={() => setSelectedImage(image)}
-                >
-                  <img
-                    src={image.image_url}
-                    alt={image.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/api/placeholder/400/400';
-                    }}
-                  />
-                  
-                  {/* Overlay with title */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="text-white font-semibold text-sm md:text-base line-clamp-2 mb-1">
-                        {image.title}
-                      </h3>
-                      {image.description && (
-                        <p className="text-white/80 text-xs line-clamp-1">
-                          {image.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Hover effect overlay */}
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                      <ImageIcon className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           ) : (
-            // Bento grid for more images
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-[200px] gap-3">
-              {galleryImages.map((image, index) => (
-                <div
-                  key={image.id}
-                  className={`${getBentoClass(index)} group cursor-pointer overflow-hidden rounded-xl bg-gray-100 hover:shadow-xl transition-all duration-300 relative`}
-                  style={{ backgroundColor: '#f8f9fa' }}
-                  onClick={() => setSelectedImage(image)}
-                >
-                  <img
-                    src={image.image_url}
-                    alt={image.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/api/placeholder/400/400';
-                    }}
-                  />
-                  
-                  {/* Overlay with title */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="text-white font-semibold text-sm md:text-base line-clamp-2 mb-1">
-                        {image.title}
-                      </h3>
-                      {image.description && (
-                        <p className="text-white/80 text-xs line-clamp-1">
-                          {image.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+            <>
+              {/* Mobile View - Single Column */}
+              <div className="block sm:hidden">
+                <div className="grid grid-cols-1 gap-4">
+                  {galleryImages.map((image) => (
+                    <div
+                      key={image.id}
+                      className="aspect-square group cursor-pointer overflow-hidden rounded-xl bg-gray-100 hover:shadow-xl transition-all duration-300 relative"
+                      style={{ backgroundColor: '#f8f9fa' }}
+                      onClick={() => setSelectedImage(image)}
+                    >
+                      <img
+                        src={image.image_url}
+                        alt={image.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/api/placeholder/400/400';
+                        }}
+                      />
+                      
+                      {/* Overlay with title */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h3 className="text-white font-semibold text-sm line-clamp-2 mb-1">
+                            {image.title}
+                          </h3>
+                          {image.description && (
+                            <p className="text-white/80 text-xs line-clamp-1">
+                              {image.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* Hover effect overlay */}
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                      <ImageIcon className="h-6 w-6 text-white" />
+                      {/* Hover effect overlay */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                          <ImageIcon className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+
+              {/* Desktop/Tablet View - Bento Grid */}
+              <div className="hidden sm:block">
+                {galleryImages.length <= 6 ? (
+                  // Simple grid for fewer images
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {galleryImages.map((image) => (
+                      <div
+                        key={image.id}
+                        className="aspect-square group cursor-pointer overflow-hidden rounded-xl bg-gray-100 hover:shadow-xl transition-all duration-300 relative"
+                        style={{ backgroundColor: '#f8f9fa' }}
+                        onClick={() => setSelectedImage(image)}
+                      >
+                        <img
+                          src={image.image_url}
+                          alt={image.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/api/placeholder/400/400';
+                          }}
+                        />
+                        
+                        {/* Overlay with title */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <h3 className="text-white font-semibold text-sm md:text-base line-clamp-2 mb-1">
+                              {image.title}
+                            </h3>
+                            {image.description && (
+                              <p className="text-white/80 text-xs line-clamp-1">
+                                {image.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Hover effect overlay */}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                            <ImageIcon className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  // Bento grid for more images
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-[200px] gap-3">
+                    {galleryImages.map((image, index) => (
+                      <div
+                        key={image.id}
+                        className={`${getBentoClass(index)} group cursor-pointer overflow-hidden rounded-xl bg-gray-100 hover:shadow-xl transition-all duration-300 relative`}
+                        style={{ backgroundColor: '#f8f9fa' }}
+                        onClick={() => setSelectedImage(image)}
+                      >
+                        <img
+                          src={image.image_url}
+                          alt={image.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/api/placeholder/400/400';
+                          }}
+                        />
+                        
+                        {/* Overlay with title */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <h3 className="text-white font-semibold text-sm md:text-base line-clamp-2 mb-1">
+                              {image.title}
+                            </h3>
+                            {image.description && (
+                              <p className="text-white/80 text-xs line-clamp-1">
+                                {image.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Hover effect overlay */}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                            <ImageIcon className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           {/* Image Modal */}

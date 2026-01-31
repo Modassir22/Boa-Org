@@ -53,13 +53,13 @@ const StatCounter = ({ stat }: { stat: any }) => {
   const animatedValue = useCounter(parseInt(stat.stat_value), 2000);
 
   return (
-    <div className="flex items-center gap-2 animate-fade-in">
-      <IconComponent className="h-5 w-5 text-black" />
+    <div className="flex items-center gap-1 sm:gap-2 animate-fade-in">
+      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-[#09637E]" />
       <div>
-        <span className="text-xl font-bold text-black">
+        <span className="text-base sm:text-xl font-bold text-[#09637E]">
           {animatedValue}+
         </span>
-        <span className="text-sm text-black ml-1">
+        <span className="text-xs sm:text-sm text-[#088395] ml-1">
           {stat.stat_label}
         </span>
       </div>
@@ -128,7 +128,7 @@ export function HeroStatsSection() {
   }
 
   return (
-    <div className="flex gap-6 justify-center lg:justify-start mt-4">
+    <div className="flex gap-3 sm:gap-6 justify-center lg:justify-start mt-4">
       {stats.map((stat) => (
         <StatCounter key={stat.stat_key} stat={stat} />
       ))}

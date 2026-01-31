@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Image, Calendar, Clock, Eye, ArrowRight } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Calendar, Clock, Eye, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '@/lib/utils';
+import { Card, CardContent } from '../ui/card';
 
 interface NewsItem {
   id: number;
@@ -189,20 +189,34 @@ export function NewsGallerySection() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {galleryImages.slice(0, 3).map((image) => (
-                <Card key={image.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 group cursor-pointer">
-                  <div className="aspect-video overflow-hidden">
+                <div key={image.id} className="bg-white border border-gray-200 hover:shadow-lg transition-shadow duration-300 group cursor-pointer overflow-hidden" style={{ borderRadius: '0.5rem' }}>
+                  {/* Image container with no spacing - using absolute positioning */}
+                  <div className="w-full aspect-square relative overflow-hidden" style={{ margin: 0, padding: 0, display: 'block', lineHeight: 0, fontSize: 0 }}>
                     <img
                       src={image.image_url}
                       alt={image.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      style={{ 
+                        top: 0,
+                        left: 0,
+                        margin: 0, 
+                        padding: 0,
+                        display: 'block',
+                        verticalAlign: 'top',
+                        borderTopLeftRadius: '0.5rem',
+                        borderTopRightRadius: '0.5rem',
+                        borderBottomLeftRadius: '0px',
+                        borderBottomRightRadius: '0px'
+                      }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/api/placeholder/400/250';
+                        target.src = '/api/placeholder/400/400';
                       }}
                     />
                   </div>
 
-                  <CardContent className="p-4">
+                  {/* Content section */}
+                  <div className="p-4">
                     <h4 className="font-semibold text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                       {image.title}
                     </h4>
@@ -223,8 +237,8 @@ export function NewsGallerySection() {
                         View Gallery →
                       </Link>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
 
