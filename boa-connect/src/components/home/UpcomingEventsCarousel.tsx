@@ -311,7 +311,7 @@ export function UpcomingEventsCarousel() {
 
             <div class="section">
               <div class="section-title">About the Event</div>
-              <p>${event.description || 'Join us for this important event organized by Ophthalmic Association Of Bihar. This event will feature expert speakers, networking opportunities, and the latest developments in ophthalmology.'}</p>
+              <p>${event.description || 'Join us for this important event organized by Ophthalmic Association Of Bihar. This event will feature expert speakers, networking opportunities, and the latest developments in ophthalmic care.'}</p>
             </div>
 
             <div class="section">

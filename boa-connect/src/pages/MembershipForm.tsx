@@ -211,7 +211,7 @@ export default function MembershipForm() {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     const enclosures = [
-      '1. Self attested copy of marksheet of diploma in ophthalmic assistant/para ophthalmology',
+      '1. Self attested copy of marksheet of diploma in ophthalmic assistant/para ophthalmic care',
       '   Or bachelor in ophthalmic technology/technique, for student ID card',
       '2. Two passport size colour photo',
       '3. Self attested copy of AADHAR'

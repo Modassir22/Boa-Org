@@ -91,7 +91,7 @@ export default function Login() {
                         Ophthalmic Association Of Bihar
                       </h2>
                       <p className="text-sm text-white/80">
-                        Advancing eye care excellence through education, research, and collaboration since 1975
+                        Advancing eye care excellence through education, research, and collaboration since 2021
                       </p>
                     </div>
 
@@ -237,7 +237,7 @@ export default function Login() {
                 {/* Mobile - Show BOA Info */}
                 <div className="lg:hidden mt-6 pt-6 border-t" style={{ borderColor: '#E5E7EB' }}>
                   <p className="text-center text-xs" style={{ color: '#616E7C' }}>
-                    Advancing eye care excellence since 1975
+                    Advancing eye care excellence since 2021
                   </p>
                 </div>
               </div>

@@ -216,7 +216,7 @@ export default function SeminarsTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <Label>Seminar Name *</Label>
-                  <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="e.g., Annual Ophthalmology Conference 2026" />
+                  <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="e.g., Annual Ophthalmic Conference 2026" />
                 </div>
                 <div className="col-span-2">
                   <Label>Title/Tagline</Label>

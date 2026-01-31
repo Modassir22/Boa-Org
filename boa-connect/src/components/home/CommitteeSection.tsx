@@ -77,12 +77,9 @@ export function CommitteeSection() {
     <section className="gov-section-gray">
       <div className="container">
         <div className="text-center mb-16">
-          <h2 className="gov-section-title p-2 bg-[#0B3C5D] text-white">
+          <h2 className="gov-section-title p-2 bg-[#09638E] text-white">
             Our Committee
           </h2>
-          <p className="gov-section-subtitle">
-            Meet the dedicated team leading our organization
-          </p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto">

@@ -48,7 +48,7 @@ export default function CMEPrograms() {
       fee: '₹1,000 (Members) / ₹1,500 (Non-members)'
     },
     {
-      title: 'Pediatric Ophthalmology Workshop',
+      title: 'Pediatric Ophthalmic Workshop',
       date: '2026-03-25',
       time: '9:00 AM - 3:00 PM',
       venue: 'Nalanda Medical College, Bihar Sharif',

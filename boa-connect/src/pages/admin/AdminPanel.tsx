@@ -24,6 +24,9 @@ import MembershipManagementTab from './tabs/MembershipManagementTab';
 import ResourcesTab from './tabs/ResourcesTab';
 import AllPaymentsTab from './tabs/AllPaymentsTab';
 import TestimonialsTab from './tabs/TestimonialsTab';
+import NewsTab from './tabs/NewsTab';
+import GalleryManagementTab from './tabs/GalleryManagementTab';
+import StatsTab from './tabs/StatsTab';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -113,6 +116,7 @@ export default function AdminPanel() {
       {/* Tab Content */}
       <div className="bg-card rounded-2xl border border-border p-6">
         {activeTab === 'statistics' && <StatisticsTab />}
+        {activeTab === 'stats' && <StatsTab />}
         {activeTab === 'seminars' && <SeminarsTab />}
         {activeTab === 'fees' && <FeeStructureTab />}
         {activeTab === 'registrations' && <RegistrationsTab />}
@@ -124,6 +128,8 @@ export default function AdminPanel() {
         {activeTab === 'certification' && <CertificationTab />}
         {activeTab === 'upcoming' && <UpcomingEventsTab />}
         {activeTab === 'gallery' && <GalleryTab />}
+        {activeTab === 'gallery-management' && <GalleryManagementTab />}
+        {activeTab === 'news' && <NewsTab />}
         {activeTab === 'testimonials' && <TestimonialsTab />}
         {activeTab === 'membership-categories' && <MembershipCategoriesTab />}
         {activeTab === 'resources' && <ResourcesTab />}

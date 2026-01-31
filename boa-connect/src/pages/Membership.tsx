@@ -182,7 +182,7 @@ export default function Membership() {
   const faqs = [
     {
       question: 'Who can become a member of BOA?',
-      answer: 'Any qualified ophthalmologist registered with Medical Council of India or ophthalmology residents can apply for BOA membership.'
+      answer: 'Any qualified ophthalmologist registered with Medical Council of India or ophthalmic residents can apply for BOA membership.'
     },
     {
       question: 'How long does the approval process take?',

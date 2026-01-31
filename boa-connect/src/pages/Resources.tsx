@@ -68,7 +68,7 @@ export default function Resources() {
     {
       title: 'All India Ophthalmological Society',
       url: 'https://aios.org',
-      description: 'National ophthalmology association'
+      description: 'National ophthalmic association'
     },
     {
       title: 'National Programme for Control of Blindness',
@@ -76,9 +76,9 @@ export default function Resources() {
       description: 'Government initiative for eye care'
     },
     {
-      title: 'Indian Journal of Ophthalmology',
+      title: 'Indian Journal of Ophthalmic Care',
       url: 'https://www.ijo.in',
-      description: 'Leading ophthalmology journal'
+      description: 'Leading ophthalmic journal'
     },
     {
       title: 'Medical Council of India',

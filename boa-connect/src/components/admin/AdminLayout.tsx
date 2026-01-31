@@ -167,6 +167,7 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
       title: 'Overview',
       items: [
         { id: 'statistics', label: 'Statistics', icon: BarChart },
+        { id: 'stats', label: 'Homepage Stats', icon: BarChart },
       ]
     },
     {
@@ -195,8 +196,10 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
     {
       title: 'Content Management',
       items: [
+        { id: 'news', label: 'News', icon: FileText },
         { id: 'upcoming', label: 'Upcoming Events', icon: Image },
         { id: 'gallery', label: 'Gallery', icon: Image },
+        { id: 'gallery-management', label: 'Gallery Management', icon: Image },
         { id: 'testimonials', label: 'Testimonials', icon: Award },
         { id: 'committee', label: 'Committee', icon: User },
         { id: 'resources', label: 'Resources', icon: FileText },

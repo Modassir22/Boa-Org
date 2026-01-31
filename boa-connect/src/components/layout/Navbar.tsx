@@ -187,6 +187,7 @@ export function Navbar() {
     { path: '/', label: 'Home' },
     { path: '/about', label: 'About Us' },
     { path: '/seminars', label: 'Events' },
+    { path: '/news', label: 'News' },
     { path: '/membership', label: 'Member Zone' },
     { path: '/notifications', label: 'Notifications' },
     { path: '/gallery', label: 'Gallery' },

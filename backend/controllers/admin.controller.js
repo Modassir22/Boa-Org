@@ -3680,3 +3680,308 @@ exports.deletePayment = async (req, res) => {
     connection.release();
   }
 };
+
+// ==================== NEWS MANAGEMENT ====================
+
+// Get all news (admin)
+exports.getAllNews = async (req, res) => {
+  try {
+    const [news] = await promisePool.query(
+      `SELECT id, title, content, image_url, status, created_at, updated_at 
+       FROM news 
+       ORDER BY created_at DESC`
+    );
+
+    res.json({
+      success: true,
+      news: news
+    });
+  } catch (error) {
+    console.error('Get all news error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch news'
+    });
+  }
+};
+
+// Create news
+exports.createNews = async (req, res) => {
+  try {
+    const { title, content, status = 'active' } = req.body;
+    let image_url = null;
+
+    // Handle image upload
+    if (req.file) {
+      const cloudinary = require('../config/cloudinary');
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'boa-news',
+        resource_type: 'image'
+      });
+      image_url = result.secure_url;
+    }
+
+    const [result] = await promisePool.query(
+      `INSERT INTO news (title, content, image_url, status) 
+       VALUES (?, ?, ?, ?)`,
+      [title, content, image_url, status]
+    );
+
+    res.json({
+      success: true,
+      message: 'News created successfully',
+      news_id: result.insertId
+    });
+  } catch (error) {
+    console.error('Create news error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create news'
+    });
+  }
+};
+
+// Update news
+exports.updateNews = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content, status } = req.body;
+    let image_url = null;
+
+    // Handle image upload
+    if (req.file) {
+      const cloudinary = require('../config/cloudinary');
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'boa-news',
+        resource_type: 'image'
+      });
+      image_url = result.secure_url;
+    }
+
+    let query = 'UPDATE news SET title = ?, content = ?, status = ?';
+    let params = [title, content, status];
+
+    if (image_url) {
+      query += ', image_url = ?';
+      params.push(image_url);
+    }
+
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    await promisePool.query(query, params);
+
+    res.json({
+      success: true,
+      message: 'News updated successfully'
+    });
+  } catch (error) {
+    console.error('Update news error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update news'
+    });
+  }
+};
+
+// Delete news
+exports.deleteNews = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query('DELETE FROM news WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'News deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete news error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete news'
+    });
+  }
+};
+
+// Toggle news status
+exports.toggleNewsStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query(
+      `UPDATE news SET status = CASE 
+         WHEN status = 'active' THEN 'inactive' 
+         ELSE 'active' 
+       END 
+       WHERE id = ?`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: 'News status updated successfully'
+    });
+  } catch (error) {
+    console.error('Toggle news status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update news status'
+    });
+  }
+};
+
+// ==================== GALLERY IMAGES MANAGEMENT ====================
+
+// Get all gallery images (admin)
+exports.getAllGalleryImages = async (req, res) => {
+  try {
+    const [images] = await promisePool.query(
+      `SELECT id, title, description, image_url, status, created_at, updated_at 
+       FROM gallery_images 
+       ORDER BY created_at DESC`
+    );
+
+    res.json({
+      success: true,
+      images: images
+    });
+  } catch (error) {
+    console.error('Get all gallery images error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch gallery images'
+    });
+  }
+};
+
+// Create gallery image
+exports.createGalleryImage = async (req, res) => {
+  try {
+    const { title, description, status = 'active' } = req.body;
+    let image_url = null;
+
+    // Handle image upload (required for gallery)
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image is required for gallery'
+      });
+    }
+
+    const cloudinary = require('../config/cloudinary');
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'boa-gallery',
+      resource_type: 'image'
+    });
+    image_url = result.secure_url;
+
+    const [result_db] = await promisePool.query(
+      `INSERT INTO gallery_images (title, description, image_url, status) 
+       VALUES (?, ?, ?, ?)`,
+      [title, description, image_url, status]
+    );
+
+    res.json({
+      success: true,
+      message: 'Gallery image added successfully',
+      image_id: result_db.insertId
+    });
+  } catch (error) {
+    console.error('Create gallery image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add gallery image'
+    });
+  }
+};
+
+// Update gallery image
+exports.updateGalleryImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, status } = req.body;
+    let image_url = null;
+
+    // Handle image upload
+    if (req.file) {
+      const cloudinary = require('../config/cloudinary');
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'boa-gallery',
+        resource_type: 'image'
+      });
+      image_url = result.secure_url;
+    }
+
+    let query = 'UPDATE gallery_images SET title = ?, description = ?, status = ?';
+    let params = [title, description, status];
+
+    if (image_url) {
+      query += ', image_url = ?';
+      params.push(image_url);
+    }
+
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    await promisePool.query(query, params);
+
+    res.json({
+      success: true,
+      message: 'Gallery image updated successfully'
+    });
+  } catch (error) {
+    console.error('Update gallery image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update gallery image'
+    });
+  }
+};
+
+// Delete gallery image
+exports.deleteGalleryImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query('DELETE FROM gallery_images WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'Gallery image deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete gallery image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete gallery image'
+    });
+  }
+};
+
+// Toggle gallery image status
+exports.toggleGalleryImageStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await promisePool.query(
+      `UPDATE gallery_images SET status = CASE 
+         WHEN status = 'active' THEN 'inactive' 
+         ELSE 'active' 
+       END 
+       WHERE id = ?`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Gallery image status updated successfully'
+    });
+  } catch (error) {
+    console.error('Toggle gallery image status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update gallery image status'
+    });
+  }
+};

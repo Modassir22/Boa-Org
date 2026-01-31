@@ -128,4 +128,26 @@ router.put('/testimonials/:id', adminAuth, adminController.updateTestimonial);
 router.delete('/testimonials/:id', adminAuth, adminController.deleteTestimonial);
 router.put('/testimonials/:id/toggle-active', adminAuth, adminController.toggleTestimonialActive);
 
+// News Management
+router.get('/news', adminAuth, adminController.getAllNews);
+router.post('/news', adminAuth, upload.single('image'), adminController.createNews);
+router.put('/news/:id', adminAuth, upload.single('image'), adminController.updateNews);
+router.delete('/news/:id', adminAuth, adminController.deleteNews);
+router.put('/news/:id/toggle-status', adminAuth, adminController.toggleNewsStatus);
+
+// Gallery Images Management
+router.get('/gallery-images', adminAuth, adminController.getAllGalleryImages);
+router.post('/gallery-images', adminAuth, upload.single('image'), adminController.createGalleryImage);
+router.put('/gallery-images/:id', adminAuth, upload.single('image'), adminController.updateGalleryImage);
+router.delete('/gallery-images/:id', adminAuth, adminController.deleteGalleryImage);
+router.put('/gallery-images/:id/toggle-status', adminAuth, adminController.toggleGalleryImageStatus);
+
+// Stats Management
+const statsController = require('../controllers/stats.controller');
+router.get('/stats', adminAuth, statsController.getAdminStats);
+router.post('/stats', adminAuth, statsController.createStat);
+router.put('/stats/:id', adminAuth, statsController.updateStat);
+router.delete('/stats/:id', adminAuth, statsController.deleteStat);
+router.put('/stats/:id/toggle-status', adminAuth, statsController.toggleStatStatus);
+
 module.exports = router;

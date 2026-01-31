@@ -21,6 +21,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://boabihar.org',
   'https://www.boabihar.org',
+  'http://localhost:3000',
+  'http://localhost:5173',
   'http://localhost:8080'
 ].filter(Boolean); // Remove any undefined values
 
@@ -139,10 +141,6 @@ try {
   // Gallery routes
   const galleryRoutes = require('./routes/gallery.routes');
   app.use('/api/gallery-images', galleryRoutes);
-
-  // Stats routes
-  const statsRoutes = require('./routes/stats.routes');
-  app.use('/api/stats', statsRoutes);
 
   // Public committee members route
   app.get('/api/committee-members', async (req, res) => {
@@ -563,8 +561,8 @@ try {
       // Get seminars count
       const [seminarCount] = await promisePool.query('SELECT COUNT(*) as count FROM seminars');
       
-      // Calculate years of service (assuming founded in 2021)
-      const foundedYear = 2021;
+      // Calculate years of service (assuming founded in 1975)
+      const foundedYear = 1975;
       const currentYear = new Date().getFullYear();
       const yearsOfService = currentYear - foundedYear;
       

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Calendar, Users, Award, MapPin } from "lucide-react";
 import { seminarAPI } from "@/lib/api";
 import { useSiteConfig } from "@/hooks/useSiteConfig";
+import { HeroStatsSection } from "./HeroStatsSection";
 
 export function HeroSection() {
   const [activeSeminar, setActiveSeminar] = useState<any>(null);
@@ -43,7 +44,7 @@ export function HeroSection() {
               Ophthalmic Association Of Bihar
             </h1>
             <p className="text-lg md:text-xl mb-8" style={{ color: '#616E7C' }}>
-              Advancing eye care excellence through education, research, and collaboration since 1975.
+              Advancing eye care excellence through education, research, and collaboration since 2021.
             </p>
             <Link to="/seminars">
               <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 h-12 text-base px-6">
@@ -77,7 +78,7 @@ export function HeroSection() {
                 Ophthalmic Association Of Bihar
               </h1>
               <p className="text-base sm:text-lg md:text-xl max-w-lg mx-auto lg:mx-0" style={{ color: '#616E7C' }}>
-                Advancing eye care excellence through education, research, and collaboration since 1975.
+                Advancing eye care excellence through education, research, and collaboration since 2021.
               </p>
             </div>
 
@@ -105,6 +106,9 @@ export function HeroSection() {
                 </Link>
               )}
             </div>
+
+            {/* Small Stats Display */}
+            <HeroStatsSection />
           </div>
 
           {/* Hero Visual */}

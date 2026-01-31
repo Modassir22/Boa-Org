@@ -39,7 +39,7 @@ export const activeSeminar = {
   registrationStart: '2025-08-01',
   registrationEnd: '2026-01-31',
   isActive: true,
-  description: 'Join us for the most prestigious ophthalmology conference in Bihar.',
+  description: 'Join us for the most prestigious ophthalmic conference in Bihar.',
   image: '/placeholder.svg'
 };
 
