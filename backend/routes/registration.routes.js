@@ -21,8 +21,8 @@ router.post('/test-post', (req, res) => {
 // Create registration (no auth required)
 router.post('/', registrationController.createRegistration);
 
-// Get user registrations (no auth required)
-router.get('/my-registrations', registrationController.getUserRegistrations);
+// Get user registrations (requires auth)
+router.get('/my-registrations', auth, registrationController.getUserRegistrations);
 
 // Update payment status (no auth required)
 router.put('/:id/payment', registrationController.updatePaymentStatus);

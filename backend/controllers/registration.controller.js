@@ -236,6 +236,14 @@ exports.createRegistration = async (req, res) => {
 // Get user registrations
 exports.getUserRegistrations = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication required' 
+      });
+    }
+
     const userId = req.user.id;
 
     const [registrations] = await promisePool.query(
