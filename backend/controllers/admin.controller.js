@@ -959,7 +959,7 @@ exports.updateMembershipDetails = async (req, res) => {
       // Update existing membership registration
       await promisePool.query(`
         UPDATE membership_registrations 
-        SET membership_type = ?, membership_status = ?, valid_from = ?, valid_until = ?, notes = ?
+        SET membership_type = ?, payment_status = ?, valid_from = ?, valid_until = ?, notes = ?
         WHERE email = ?
       `, [membership_type, status || 'active', valid_from || null, valid_until || null, notes, userEmail]);
     } else if (membership_type) {
@@ -969,7 +969,7 @@ exports.updateMembershipDetails = async (req, res) => {
         const userData = user[0];
         await promisePool.query(`
           INSERT INTO membership_registrations 
-          (email, name, membership_type, membership_status, valid_from, valid_until, notes, created_at)
+          (email, name, membership_type, payment_status, valid_from, valid_until, notes, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         `, [userEmail, `${userData.title || ''} ${userData.first_name || ''} ${userData.surname || ''}`.trim(), membership_type, status || 'active', valid_from || null, valid_until || null, notes]);
       }
