@@ -696,14 +696,14 @@ export default function Dashboard() {
                             <div className="flex items-center gap-2">
                               <h4 className="font-semibold text-foreground">{reg.seminar_name}</h4>
                               <Badge
-                                className={reg.status === 'completed'
+                                className={reg.status === 'completed' || reg.status === 'confirmed'
                                   ? 'bg-green-100 text-green-700 border-0'
                                   : reg.status === 'pending'
                                     ? 'bg-yellow-100 text-yellow-700 border-0'
                                     : 'bg-red-100 text-red-700 border-0'
                                 }
                               >
-                                {reg.status}
+                                {reg.status === 'confirmed' ? 'completed' : reg.status}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">

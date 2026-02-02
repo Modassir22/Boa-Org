@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import { API_BASE_URL } from './utils';
 
 declare global {
@@ -15,6 +13,7 @@ export interface RazorpayOptions {
   name: string;
   description: string;
   order_id: string;
+  image?: string;
   handler: (response: RazorpayResponse) => void;
   prefill?: {
     name?: string;
@@ -262,6 +261,7 @@ class RazorpayService {
           name: 'Ophthalmic Association Of Bihar',
           description: 'Seminar Registration Fee',
           order_id: orderResponse.order.id,
+          image: 'https://res.cloudinary.com/derzj7d4u/image/upload/v1768477374/boa-certificates/pjm2se9296raotekzmrc.png',
           handler: async (response: RazorpayResponse) => {
             try {
               console.log('=== RAZORPAY SUCCESS HANDLER ===');
@@ -295,22 +295,6 @@ class RazorpayService {
           config: {
             display: {
               blocks: {
-                banks: {
-                  name: 'Pay using Netbanking',
-                  instruments: [
-                    {
-                      method: 'netbanking'
-                    }
-                  ]
-                },
-                card: {
-                  name: 'Pay using Cards',
-                  instruments: [
-                    {
-                      method: 'card'
-                    }
-                  ]
-                },
                 upi: {
                   name: 'Pay using UPI',
                   instruments: [
@@ -318,19 +302,11 @@ class RazorpayService {
                       method: 'upi'
                     }
                   ]
-                },
-                wallet: {
-                  name: 'Pay using Wallets',
-                  instruments: [
-                    {
-                      method: 'wallet'
-                    }
-                  ]
                 }
               },
-              sequence: ['block.upi', 'block.card', 'block.banks', 'block.wallet'],
+              sequence: ['block.upi'],
               preferences: {
-                show_default_blocks: true
+                show_default_blocks: false
               }
             }
           },
@@ -377,6 +353,7 @@ class RazorpayService {
           name: 'Ophthalmic Association Of Bihar',
           description: 'Membership Registration Fee',
           order_id: orderResponse.order.id,
+          image: 'https://res.cloudinary.com/derzj7d4u/image/upload/v1768477374/boa-certificates/pjm2se9296raotekzmrc.png',
           handler: async (response: RazorpayResponse) => {
             try {
               // Verify payment
@@ -401,22 +378,6 @@ class RazorpayService {
           config: {
             display: {
               blocks: {
-                banks: {
-                  name: 'Pay using Netbanking',
-                  instruments: [
-                    {
-                      method: 'netbanking'
-                    }
-                  ]
-                },
-                card: {
-                  name: 'Pay using Cards',
-                  instruments: [
-                    {
-                      method: 'card'
-                    }
-                  ]
-                },
                 upi: {
                   name: 'Pay using UPI',
                   instruments: [
@@ -424,19 +385,11 @@ class RazorpayService {
                       method: 'upi'
                     }
                   ]
-                },
-                wallet: {
-                  name: 'Pay using Wallets',
-                  instruments: [
-                    {
-                      method: 'wallet'
-                    }
-                  ]
                 }
               },
-              sequence: ['block.upi', 'block.card', 'block.banks', 'block.wallet'],
+              sequence: ['block.upi'],
               preferences: {
-                show_default_blocks: true
+                show_default_blocks: false
               }
             }
           },
