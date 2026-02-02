@@ -24,9 +24,7 @@ class BOAMemberSyncService {
         AND is_boa_member = FALSE
       `);
 
-      if (updateResult.affectedRows > 0) {
-        console.log(`[BOA Sync] ✓ Activated ${updateResult.affectedRows} BOA members`);
-      }
+      
 
       // Set is_boa_member = FALSE for users without membership_no
       const [deactivateResult] = await promisePool.query(`

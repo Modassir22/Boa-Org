@@ -23,8 +23,6 @@ export interface RazorpayOptions {
   notes?: Record<string, any>;
   config?: {
     display?: {
-      blocks?: Record<string, any>;
-      sequence?: string[];
       preferences?: {
         show_default_blocks?: boolean;
       };
@@ -292,24 +290,6 @@ class RazorpayService {
             email: userDetails.email,
             contact: userDetails.mobile
           },
-          config: {
-            display: {
-              blocks: {
-                upi: {
-                  name: 'Pay using UPI',
-                  instruments: [
-                    {
-                      method: 'upi'
-                    }
-                  ]
-                }
-              },
-              sequence: ['block.upi'],
-              preferences: {
-                show_default_blocks: false
-              }
-            }
-          },
           theme: {
             color: '#0B3C5D'
           },
@@ -374,24 +354,6 @@ class RazorpayService {
             name: membershipData.name,
             email: membershipData.email,
             contact: membershipData.mobile
-          },
-          config: {
-            display: {
-              blocks: {
-                upi: {
-                  name: 'Pay using UPI',
-                  instruments: [
-                    {
-                      method: 'upi'
-                    }
-                  ]
-                }
-              },
-              sequence: ['block.upi'],
-              preferences: {
-                show_default_blocks: false
-              }
-            }
           },
           theme: {
             color: '#0B3C5D'

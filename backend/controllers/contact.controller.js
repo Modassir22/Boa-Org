@@ -50,7 +50,6 @@ exports.sendContactForm = async (req, res) => {
           email,
           subject
         });
-        console.log('Contact confirmation email sent to user:', email);
       } catch (confirmationError) {
         console.error('Failed to send confirmation email to user:', confirmationError.message);
         // Don't fail the main request if confirmation email fails

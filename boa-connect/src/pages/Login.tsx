@@ -38,7 +38,6 @@ export default function Login() {
         response = await authAPI.loginWithMembership(membershipNo, password);
       }
 
-      console.log('Login response:', response);
 
       // Check if response has token
       if (!response.token) {
@@ -71,8 +70,6 @@ export default function Login() {
       
       // Verify token was saved
       const savedToken = localStorage.getItem('token');
-      console.log('Token saved to localStorage:', savedToken ? 'Yes' : 'No');
-      console.log('Redirecting to:', from);
 
       // Show success message
       toast({

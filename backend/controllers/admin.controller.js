@@ -600,7 +600,7 @@ exports.getAllRegistrations = async (req, res) => {
 
     let query = `
       SELECT r.*, 
-        u.title, u.first_name, u.surname, u.email, u.mobile,
+        u.title, u.first_name, u.surname, u.email, u.mobile, u.gender,
         s.name as seminar_name, s.location as seminar_location,
         fc.name as category_name, fs.label as slab_label
       FROM registrations r
@@ -2841,7 +2841,7 @@ exports.getLatestPayments = async (req, res) => {
     const [seminarPayments] = await promisePool.query(
       `SELECT r.id, r.user_id, r.amount, r.status, r.payment_method, r.transaction_id, 
               r.payment_date, r.created_at, r.guest_name, r.guest_email,
-              u.title, u.first_name, u.surname, u.email,
+              u.title, u.first_name, u.surname, u.email, u.gender,
               s.name as seminar_name
        FROM registrations r
        LEFT JOIN users u ON r.user_id = u.id
@@ -2922,7 +2922,7 @@ exports.getPaymentDetails = async (req, res) => {
     if (type === 'sem') {
       const [payments] = await promisePool.query(
         `SELECT r.*, r.guest_name, r.guest_email, r.guest_mobile,
-                u.title, u.first_name, u.surname, u.email, u.mobile,
+                u.title, u.first_name, u.surname, u.email, u.mobile, u.gender,
                 s.name as seminar_name, s.start_date, s.end_date, s.location
          FROM registrations r
          LEFT JOIN users u ON r.user_id = u.id
@@ -3022,7 +3022,7 @@ exports.getAllPayments = async (req, res) => {
       `SELECT r.id, r.registration_no, r.user_id, r.amount, r.status, 
               r.payment_method, r.transaction_id, r.payment_date, r.created_at,
               r.delegate_type, r.category_name, r.guest_name, r.guest_email, r.guest_mobile,
-              u.title, u.first_name, u.surname, u.email, u.mobile,
+              u.title, u.first_name, u.surname, u.email, u.mobile, u.gender,
               s.name as seminar_name, s.start_date, s.end_date
        FROM registrations r
        LEFT JOIN users u ON r.user_id = u.id
@@ -3150,7 +3150,7 @@ const generateAndSendPDFReceipt = async (paymentId, paymentType) => {
       // Get seminar payment
       const [payments] = await promisePool.query(
         `SELECT r.*, r.guest_name, r.guest_email, r.guest_mobile, r.guest_address,
-                u.title, u.first_name, u.surname, u.email, u.mobile, u.address,
+                u.title, u.first_name, u.surname, u.email, u.mobile, u.gender, u.address,
                 s.name as seminar_name, s.start_date, s.end_date, s.location
          FROM registrations r
          LEFT JOIN users u ON r.user_id = u.id
@@ -3228,7 +3228,7 @@ const generateAndSendPDFReceipt = async (paymentId, paymentType) => {
     }
     
     if (!paymentData || !paymentData.user_email) {
-      console.log('No payment data or email found for:', paymentId);
+     
       return { success: false, message: 'Payment data or email not found' };
     }
 
@@ -3432,7 +3432,7 @@ exports.downloadPaymentPDF = async (req, res) => {
       // Get seminar payment
       const [payments] = await promisePool.query(
         `SELECT r.*, r.guest_name, r.guest_email, r.guest_mobile, r.guest_address,
-                u.title, u.first_name, u.surname, u.email, u.mobile, u.address,
+                u.title, u.first_name, u.surname, u.email, u.mobile, u.gender, u.address,
                 s.name as seminar_name, s.start_date, s.end_date, s.location
          FROM registrations r
          LEFT JOIN users u ON r.user_id = u.id
@@ -3701,7 +3701,7 @@ exports.exportAllPayments = async (req, res) => {
       `SELECT r.registration_no, r.user_id, r.amount, r.status, r.payment_method, 
               r.transaction_id, r.payment_date, r.created_at, r.delegate_type, r.category_name,
               r.guest_name, r.guest_email, r.guest_mobile,
-              u.title, u.first_name, u.surname, u.email, u.mobile,
+              u.title, u.first_name, u.surname, u.email, u.mobile, u.gender,
               s.name as seminar_name
        FROM registrations r
        LEFT JOIN users u ON r.user_id = u.id

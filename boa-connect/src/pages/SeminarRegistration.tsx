@@ -71,7 +71,6 @@ export default function SeminarRegistration() {
   useEffect(() => {
     // Test backend connection
     razorpayService.testConnection();
-console.log("commete member",committeeMembers);
     loadSeminarData();
   }, [id]);
 
@@ -846,7 +845,6 @@ console.log("commete member",committeeMembers);
 
   const handlePayment = async () => {
     try {
-      console.log('=== STARTING PAYMENT PROCESS ===');
       
       // Prepare registration data using form information instead of user token
       const registrationData = {
@@ -883,9 +881,6 @@ console.log("commete member",committeeMembers);
         mobile: mobile
       };
 
-      console.log('Registration data:', registrationData);
-      console.log('User details:', userDetails);
-      console.log('Total amount:', totalAmount);
 
       // Validate total amount before payment
       if (!totalAmount || typeof totalAmount !== 'number' || isNaN(totalAmount) || totalAmount <= 0) {
@@ -893,17 +888,15 @@ console.log("commete member",committeeMembers);
       }
 
       // Process payment through Razorpay
-      console.log('Calling razorpayService.processSeminarPayment...');
+     
       const paymentResult = await razorpayService.processSeminarPayment(
         totalAmount,
         registrationData,
         userDetails
       );
 
-      console.log('Payment result:', paymentResult);
 
       if (paymentResult && paymentResult.success) {
-        console.log('Payment successful, updating UI...');
         setPaymentComplete(true);
         
         // Force a small delay to ensure state updates

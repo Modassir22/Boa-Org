@@ -154,18 +154,13 @@ exports.deleteCertificate = async (req, res) => {
 // Upload certificate for member (admin only)
 exports.uploadMemberCertificate = async (req, res) => {
   try {
-    console.log('=== UPLOAD MEMBER CERTIFICATE ===');
-    console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
-    console.log('Admin user:', req.admin);
 
     const { user_id, title, description, issue_date, expiry_date, certificate_type } = req.body;
     const adminId = req.admin?.id || null;
 
-    console.log('Parsed data:', { user_id, title, description, issue_date, expiry_date, certificate_type, adminId });
+   
 
     if (!user_id || !title) {
-      console.log('Missing required fields');
       return res.status(400).json({
         success: false,
         message: 'User ID and certificate title are required'
@@ -187,7 +182,7 @@ exports.uploadMemberCertificate = async (req, res) => {
       folder: 'certificates',
       resource_type: 'auto'
     });
-    console.log('Cloudinary upload result:', result.secure_url);
+   
 
     console.log('Inserting into database...');
     // Insert certificate record
@@ -206,7 +201,7 @@ exports.uploadMemberCertificate = async (req, res) => {
         adminId
       ]
     );
-    console.log('Certificate inserted with ID:', insertResult.insertId);
+   
 
     console.log('Creating notification...');
     // Create global notification about certificate upload

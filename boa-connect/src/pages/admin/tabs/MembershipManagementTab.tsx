@@ -192,10 +192,6 @@ export default function MembershipManagementTab() {
     setIsUploadingCertificate(true);
 
     try {
-      console.log('Starting certificate upload...');
-      console.log('Selected member:', selectedMember);
-      console.log('Certificate form:', certificateForm);
-      console.log('Certificate file:', certificateFile);
 
       const formData = new FormData();
       formData.append('certificate', certificateFile);
@@ -206,9 +202,8 @@ export default function MembershipManagementTab() {
       formData.append('expiry_date', certificateForm.expiry_date);
       formData.append('certificate_type', certificateForm.certificate_type);
 
-      console.log('FormData prepared, calling API...');
+      
       const response = await adminAPI.uploadCertificate(formData);
-      console.log('API response:', response);
       
       toast({
         title: 'Success',

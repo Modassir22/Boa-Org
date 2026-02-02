@@ -828,8 +828,6 @@ const startServer = async () => {
   try {
     await testConnection();
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📍 Environment: ${process.env.NODE_ENV}`);
       
       // Start BOA Member Sync Service
       boaSyncService.start();

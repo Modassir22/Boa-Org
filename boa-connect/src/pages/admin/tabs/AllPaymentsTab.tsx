@@ -85,9 +85,7 @@ export default function AllPaymentsTab() {
         }
       });
       const data = await response.json();
-      console.log('[AllPaymentsTab] Received data:', data);
       if (data.success) {
-        console.log('[AllPaymentsTab] Payments:', data.payments);
         setPayments(data.payments || []);
         setStats(data.stats || { total: 0, completed: 0, pending: 0, totalAmount: 0 });
       }

@@ -188,7 +188,6 @@ exports.createRegistration = async (req, res) => {
         };
 
         await sendSeminarRegistrationConfirmation(registrationData, seminarDetails[0]);
-        console.log('Seminar registration confirmation email sent to:', userDetails[0]?.email);
       } catch (emailError) {
         console.error('Failed to send registration confirmation email:', emailError.message);
         // Don't fail the registration if email fails
@@ -236,6 +235,7 @@ exports.createRegistration = async (req, res) => {
 // Get user registrations
 exports.getUserRegistrations = async (req, res) => {
   try {
+    
     // Check if user is authenticated
     if (!req.user || !req.user.id) {
       return res.status(401).json({ 
@@ -245,31 +245,47 @@ exports.getUserRegistrations = async (req, res) => {
     }
 
     const userId = req.user.id;
+   
+
+    // First, check if user exists
+    const [userCheck] = await promisePool.query(
+      'SELECT id, email, first_name, surname FROM users WHERE id = ?',
+      [userId]
+    );
+
+    // Check all registrations in database for this user
+    const [allRegs] = await promisePool.query(
+      'SELECT * FROM registrations WHERE user_id = ?',
+      [userId]
+    );
 
     const [registrations] = await promisePool.query(
       `SELECT r.*, s.name as seminar_name, s.location, s.start_date, s.end_date,
        fc.name as category_name, fs.label as slab_label
        FROM registrations r
-       JOIN seminars s ON r.seminar_id = s.id
-       JOIN fee_categories fc ON r.category_id = fc.id
-       JOIN fee_slabs fs ON r.slab_id = fs.id
+       LEFT JOIN seminars s ON r.seminar_id = s.id
+       LEFT JOIN fee_categories fc ON r.category_id = fc.id
+       LEFT JOIN fee_slabs fs ON r.slab_id = fs.id
        WHERE r.user_id = ?
        ORDER BY r.created_at DESC`,
       [userId]
     );
+
 
     // Get additional persons for each registration
     for (let reg of registrations) {
       const [persons] = await promisePool.query(
         `SELECT ap.*, fc.name as category_name, fs.label as slab_label
          FROM additional_persons ap
-         JOIN fee_categories fc ON ap.category_id = fc.id
-         JOIN fee_slabs fs ON ap.slab_id = fs.id
+         LEFT JOIN fee_categories fc ON ap.category_id = fc.id
+         LEFT JOIN fee_slabs fs ON ap.slab_id = fs.id
          WHERE ap.registration_id = ?`,
         [reg.id]
       );
       reg.additional_persons = persons;
+    
     }
+
 
     res.json({
       success: true,
@@ -278,7 +294,10 @@ exports.getUserRegistrations = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get registrations error:', error);
+    console.error('=== GET REGISTRATIONS ERROR ===');
+    console.error('Error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch registrations',

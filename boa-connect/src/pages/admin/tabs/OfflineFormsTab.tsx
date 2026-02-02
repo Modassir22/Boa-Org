@@ -33,18 +33,13 @@ export function OfflineFormsTab() {
   };
 
   const handleSave = async () => {
-    console.log('=== SAVE BUTTON CLICKED ===');
-    console.log('Membership HTML length:', membershipFormHtml?.length || 0);
-    console.log('Seminar HTML length:', seminarFormHtml?.length || 0);
     
     setLoading(true);
     try {
-      console.log('Calling adminAPI.updateOfflineFormsConfig...');
       const response = await adminAPI.updateOfflineFormsConfig({
         membership_form_html: membershipFormHtml,
         seminar_form_html: seminarFormHtml
       });
-      console.log('Response:', response);
       toast.success('Offline forms configuration updated successfully');
       
       // Reload to verify

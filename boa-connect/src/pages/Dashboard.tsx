@@ -75,8 +75,19 @@ export default function Dashboard() {
       }
 
       // Load registrations
-      const regResponse = await registrationAPI.getMyRegistrations();
-      setRegistrations(regResponse.registrations || []);
+      try {
+        const regResponse = await registrationAPI.getMyRegistrations();
+        
+        if (regResponse.registrations && Array.isArray(regResponse.registrations)) {
+          setRegistrations(regResponse.registrations);
+        } else {
+          console.error('Invalid registrations data:', regResponse);
+          setRegistrations([]);
+        }
+      } catch (regError) {
+        console.error('Failed to load registrations:', regError);
+        setRegistrations([]);
+      }
 
       // Load active seminar
       try {
@@ -213,92 +224,201 @@ export default function Dashboard() {
     }
   };
 
-  const handleDownloadPDF = (reg: any) => {
+  const handleDownloadPDF = async (reg: any) => {
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 15;
 
-    // Header
-    doc.setFillColor(0, 128, 128);
-    doc.rect(0, 0, pageWidth, 35, 'F');
+    // Load and add logo
+    const logoUrl = 'https://res.cloudinary.com/derzj7d4u/image/upload/v1768477374/boa-certificates/pjm2se9296raotekzmrc.png';
+    
+    try {
+      // Load image as base64
+      const response = await fetch(logoUrl);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        
+        // Header with logo
+        doc.setFillColor(0, 128, 128);
+        doc.rect(0, 0, pageWidth, 40, 'F');
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Registration Receipt', pageWidth / 2, 15, { align: 'center' });
+        // Add logo on the left side
+        try {
+          doc.addImage(base64data, 'PNG', margin, 5, 30, 30);
+        } catch (error) {
+          console.error('Error adding logo:', error);
+        }
 
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(reg.seminar_name, pageWidth / 2, 23, { align: 'center' });
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Registration Receipt', pageWidth / 2, 15, { align: 'center' });
 
-    doc.setFontSize(10);
-    doc.text(reg.location || '', pageWidth / 2, 30, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(reg.seminar_name, pageWidth / 2, 23, { align: 'center' });
 
-    let yPos = 50;
-    doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.text(reg.location || '', pageWidth / 2, 30, { align: 'center' });
 
-    // Receipt details
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 128, 128);
-    doc.text('REGISTRATION DETAILS', margin + 3, yPos + 5.5);
-    yPos += 14;
+        let yPos = 55;
+        doc.setTextColor(0, 0, 0);
 
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+        // Receipt details
+        doc.setFillColor(240, 240, 240);
+        doc.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 128, 128);
+        doc.text('REGISTRATION DETAILS', margin + 3, yPos + 5.5);
+        yPos += 14;
 
-    const details = [
-      { label: 'Registration No', value: reg.registration_no },
-      { label: 'Name', value: `${getDisplayTitle(user.title)} ${user.first_name} ${user.surname}` },
-      { label: 'Email', value: user.email },
-      { label: 'Mobile', value: user.mobile },
-      { label: 'Category', value: reg.category_name },
-      { label: 'Fee Slab', value: reg.slab_label },
-      { label: 'Amount', value: `Rs ${parseFloat(reg.amount).toLocaleString()}` },
-      { label: 'Status', value: reg.status.toUpperCase() },
-      { label: 'Transaction ID', value: reg.transaction_id || 'N/A' },
-      { label: 'Date', value: new Date(reg.created_at).toLocaleDateString() },
-    ];
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
 
-    details.forEach(item => {
+        const details = [
+          { label: 'Registration No', value: reg.registration_no },
+          { label: 'Name', value: `${getDisplayTitle(user.title)} ${user.first_name} ${user.surname}` },
+          { label: 'Email', value: user.email },
+          { label: 'Mobile', value: user.mobile },
+          { label: 'Gender', value: user.gender || 'N/A' },
+          { label: 'Category', value: reg.category_name },
+          { label: 'Fee Slab', value: reg.slab_label },
+          { label: 'Amount', value: `Rs ${parseFloat(reg.amount).toLocaleString()}` },
+          { label: 'Status', value: reg.status.toUpperCase() },
+          { label: 'Transaction ID', value: reg.transaction_id || 'N/A' },
+          { label: 'Date', value: new Date(reg.created_at).toLocaleDateString() },
+        ];
+
+        details.forEach(item => {
+          doc.setFont('helvetica', 'bold');
+          doc.text(item.label + ':', margin, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text(item.value, margin + 50, yPos);
+          yPos += 8;
+        });
+
+        // Additional persons
+        if (reg.additional_persons && reg.additional_persons.length > 0) {
+          yPos += 5;
+          doc.setFillColor(240, 240, 240);
+          doc.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 128, 128);
+          doc.text('ADDITIONAL PERSONS', margin + 3, yPos + 5.5);
+          yPos += 14;
+
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('helvetica', 'normal');
+
+          reg.additional_persons.forEach((person: any, index: number) => {
+            doc.text(`${index + 1}. ${person.name}`, margin, yPos);
+            doc.text(`${person.category_name} - Rs ${parseFloat(person.amount).toLocaleString()}`, margin + 50, yPos);
+            yPos += 7;
+          });
+        }
+
+        // Footer
+        doc.setFillColor(0, 128, 128);
+        doc.rect(0, doc.internal.pageSize.getHeight() - 15, pageWidth, 15, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.text('Ophthalmic Association Of Bihar | www.boabihar.org', pageWidth / 2, doc.internal.pageSize.getHeight() - 7, { align: 'center' });
+
+        doc.save(`Registration_${reg.registration_no}.pdf`);
+      };
+      
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error loading logo, generating PDF without logo:', error);
+      
+      // Fallback: Generate PDF without logo
+      doc.setFillColor(0, 128, 128);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text(item.label + ':', margin, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(item.value, margin + 50, yPos);
-      yPos += 8;
-    });
+      doc.text('Registration Receipt', pageWidth / 2, 15, { align: 'center' });
 
-    // Additional persons
-    if (reg.additional_persons && reg.additional_persons.length > 0) {
-      yPos += 5;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(reg.seminar_name, pageWidth / 2, 23, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.text(reg.location || '', pageWidth / 2, 30, { align: 'center' });
+
+      let yPos = 50;
+      doc.setTextColor(0, 0, 0);
+
+      // Receipt details
       doc.setFillColor(240, 240, 240);
       doc.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 128, 128);
-      doc.text('ADDITIONAL PERSONS', margin + 3, yPos + 5.5);
+      doc.text('REGISTRATION DETAILS', margin + 3, yPos + 5.5);
       yPos += 14;
 
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
 
-      reg.additional_persons.forEach((person: any, index: number) => {
-        doc.text(`${index + 1}. ${person.name}`, margin, yPos);
-        doc.text(`${person.category_name} - Rs ${parseFloat(person.amount).toLocaleString()}`, margin + 50, yPos);
-        yPos += 7;
+      const details = [
+        { label: 'Registration No', value: reg.registration_no },
+        { label: 'Name', value: `${getDisplayTitle(user.title)} ${user.first_name} ${user.surname}` },
+        { label: 'Email', value: user.email },
+        { label: 'Mobile', value: user.mobile },
+        { label: 'Gender', value: user.gender || 'N/A' },
+        { label: 'Category', value: reg.category_name },
+        { label: 'Fee Slab', value: reg.slab_label },
+        { label: 'Amount', value: `Rs ${parseFloat(reg.amount).toLocaleString()}` },
+        { label: 'Status', value: reg.status.toUpperCase() },
+        { label: 'Transaction ID', value: reg.transaction_id || 'N/A' },
+        { label: 'Date', value: new Date(reg.created_at).toLocaleDateString() },
+      ];
+
+      details.forEach(item => {
+        doc.setFont('helvetica', 'bold');
+        doc.text(item.label + ':', margin, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.text(item.value, margin + 50, yPos);
+        yPos += 8;
       });
+
+      // Additional persons
+      if (reg.additional_persons && reg.additional_persons.length > 0) {
+        yPos += 5;
+        doc.setFillColor(240, 240, 240);
+        doc.rect(margin, yPos, pageWidth - (margin * 2), 8, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 128, 128);
+        doc.text('ADDITIONAL PERSONS', margin + 3, yPos + 5.5);
+        yPos += 14;
+
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+
+        reg.additional_persons.forEach((person: any, index: number) => {
+          doc.text(`${index + 1}. ${person.name}`, margin, yPos);
+          doc.text(`${person.category_name} - Rs ${parseFloat(person.amount).toLocaleString()}`, margin + 50, yPos);
+          yPos += 7;
+        });
+      }
+
+      // Footer
+      doc.setFillColor(0, 128, 128);
+      doc.rect(0, doc.internal.pageSize.getHeight() - 15, pageWidth, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Ophthalmic Association Of Bihar | www.boabihar.org', pageWidth / 2, doc.internal.pageSize.getHeight() - 7, { align: 'center' });
+
+      doc.save(`Registration_${reg.registration_no}.pdf`);
     }
-
-    // Footer
-    doc.setFillColor(0, 128, 128);
-    doc.rect(0, doc.internal.pageSize.getHeight() - 15, pageWidth, 15, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
-    doc.text('Ophthalmic Association Of Bihar | www.boabihar.org', pageWidth / 2, doc.internal.pageSize.getHeight() - 7, { align: 'center' });
-
-    doc.save(`Registration_${reg.registration_no}.pdf`);
   };
 
   const getDisplayTitle = (title: string) => {

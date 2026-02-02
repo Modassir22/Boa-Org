@@ -18,8 +18,8 @@ router.post('/test-post', (req, res) => {
   res.json({ success: true, message: 'POST test working', user_id: req.user?.id });
 });
 
-// Create registration (no auth required)
-router.post('/', registrationController.createRegistration);
+// Create registration (requires auth)
+router.post('/', auth, registrationController.createRegistration);
 
 // Get user registrations (requires auth)
 router.get('/my-registrations', auth, registrationController.getUserRegistrations);

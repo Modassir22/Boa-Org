@@ -114,11 +114,7 @@ export default function SeminarsTab() {
       const uploadFormData = new FormData();
       uploadFormData.append('image', file, file.name);
 
-      console.log('Uploading file:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      });
+    
 
       const response = await adminAuthAPI.uploadCertificateImage(uploadFormData);
 
@@ -189,7 +185,9 @@ export default function SeminarsTab() {
       offline_form_html: '',
       image_url: '',
       is_active: true,
-      status: 'active'
+      status: 'active',
+      color: '#0B3C5D',
+      online_registration_enabled: true
     });
   };
 

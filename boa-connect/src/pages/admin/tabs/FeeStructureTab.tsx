@@ -68,7 +68,7 @@ export default function FeeStructureTab() {
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
       const response = await adminAPI.get(`/admin/fee-structure/${selectedSeminar}?t=${timestamp}`);
-      console.log('Loaded fee structure:', response);
+      
       setCategories(response.categories || []);
       setSlabs(response.slabs || []);
       setFees(response.fees || []);
@@ -132,11 +132,8 @@ export default function FeeStructureTab() {
   const handleUpdateSlab = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log('Updating slab with data:', slabForm);
-      console.log('Slab ID:', editingSlab.id);
       
       const response = await adminAPI.put(`/admin/fee-slabs/${editingSlab.id}`, slabForm);
-      console.log('Update response:', response);
       
       toast({ title: 'Success', description: 'Fee slab updated successfully' });
       setIsSlabDialogOpen(false);

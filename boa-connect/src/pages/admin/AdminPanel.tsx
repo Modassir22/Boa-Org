@@ -64,9 +64,7 @@ export default function AdminPanel() {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('admin');
         navigate('/admin-login');
-      } else {
-        console.log('✅ Admin authenticated:', admin.username);
-      }
+      } 
     } catch (error) {
       console.error('❌ Failed to parse admin data:', error);
       localStorage.removeItem('adminToken');
