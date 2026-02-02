@@ -292,50 +292,77 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
     // Store the original delegate type name for display purposes
     const originalCategoryName = delegate_type;
 
-    // Generate registration number
-    const registration_no = `REG-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-
-    logToFile(`Generated registration number: ${registration_no}`);
-
-    // Prepare guest information for logging and insertion
-    const guestName = user_id ? null : (user_info ? `${formatTitle(user_info.title || '')} ${user_info.full_name || user_info.first_name || ''} ${user_info.surname || ''}`.trim() : null);
-    const guestEmail = user_id ? null : (user_info ? user_info.email : null);
-    const guestMobile = user_id ? null : (user_info ? user_info.mobile : null);
-    const guestAddress = user_id ? null : (user_info ? user_info.address : null);
-
-    logToFile(`Guest info being inserted: name="${guestName}", email="${guestEmail}", mobile="${guestMobile}", address="${guestAddress}"`);
-
-    // Insert main registration (user_id can be null for guest registrations)
-    const [regResult] = await connection.query(
-      `INSERT INTO registrations 
-       (registration_no, user_id, seminar_id, category_id, slab_id, delegate_type, category_name,
-        amount, status, transaction_id, payment_method, payment_date, razorpay_order_id, razorpay_payment_id,
-        guest_name, guest_email, guest_mobile, guest_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)`,
-      [
-        registration_no,
-        user_id || null, // Explicitly set to null if user_id is falsy
-        seminar_id,
-        category_id,
-        slab_id,
-        normalizedDelegateType,
-        originalCategoryName,
-        paymentInfo.amount,
-        paymentInfo.status,
-        paymentInfo.payment_id, // transaction_id
-        'razorpay', // payment_method
-        paymentInfo.order_id, // razorpay_order_id
-        paymentInfo.payment_id, // razorpay_payment_id
-        // Guest information (will be null if user_id exists)
-        guestName,
-        guestEmail,
-        guestMobile,
-        guestAddress
-      ]
+    // Check if registration already exists with this order_id
+    const [existingReg] = await connection.query(
+      'SELECT id, registration_no FROM registrations WHERE razorpay_order_id = ?',
+      [paymentInfo.order_id]
     );
 
-    const registrationId = regResult.insertId;
-    logToFile(`Registration inserted with ID: ${registrationId}`);
+    let registrationId;
+    let registration_no;
+
+    if (existingReg.length > 0) {
+      // Update existing registration
+      registrationId = existingReg[0].id;
+      registration_no = existingReg[0].registration_no;
+      
+      logToFile(`Found existing registration ID: ${registrationId}, updating status to completed`);
+      
+      await connection.query(
+        `UPDATE registrations 
+         SET status = ?, transaction_id = ?, payment_method = ?, payment_date = NOW(), 
+             razorpay_payment_id = ?
+         WHERE id = ?`,
+        [paymentInfo.status, paymentInfo.payment_id, 'razorpay', paymentInfo.payment_id, registrationId]
+      );
+      
+      logToFile(`Registration ${registration_no} updated successfully`);
+    } else {
+      // Create new registration (for cases where registration wasn't pre-created)
+      registration_no = `REG-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+
+      logToFile(`No existing registration found, creating new one: ${registration_no}`);
+
+      // Prepare guest information for logging and insertion
+      const guestName = user_id ? null : (user_info ? `${formatTitle(user_info.title || '')} ${user_info.full_name || user_info.first_name || ''} ${user_info.surname || ''}`.trim() : null);
+      const guestEmail = user_id ? null : (user_info ? user_info.email : null);
+      const guestMobile = user_id ? null : (user_info ? user_info.mobile : null);
+      const guestAddress = user_id ? null : (user_info ? user_info.address : null);
+
+      logToFile(`Guest info being inserted: name="${guestName}", email="${guestEmail}", mobile="${guestMobile}", address="${guestAddress}"`);
+
+      // Insert main registration (user_id can be null for guest registrations)
+      const [regResult] = await connection.query(
+        `INSERT INTO registrations 
+         (registration_no, user_id, seminar_id, category_id, slab_id, delegate_type, category_name,
+          amount, status, transaction_id, payment_method, payment_date, razorpay_order_id, razorpay_payment_id,
+          guest_name, guest_email, guest_mobile, guest_address)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)`,
+        [
+          registration_no,
+          user_id || null, // Explicitly set to null if user_id is falsy
+          seminar_id,
+          category_id,
+          slab_id,
+          normalizedDelegateType,
+          originalCategoryName,
+          paymentInfo.amount,
+          paymentInfo.status,
+          paymentInfo.payment_id, // transaction_id
+          'razorpay', // payment_method
+          paymentInfo.order_id, // razorpay_order_id
+          paymentInfo.payment_id, // razorpay_payment_id
+          // Guest information (will be null if user_id exists)
+          guestName,
+          guestEmail,
+          guestMobile,
+          guestAddress
+        ]
+      );
+
+      registrationId = regResult.insertId;
+      logToFile(`Registration inserted with ID: ${registrationId}`);
+    }
 
     // Insert additional persons if any
     if (additional_persons.length > 0) {
