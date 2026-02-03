@@ -883,6 +883,109 @@ exports.getAllMembers = async (req, res) => {
   }
 };
 
+// Add offline membership
+exports.addOfflineMembership = async (req, res) => {
+  try {
+    const { 
+      email,
+      name,
+      father_name,
+      qualification,
+      year_passing,
+      dob,
+      institution,
+      working_place,
+      sex,
+      age,
+      address,
+      mobile,
+      membership_type, 
+      payment_type,
+      amount,
+      transaction_id,
+      valid_from, 
+      valid_until, 
+      notes 
+    } = req.body;
+
+    // Validate required fields
+    if (!email || !membership_type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and membership type are required'
+      });
+    }
+
+    // Check if user exists
+    const [user] = await promisePool.query(
+      'SELECT id, title, first_name, surname, email FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found. Please register the user first.'
+      });
+    }
+
+    // Check if user already has a membership registration
+    const [existing] = await promisePool.query(
+      'SELECT id FROM membership_registrations WHERE email = ?',
+      [email]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already has a membership registration'
+      });
+    }
+
+    // Insert offline membership with all fields
+    await promisePool.query(`
+      INSERT INTO membership_registrations 
+      (email, name, father_name, qualification, year_passing, dob, institution, working_place,
+       sex, age, address, mobile, membership_type, payment_type, transaction_id, 
+       payment_status, payment_method, amount, valid_from, valid_until, notes, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'offline', ?, ?, ?, ?, NOW())
+    `, [
+      email,
+      name || null,
+      father_name || null,
+      qualification || null,
+      year_passing || null,
+      dob || null,
+      institution || null,
+      working_place || null,
+      sex || null,
+      age || null,
+      address || null,
+      mobile || null,
+      membership_type,
+      payment_type || null,
+      transaction_id || null,
+      amount || null,
+      valid_from || null,
+      valid_until || null,
+      notes || ''
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Offline membership added successfully'
+    });
+
+  } catch (error) {
+    console.error('[addOfflineMembership] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add offline membership',
+      error: error.message
+    });
+  }
+};
+
 // Update membership details
 exports.updateMembershipDetails = async (req, res) => {
   try {
@@ -965,14 +1068,18 @@ exports.updateMembershipDetails = async (req, res) => {
       // Preserve the original valid_until - don't let admin change it
       const preservedValidUntil = currentData[0].valid_until;
       
-      // Update existing membership registration (preserve valid_until)
+      // Update existing membership registration (preserve valid_until and add membership_no)
       await promisePool.query(`
         UPDATE membership_registrations 
-        SET membership_type = ?, payment_status = ?, valid_from = ?, notes = ?
+        SET membership_type = ?, 
+            payment_status = ?, 
+            valid_from = ?, 
+            notes = ?,
+            membership_no = ?
         WHERE email = ?
-      `, [membership_type, status || 'active', valid_from || null, notes, userEmail]);
+      `, [membership_type, status || 'active', valid_from || null, notes, membership_no || null, userEmail]);
       
-      console.log(`Preserved valid_until: ${preservedValidUntil} for ${userEmail}`);
+      
     } else if (membership_type) {
       // Create new membership registration record only if membership_type is provided
       const [user] = await promisePool.query('SELECT * FROM users WHERE email = ?', [userEmail]);
@@ -3062,7 +3169,7 @@ exports.getAllPayments = async (req, res) => {
         amount: parseFloat(payment.amount),
         transaction_id: payment.transaction_id,
         payment_method: payment.payment_method,
-        status: payment.status,
+        status: payment.status || 'pending',
         created_at: payment.payment_date || payment.created_at,
         details: {
           registration_no: payment.registration_no,
@@ -3092,7 +3199,8 @@ exports.getAllPayments = async (req, res) => {
 
     // Add membership payments to array
     membershipPayments.forEach(payment => {
-    
+      const mappedStatus = (payment.payment_status === 'completed' || payment.payment_status === 'paid' || payment.payment_status === 'active') ? 'completed' : 'pending';
+      
       
       payments.push({
         id: `mem_${payment.id}`,
@@ -3105,7 +3213,7 @@ exports.getAllPayments = async (req, res) => {
         amount: parseFloat(payment.payment_amount || payment.amount || 0),
         transaction_id: payment.transaction_id,
         payment_method: 'Online',
-        status: payment.payment_status === 'completed' ? 'completed' : 'pending',
+        status: mappedStatus,
         created_at: payment.created_at,
         details: {
           membership: {

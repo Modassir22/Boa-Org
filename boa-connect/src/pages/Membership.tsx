@@ -89,6 +89,13 @@ export default function Membership() {
   };
 
   const handleDownloadOfflineForm = async () => {
+    // Check if user is logged in
+    if (!isAuthenticated) {
+      toast.error('Please login to download the membership form');
+      navigate('/login', { state: { from: '/membership' } });
+      return;
+    }
+
     try {
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
@@ -264,8 +271,9 @@ export default function Membership() {
               variant="outline" 
               onClick={handleDownloadOfflineForm}
             >
+              {!isAuthenticated && <Lock className="mr-2 h-5 w-5" />}
               <Download className="mr-2 h-5 w-5" />
-              Download Form
+              {isAuthenticated ? 'Download Form' : 'Login to Download'}
             </Button>
           </div>
         </div>

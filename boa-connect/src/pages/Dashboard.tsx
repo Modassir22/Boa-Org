@@ -535,12 +535,6 @@ export default function Dashboard() {
                           </Badge>
                         </div>
                       )}
-                      {membershipData?.amount && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Amount Paid</span>
-                          <span className="text-foreground font-medium">₹{parseFloat(membershipData.amount).toLocaleString()}</span>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <div className="flex justify-between">

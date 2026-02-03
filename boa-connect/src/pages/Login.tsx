@@ -117,11 +117,11 @@ export default function Login() {
                     </div>
 
                     {/* Medical Image */}
-                    <div className="rounded-lg overflow-hidden border-2" style={{ borderColor: '#C9A227' }}>
+                    <div className="rounded-lg overflow-hidden border-2 mr-4 mx-4" style={{ borderColor: '#C9A227' }}>
                       <img
-                        src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80"
+                        src="https://i.pinimg.com/736x/26/20/70/262070dec8e03eb4457722061d18ddf6.jpg"
                         alt="Medical Conference"
-                        className="w-full h-36 object-cover"
+                        className="w-full h-auto"
                       />
                     </div>
 
@@ -165,12 +165,6 @@ export default function Login() {
                     </div>
                   </div>
 
-                  {/* Decorative Element */}
-                  <div className="absolute bottom-0 right-0 w-24 h-24 opacity-10">
-                    <svg viewBox="0 0 100 100" fill="currentColor" className="text-white">
-                      <circle cx="50" cy="50" r="40" />
-                    </svg>
-                  </div>
                 </div>
               </div>
 

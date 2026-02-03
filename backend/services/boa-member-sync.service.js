@@ -35,7 +35,6 @@ class BOAMemberSyncService {
       `);
 
       if (deactivateResult.affectedRows > 0) {
-        console.log(`[BOA Sync] ✓ Deactivated ${deactivateResult.affectedRows} non-BOA members`);
       }
 
     } catch (error) {

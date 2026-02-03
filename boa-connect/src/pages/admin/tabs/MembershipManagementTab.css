@@ -1,0 +1,19 @@
+/* Disable all animations and transitions in membership forms */
+.no-animations,
+.no-animations * {
+  animation: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}
+
+/* Prevent visual glitches during select interactions */
+.no-animations [data-radix-select-viewport] {
+  animation: none !important;
+  transition: none !important;
+}
+
+.no-animations [data-radix-popper-content-wrapper] {
+  animation: none !important;
+  transition: none !important;
+}

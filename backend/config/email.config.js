@@ -40,7 +40,6 @@ async function sendEmailWithFallback(mailOptions) {
     // Try primary transporter first
     console.log('Attempting to send email with primary transporter...');
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully with primary transporter:', info.messageId);
     return { success: true, messageId: info.messageId, transporter: 'primary' };
   } catch (primaryError) {
     console.error('Primary transporter failed:', primaryError.message);
@@ -48,7 +47,6 @@ async function sendEmailWithFallback(mailOptions) {
     // If primary fails and fallback is configured, try fallback
     if (process.env.FALLBACK_EMAIL_USER && process.env.FALLBACK_EMAIL_PASSWORD) {
       try {
-        console.log('Attempting to send email with fallback transporter...');
         // Update from address to use fallback email
         const fallbackMailOptions = {
           ...mailOptions,
@@ -59,7 +57,6 @@ async function sendEmailWithFallback(mailOptions) {
         };
         
         const info = await fallbackTransporter.sendMail(fallbackMailOptions);
-        console.log('Email sent successfully with fallback transporter:', info.messageId);
         return { success: true, messageId: info.messageId, transporter: 'fallback' };
       } catch (fallbackError) {
         console.error('Fallback transporter also failed:', fallbackError.message);
@@ -263,7 +260,6 @@ const testEmailConfig = async () => {
     await transporter.verify();
     return true;
   } catch (primaryError) {
-    console.log('Primary transporter verification failed:', primaryError.message);
     
     // Try fallback if configured
     if (process.env.FALLBACK_EMAIL_USER && process.env.FALLBACK_EMAIL_PASSWORD) {
@@ -272,7 +268,6 @@ const testEmailConfig = async () => {
         console.log('Fallback transporter verification successful');
         return true;
       } catch (fallbackError) {
-        console.log('Fallback transporter verification also failed:', fallbackError.message);
         return false;
       }
     }
@@ -558,9 +553,7 @@ const sendContactConfirmationEmail = async (contactData) => {
   };
 
   try {
-    console.log('Sending contact confirmation email to:', email);
     const info = await sendEmailWithFallback(mailOptions);
-    console.log('Contact confirmation email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Contact confirmation email error:', error.message);
@@ -740,9 +733,7 @@ const sendSeminarRegistrationConfirmation = async (registrationData, seminarData
   };
 
   try {
-    console.log('Sending seminar registration confirmation to:', user_info.email);
     const info = await sendEmailWithFallback(mailOptions);
-    console.log('Seminar confirmation email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Seminar confirmation email error:', error.message);
@@ -917,9 +908,7 @@ const sendMembershipConfirmation = async (membershipData) => {
   };
 
   try {
-    console.log('Sending membership confirmation to:', email);
     const info = await sendEmailWithFallback(mailOptions);
-    console.log('Membership confirmation email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Membership confirmation email error:', error.message);
@@ -1078,7 +1067,6 @@ const sendMembershipAdminNotification = async (membershipData) => {
   try {
     console.log('Sending membership admin notification...');
     const info = await sendEmailWithFallback(mailOptions);
-    console.log('Membership admin notification sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Membership admin notification error:', error.message);
@@ -1246,7 +1234,6 @@ const sendSeminarAdminNotification = async (registrationData, seminarData) => {
   try {
     console.log('Sending seminar admin notification...');
     const info = await sendEmailWithFallback(mailOptions);
-    console.log('Seminar admin notification sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Seminar admin notification error:', error.message);
@@ -1411,9 +1398,7 @@ const sendPDFReceiptEmail = async (paymentData, pdfBuffer) => {
   };
 
   try {
-    console.log('Sending PDF receipt email to:', user_email);
     const info = await sendEmailWithFallback(mailOptions);
-    console.log('PDF receipt email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('PDF receipt email error:', error.message);

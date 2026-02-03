@@ -103,6 +103,7 @@ router.delete('/membership-categories/:id', adminAuth, adminController.deleteMem
 
 // Membership Management
 router.get('/members', adminAuth, adminController.getAllMembers);
+router.post('/members/offline', adminAuth, adminController.addOfflineMembership);
 router.put('/members/:id', adminAuth, adminController.updateMembershipDetails);
 router.get('/check-membership-availability', adminAuth, adminController.checkMembershipAvailability);
 router.get('/export-members', adminAuth, adminController.exportMembers);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -80,12 +81,18 @@ export default function AllPaymentsTab() {
     try {
       setIsLoading(true);
       const response = await fetch(`${API_BASE_URL}/api/admin/payments/all?t=${Date.now()}`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
       const data = await response.json();
+      console.log('Loaded payments:', data);
       if (data.success) {
+        console.log('Setting payments:', data.payments);
         setPayments(data.payments || []);
         setStats(data.stats || { total: 0, completed: 0, pending: 0, totalAmount: 0 });
       }
@@ -140,8 +147,13 @@ export default function AllPaymentsTab() {
   };
 
   const handleViewDetails = (payment: Payment) => {
-    setSelectedPayment(payment);
-    setIsDetailsOpen(true);
+    console.log('Opening payment details:', payment);
+    flushSync(() => {
+      setSelectedPayment(payment);
+    });
+    flushSync(() => {
+      setIsDetailsOpen(true);
+    });
   };
 
   const handleDownloadPDF = async (paymentId: string) => {
@@ -330,7 +342,9 @@ export default function AllPaymentsTab() {
                   </td>
                 </tr>
               ) : (
-                filteredPayments.map((payment) => (
+                filteredPayments.map((payment) => {
+                  console.log(`Rendering payment ${payment.id}: status="${payment.status}"`);
+                  return (
                   <tr key={payment.id} className="border-t hover:bg-muted/50">
                     <td className="p-4">
                       <div>
@@ -405,7 +419,8 @@ export default function AllPaymentsTab() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -413,13 +428,13 @@ export default function AllPaymentsTab() {
       </div>
 
       {/* Payment Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Payment Details</DialogTitle>
-          </DialogHeader>
+      {isDetailsOpen && selectedPayment && (
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Payment Details</DialogTitle>
+            </DialogHeader>
 
-          {selectedPayment && (
             <div className="space-y-6">
               {/* User Info */}
               <div className="border rounded-lg p-4">
@@ -547,9 +562,9 @@ export default function AllPaymentsTab() {
                 </Button>
               </div>
             </div>
-          )}
         </DialogContent>
       </Dialog>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

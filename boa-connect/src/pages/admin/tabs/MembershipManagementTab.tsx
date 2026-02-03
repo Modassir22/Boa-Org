@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { flushSync } from 'react-dom';
+import './MembershipManagementTab.css';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +41,32 @@ export default function MembershipManagementTab() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isAddOfflineOpen, setIsAddOfflineOpen] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [membershipCategories, setMembershipCategories] = useState<any[]>([]);
+  const [selectedUserEmail, setSelectedUserEmail] = useState('');
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [offlineForm, setOfflineForm] = useState({
+    email: '',
+    name: '',
+    father_name: '',
+    qualification: '',
+    year_passing: '',
+    dob: '',
+    institution: '',
+    working_place: '',
+    sex: '',
+    age: '',
+    address: '',
+    mobile: '',
+    membership_type: '',
+    payment_type: '',
+    amount: '',
+    transaction_id: '',
+    valid_from: '',
+    valid_until: '',
+    notes: ''
+  });
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [certificatePreview, setCertificatePreview] = useState<string | null>(null);
   const [certificateForm, setCertificateForm] = useState({
@@ -62,6 +90,19 @@ export default function MembershipManagementTab() {
   }, []);
 
   useEffect(() => {
+    if (isAddOfflineOpen) {
+      loadUsers();
+      loadMembershipCategories();
+    }
+  }, [isAddOfflineOpen]);
+
+  useEffect(() => {
+    if (isEditOpen) {
+      loadMembershipCategories();
+    }
+  }, [isEditOpen]);
+
+  useEffect(() => {
     filterMembers();
   }, [searchQuery, members]);
 
@@ -78,6 +119,94 @@ export default function MembershipManagementTab() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await adminAPI.getAllUsers();
+      setUsers(response.users || []);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
+  };
+
+  const loadMembershipCategories = async () => {
+    try {
+      const response = await adminAPI.getMembershipCategories();
+      setMembershipCategories(response.categories || []);
+    } catch (error) {
+      console.error('Failed to load membership categories:', error);
+    }
+  };
+
+  const handleUserSelect = useCallback((email: string) => {
+    const user = users.find(u => u.email === email);
+    if (user) {
+      // Use flushSync to force synchronous update and prevent blink
+      flushSync(() => {
+        setSelectedUserEmail(email);
+      });
+      flushSync(() => {
+        setOfflineForm(prev => ({ 
+          ...prev, 
+          email: email,
+          name: `${formatTitle(user.title)} ${user.first_name} ${user.surname}`.trim(),
+          mobile: user.mobile || '',
+          address: `${user.house || ''} ${user.street || ''} ${user.landmark || ''} ${user.city || ''} ${user.state || ''}`.trim()
+        }));
+      });
+    }
+  }, [users]);
+
+  const handleAddOfflineMembership = async () => {
+    try {
+      if (!offlineForm.email || !offlineForm.membership_type) {
+        toast({
+          title: 'Missing Fields',
+          description: 'Email and membership type are required',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      await adminAPI.addOfflineMembership(offlineForm);
+      
+      toast({
+        title: 'Success',
+        description: 'Offline membership added successfully',
+      });
+      
+      setIsAddOfflineOpen(false);
+      setSelectedUserEmail('');
+      setOfflineForm({
+        email: '',
+        name: '',
+        father_name: '',
+        qualification: '',
+        year_passing: '',
+        dob: '',
+        institution: '',
+        working_place: '',
+        sex: '',
+        age: '',
+        address: '',
+        mobile: '',
+        membership_type: '',
+        payment_type: '',
+        amount: '',
+        transaction_id: '',
+        valid_from: '',
+        valid_until: '',
+        notes: ''
+      });
+      loadMembers();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to add offline membership',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -240,6 +369,12 @@ export default function MembershipManagementTab() {
     setIsEditOpen(true);
   };
 
+  const handleEditFormChange = useCallback((field: string, value: any) => {
+    flushSync(() => {
+      setEditForm(prev => ({ ...prev, [field]: value }));
+    });
+  }, []);
+
   const handleSaveMember = async () => {
     try {
       // Check availability before saving
@@ -401,10 +536,16 @@ export default function MembershipManagementTab() {
         <div>
           <h2 className="text-2xl font-bold">Paid Members Only</h2>
         </div>
-        <Button onClick={handleExportCSV} className="gradient-primary">
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsAddOfflineOpen(true)} variant="outline">
+            <Upload className="mr-2 h-4 w-4" />
+            Add Offline Membership
+          </Button>
+          <Button onClick={handleExportCSV} className="gradient-primary">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -548,7 +689,7 @@ export default function MembershipManagementTab() {
 
       {/* Edit Member Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl no-animations">
           <DialogHeader>
             <DialogTitle>
               Edit Membership - {selectedMember && `${formatTitle(selectedMember.title)} ${selectedMember.first_name} ${selectedMember.surname}`}
@@ -594,26 +735,36 @@ export default function MembershipManagementTab() {
 
                 <div className="space-y-2">
                   <Label>Membership Type</Label>
-                  <Select value={editForm.membership_type} onValueChange={(value) => setEditForm(prev => ({ ...prev, membership_type: value }))}>
+                  <Select value={editForm.membership_type} onValueChange={(value) => handleEditFormChange('membership_type', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="lifetime">Lifetime</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="honorary">Honorary</SelectItem>
+                    <SelectContent style={{ animation: 'none', transition: 'none' }}>
+                      {membershipCategories.length > 0 ? (
+                        membershipCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.title}>
+                            {category.title}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="standard">Standard</SelectItem>
+                          <SelectItem value="lifetime">Lifetime</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="honorary">Honorary</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select value={editForm.status} onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}>
+                  <Select value={editForm.status} onValueChange={(value) => handleEditFormChange('status', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent style={{ animation: 'none', transition: 'none' }}>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
@@ -989,6 +1140,285 @@ export default function MembershipManagementTab() {
                 </Button>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Offline Membership Dialog */}
+      <Dialog open={isAddOfflineOpen} onOpenChange={(open) => {
+        setIsAddOfflineOpen(open);
+        if (!open) {
+          // Reset form when dialog closes
+          setSelectedUserEmail('');
+          setOfflineForm({
+            email: '',
+            name: '',
+            father_name: '',
+            qualification: '',
+            year_passing: '',
+            dob: '',
+            institution: '',
+            working_place: '',
+            sex: '',
+            age: '',
+            address: '',
+            mobile: '',
+            membership_type: '',
+            payment_type: '',
+            amount: '',
+            transaction_id: '',
+            valid_from: '',
+            valid_until: '',
+            notes: ''
+          });
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto no-animations">
+          <DialogHeader>
+            <DialogTitle>Add Offline Membership</DialogTitle>
+          </DialogHeader>
+          
+          {isAddOfflineOpen && (
+          <div className="space-y-6">
+            {/* User Selection */}
+            <div className="space-y-2">
+              <Label>Select User <span className="text-red-500">*</span></Label>
+              <Select 
+                value={selectedUserEmail} 
+                onValueChange={handleUserSelect}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a registered user" />
+                </SelectTrigger>
+                <SelectContent style={{ animation: 'none', transition: 'none' }}>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.email}>
+                      {formatTitle(user.title)} {user.first_name} {user.surname} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">User must be registered first</p>
+            </div>
+
+            {/* Personal Information */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">Personal Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Full Name <span className="text-red-500">*</span></Label>
+                  <Input
+                    value={offlineForm.name}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Father's Name</Label>
+                  <Input
+                    value={offlineForm.father_name}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, father_name: e.target.value }))}
+                    placeholder="Father's name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <Select value={offlineForm.sex} onValueChange={(value) => setOfflineForm(prev => ({ ...prev, sex: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={offlineForm.dob}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, dob: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Age</Label>
+                  <Input
+                    type="number"
+                    value={offlineForm.age}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, age: e.target.value }))}
+                    placeholder="Age"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Mobile</Label>
+                  <Input
+                    value={offlineForm.mobile}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, mobile: e.target.value }))}
+                    placeholder="Mobile number"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label>Address</Label>
+                <Textarea
+                  value={offlineForm.address}
+                  onChange={(e) => setOfflineForm(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="Complete address"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {/* Educational Information */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">Educational Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Qualification</Label>
+                  <Input
+                    value={offlineForm.qualification}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, qualification: e.target.value }))}
+                    placeholder="e.g., MBBS, MD"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Year of Passing</Label>
+                  <Input
+                    value={offlineForm.year_passing}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, year_passing: e.target.value }))}
+                    placeholder="e.g., 2020"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Institution</Label>
+                  <Input
+                    value={offlineForm.institution}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, institution: e.target.value }))}
+                    placeholder="Institution name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Working Place</Label>
+                  <Input
+                    value={offlineForm.working_place}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, working_place: e.target.value }))}
+                    placeholder="Current workplace"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Membership Information */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">Membership Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Membership Type <span className="text-red-500">*</span></Label>
+                  <Select value={offlineForm.membership_type} onValueChange={(value) => setOfflineForm(prev => ({ ...prev, membership_type: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {membershipCategories.length > 0 ? (
+                        membershipCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.title}>
+                            {category.title}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="Yearly">Yearly</SelectItem>
+                          <SelectItem value="5-Yearly">5-Yearly</SelectItem>
+                          <SelectItem value="Lifetime">Lifetime</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Payment Type</Label>
+                  <Select value={offlineForm.payment_type} onValueChange={(value) => setOfflineForm(prev => ({ ...prev, payment_type: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Student">Student</SelectItem>
+                      <SelectItem value="Passout">Passout</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Amount</Label>
+                  <Input
+                    type="number"
+                    value={offlineForm.amount}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, amount: e.target.value }))}
+                    placeholder="Amount paid"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Transaction ID</Label>
+                  <Input
+                    value={offlineForm.transaction_id}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, transaction_id: e.target.value }))}
+                    placeholder="Transaction/Receipt ID"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Valid From</Label>
+                  <Input
+                    type="date"
+                    value={offlineForm.valid_from}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, valid_from: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Valid Until</Label>
+                  <Input
+                    type="date"
+                    value={offlineForm.valid_until}
+                    onChange={(e) => setOfflineForm(prev => ({ ...prev, valid_until: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty for lifetime</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label>Notes</Label>
+                <Textarea
+                  value={offlineForm.notes}
+                  onChange={(e) => setOfflineForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Additional notes about this membership..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsAddOfflineOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddOfflineMembership} className="gradient-primary">
+                Add Membership
+              </Button>
+            </div>
+          </div>
           )}
         </DialogContent>
       </Dialog>

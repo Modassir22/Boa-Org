@@ -397,6 +397,10 @@ export const adminAPI = {
     const response = await adminApi.get(`/admin/members?_t=${timestamp}`);
     return response.data;
   },
+  addOfflineMembership: async (data: any) => {
+    const response = await adminApi.post('/admin/members/offline', data);
+    return response.data;
+  },
   updateMembershipDetails: async (id: string, data: any) => {
     const response = await adminApi.put(`/admin/members/${id}`, data);
     return response.data;
