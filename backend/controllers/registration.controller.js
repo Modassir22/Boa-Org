@@ -9,27 +9,54 @@ const generateRegistrationNo = () => {
   return `REG-${year}-${random}`;
 };
 
-// Generate membership number
-const generateMembershipNo = async (connection) => {
-  const year = new Date().getFullYear();
+// Generate membership number based on membership type
+const generateMembershipNo = async (connection, membershipType = 'Standard') => {
+  // Determine prefix based on membership type
+  let prefix = 'STD'; // Default Standard
+  
+  const typeUpper = membershipType.toUpperCase();
+  
+  // Check for Lifetime first
+  if (typeUpper.includes('LIFETIME') || typeUpper.includes('LIFE')) {
+    prefix = 'LM'; // Life Member
+  } 
+  // Check for 5-Yearly (must check before Yearly to avoid confusion)
+  else if (typeUpper.includes('5-YEARLY') || typeUpper.includes('5 YEARLY') || typeUpper.includes('5YEARLY')) {
+    prefix = '5YL'; // 5-Yearly
+  } 
+  // Check for Yearly (any yearly that's not 5-yearly)
+  else if (typeUpper.includes('YEARLY') || typeUpper.includes('ANNUAL')) {
+    prefix = 'YL'; // Yearly
+  } 
+  // Check for Student
+  else if (typeUpper.includes('STUDENT')) {
+    prefix = 'ST'; // Student
+  } 
+  // Check for Honorary
+  else if (typeUpper.includes('HONORARY')) {
+    prefix = 'HN'; // Honorary
+  }
 
-  // Get the last membership number for this year
+  // Get the last membership number for this prefix
   const [lastMembership] = await connection.query(
     `SELECT membership_no FROM users 
      WHERE membership_no LIKE ? 
      ORDER BY membership_no DESC LIMIT 1`,
-    [`BOA-${year}-%`]
+    [`${prefix}%`]
   );
 
   let serial = 1;
   if (lastMembership.length > 0) {
-    // Extract serial number from last membership
+    // Extract serial number from last membership (format: PREFIX001)
     const lastNo = lastMembership[0].membership_no;
-    const lastSerial = parseInt(lastNo.split('-')[2]);
-    serial = lastSerial + 1;
+    const numPart = lastNo.replace(prefix, '');
+    const lastSerial = parseInt(numPart);
+    if (!isNaN(lastSerial)) {
+      serial = lastSerial + 1;
+    }
   }
 
-  return `BOA-${year}-${serial.toString().padStart(4, '0')}`;
+  return `${prefix}${serial.toString().padStart(3, '0')}`;
 };
 
 // Create registration

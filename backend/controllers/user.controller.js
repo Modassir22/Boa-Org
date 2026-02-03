@@ -6,9 +6,11 @@ exports.getProfile = async (req, res) => {
     const userId = req.user.id;
 
     const [users] = await promisePool.query(
-      `SELECT u.*, a.house, a.street, a.landmark, a.city, a.state, a.country, a.pin_code
+      `SELECT u.*, a.house, a.street, a.landmark, a.city, a.state, a.country, a.pin_code,
+       CASE WHEN mr.membership_type IS NOT NULL THEN 1 ELSE 0 END as has_active_membership
        FROM users u
        LEFT JOIN addresses a ON u.id = a.user_id
+       LEFT JOIN membership_registrations mr ON u.email = mr.email
        WHERE u.id = ?`,
       [userId]
     );
@@ -202,7 +204,7 @@ exports.getMembershipDetails = async (req, res) => {
     // Get user details with membership information and payment details
     const [user] = await promisePool.query(`
       SELECT u.*, 
-             mr.membership_type, mr.payment_status as status, mr.valid_from, mr.valid_until, mr.notes,
+             mr.membership_type, mr.payment_type, mr.payment_status as status, mr.valid_from, mr.valid_until, mr.notes,
              mr.amount, mr.payment_status, mr.payment_method, mr.transaction_id,
              mr.razorpay_payment_id, mr.payment_date, mr.qualification, mr.year_passing,
              mr.institution, mr.working_place,

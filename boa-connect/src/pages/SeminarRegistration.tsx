@@ -947,28 +947,28 @@ export default function SeminarRegistration() {
 
   return (
     <>
-      <div className="min-h-[calc(100vh-4rem)] py-4 sm:py-6 md:py-8 px-3 sm:px-4" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
+      <div className="min-h-[calc(100vh-4rem)] py-6 sm:py-6 md:py-8 px-3 sm:px-4" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
         <div className="max-w-7xl mx-auto" style={{ animation: 'none', transition: 'none', opacity: 1, visibility: 'visible' }}>
           {/* Header */}
-          <div className="text-center mb-6 md:mb-8">
-            <Badge className="gradient-gold text-secondary-foreground border-0 mb-3 md:mb-4 text-xs sm:text-sm">
+          <div className="text-center mb-8 md:mb-8 py-4 sm:py-0">
+            <Badge className="gradient-gold text-secondary-foreground border-0 mb-4 md:mb-4 text-sm sm:text-sm">
               Registration Open
             </Badge>
 
             {/* Main Seminar Name */}
-            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2 md:mb-3 px-2">
+            <h1 className="text-2xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 md:mb-3 px-2">
               {activeSeminar.name}
             </h1>
 
             {/* Title/Tagline if exists */}
             {activeSeminar.title && (
-              <p className="text-base sm:text-lg md:text-xl text-black font-semibold mb-3 md:mb-4 px-2">
+              <p className="text-lg sm:text-lg md:text-xl text-black font-semibold mb-4 md:mb-4 px-2">
                 {activeSeminar.title}
               </p>
             )}
 
             {/* Date and Venue Info */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-muted-foreground text-sm sm:text-base md:text-lg px-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-2 text-muted-foreground text-base sm:text-base md:text-lg px-2">
               <span className="font-medium">
                 {new Date(activeSeminar.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                 {activeSeminar.end_date && activeSeminar.start_date !== activeSeminar.end_date && (

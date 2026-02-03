@@ -840,7 +840,7 @@ exports.getAllMembers = async (req, res) => {
 
     // JOIN with users table to get membership_no
     const [members] = await promisePool.query(`
-      SELECT mr.id, mr.name, mr.email, mr.membership_type, mr.payment_status as membership_status, mr.created_at,
+      SELECT mr.id, mr.name, mr.email, mr.membership_type, mr.payment_type, mr.payment_status as membership_status, mr.created_at,
              u.membership_no, mr.valid_from, mr.valid_until, mr.notes
       FROM membership_registrations mr
       LEFT JOIN users u ON mr.email = u.email
@@ -956,12 +956,23 @@ exports.updateMembershipDetails = async (req, res) => {
     );
 
     if (existingMembership.length > 0) {
-      // Update existing membership registration
+      // Get current valid_until to preserve it
+      const [currentData] = await promisePool.query(
+        'SELECT valid_until FROM membership_registrations WHERE email = ?',
+        [userEmail]
+      );
+      
+      // Preserve the original valid_until - don't let admin change it
+      const preservedValidUntil = currentData[0].valid_until;
+      
+      // Update existing membership registration (preserve valid_until)
       await promisePool.query(`
         UPDATE membership_registrations 
-        SET membership_type = ?, payment_status = ?, valid_from = ?, valid_until = ?, notes = ?
+        SET membership_type = ?, payment_status = ?, valid_from = ?, notes = ?
         WHERE email = ?
-      `, [membership_type, status || 'active', valid_from || null, valid_until || null, notes, userEmail]);
+      `, [membership_type, status || 'active', valid_from || null, notes, userEmail]);
+      
+      console.log(`Preserved valid_until: ${preservedValidUntil} for ${userEmail}`);
     } else if (membership_type) {
       // Create new membership registration record only if membership_type is provided
       const [user] = await promisePool.query('SELECT * FROM users WHERE email = ?', [userEmail]);

@@ -351,7 +351,7 @@ export function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
-                    {user.membership_no && (
+                    {user.membership_no && user.has_active_membership && (
                       <>
                         <DropdownMenuItem className="cursor-default">
                           <div className="flex items-center justify-center w-full">
@@ -491,7 +491,7 @@ export function Navbar() {
                     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
                       {user ? (
                         <div className="space-y-2">
-                          {user.membership_no && (
+                          {user.membership_no && user.has_active_membership && (
                             <div className="flex items-center justify-center mb-3">
                               <Badge variant="outline" className="text-xs border-blue-200 bg-blue-50 text-blue-700">
                                 Membership: {user.membership_no}

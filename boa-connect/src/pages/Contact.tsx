@@ -159,20 +159,20 @@ export default function Contact() {
 
   return (
     <Layout>
-      <div className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
+      <div className="py-12 sm:py-16 lg:py-20 px-1 sm:px-6">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 px-2 sm:px-0">
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 sm:mb-4">Contact Us</h1>
             <p className="text-base sm:text-lg text-muted-foreground">
               Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 max-w-5xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-4 sm:gap-12 max-w-6xl mx-auto">
             {/* Contact Form */}
-            <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 lg:p-8 shadow-card">
+            <div className="bg-card rounded-xl sm:rounded-2xl border border-border p-2.5 sm:p-6 lg:p-8 shadow-card lg:col-span-1">
               <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Send us a message</h2>
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6" noValidate>
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6" noValidate>
                 <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1 sm:space-y-2">
                     <Label htmlFor="firstName" className="text-xs sm:text-sm">First Name</Label>

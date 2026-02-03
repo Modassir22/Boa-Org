@@ -37,9 +37,9 @@ export function HeroSection() {
 
   if (!activeSeminar) {
     return (
-      <section className="relative overflow-hidden" style={{ background: '#F9FAFB' }}>
+      <section className="mt-5 relative overflow-hidden" style={{ background: '#F9FAFB' }}>
         <div className="container py-20">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl px-4 sm:px-0">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight mb-4" style={{ color: '#1F2933' }}>
               Ophthalmic Association Of Bihar
             </h1>
@@ -61,52 +61,52 @@ export function HeroSection() {
   return (
     <section className="relative overflow-hidden -mt-4 sm:-mt-6 md:-mt-8" style={{ background: '#F9FAFB' }}>
       {/* Background Eye Image for Mobile */}
-      <div className="absolute inset-0 lg:hidden opacity-50 pointer-events-none">
+      <div className="absolute inset-0 lg:hidden opacity-30 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#F9FAFB]" />
         <img
-          src="https://res.cloudinary.com/derzj7d4u/image/upload/v1770063826/seminars/l3mbgixhgdaoek5fode2.png"
+          src="https://i.pinimg.com/736x/26/20/70/262070dec8e03eb4457722061d18ddf6.jpg"
           alt=""
-          className="w-full h-full object-contain object-center"
+          className="w-full h-full object-cover object-center"
         />
       </div>
 
-      <div className="container relative pt-0 pb-1 sm:pb-2 md:pb-4 lg:pb-6">
+      <div className="container relative pt-0 mt-10 pb-1 sm:pb-2 md:pb-4 lg:pb-6">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Content */}
-          <div className="space-y-4 lg:space-y-6 text-center lg:text-left">
+          <div className="space-y-4 lg:space-y-6 text-left px-2 sm:px-0">
             {activeSeminar && activeSeminar.online_registration_enabled === 1 && (
               <div className="gov-badge-accent inline-flex mt-2">
                 <span className="w-2 h-2 rounded-full mr-2 inline-block bg-green-500" />
-                <span className="text-black text-sm">{activeSeminar.name} - Registration Open</span>
+                <span className="text-black text-sm"><b>{activeSeminar.name} - Registration Open</b></span>
               </div>
             )}
 
             <div className="space-y-2 lg:space-y-3">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight" style={{ color: '#1F2933' }}>
+              <h1 className="leading-[1] text-5xl sm:text-6xl md:text-6xl lg:text-6xl font-semibold leading-tight px-2 sm:px-0 text-left" style={{ color: '#000' }}>
                 Ophthalmic Association Of Bihar
               </h1>
-              <p className="text-base sm:text-lg md:text-xl max-w-lg mx-auto lg:mx-0" style={{ color: '#474849ff' }}>
+              <p className="text-base sm:text-lg md:text-xl max-w-lg px-2 sm:px-0 text-left" style={{ color: '#474849ff' }}>
                 <b>Advancing eye care excellence through education, research, and collaboration since 2021.</b>
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 px-2 sm:px-0">
               {activeSeminar && activeSeminar.online_registration_enabled === 1 ? (
                 <>
-                  <Link to={`/seminar/${activeSeminar.id}/register`}>
+                  <Link to={`/seminar/${activeSeminar.id}/register`} className="w-full sm:w-auto">
                     <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 h-11 text-sm px-5">
                       Register for {activeSeminar.name}
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </Link>
-                  <Link to="/seminars">
+                  <Link to="/seminars" className="w-full sm:w-auto">
                     <button className="w-full sm:w-auto bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold rounded-lg transition-colors h-11 text-sm px-5">
                       View All Seminars
                     </button>
                   </Link>
                 </>
               ) : (
-                <Link to="/seminars">
+                <Link to="/seminars" className="w-full sm:w-auto">
                   <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 h-11 text-sm px-5">
                     View All Seminars
                     <ArrowRight className="h-4 w-4" />

@@ -10,7 +10,7 @@ import { SeminarPopup } from '@/components/home/SeminarPopup';
 const Index = () => {
   return (
     <Layout>
-      <div className="page-enter mt-4">
+      <div className="page-enter">
         <HeroSection />
         <div className="section-enter animate-delay-100 px-4 sm:px-6 lg:px-10">
           <AboutSection />

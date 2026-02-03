@@ -213,9 +213,18 @@ export default function MembershipForm() {
         return;
       }
 
+      // Construct membership_type with subcategory
+      let membershipType = selectedCategory?.title || 'Standard';
+      if (formData.payment_type === 'student') {
+        membershipType = `${membershipType} (Student)`;
+      } else if (formData.payment_type === 'passout') {
+        membershipType = `${membershipType} (Passout)`;
+      }
+
       const paymentResult = await razorpayService.processMembershipPayment(selectedPrice, {
         ...formData,
-        category_id: selectedCategory?.id
+        category_id: selectedCategory?.id,
+        membership_type: membershipType
       });
 
       if (paymentResult.success) {

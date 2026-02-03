@@ -26,6 +26,56 @@ function logToFile(message) {
   fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`);
 }
 
+// Helper function to generate membership number based on type
+async function generateMembershipNo(membershipType = 'Standard') {
+  // Determine prefix based on membership type
+  let prefix = 'STD'; // Default Standard
+  
+  const typeUpper = membershipType.toUpperCase();
+  
+  // Check for Lifetime first
+  if (typeUpper.includes('LIFETIME') || typeUpper.includes('LIFE')) {
+    prefix = 'LM'; // Life Member
+  } 
+  // Check for 5-Yearly (must check before Yearly to avoid confusion)
+  else if (typeUpper.includes('5-YEARLY') || typeUpper.includes('5 YEARLY') || typeUpper.includes('5YEARLY')) {
+    prefix = '5YL'; // 5-Yearly
+  } 
+  // Check for Yearly (any yearly that's not 5-yearly)
+  else if (typeUpper.includes('YEARLY') || typeUpper.includes('ANNUAL')) {
+    prefix = 'YL'; // Yearly
+  } 
+  // Check for Student
+  else if (typeUpper.includes('STUDENT')) {
+    prefix = 'ST'; // Student
+  } 
+  // Check for Honorary
+  else if (typeUpper.includes('HONORARY')) {
+    prefix = 'HN'; // Honorary
+  }
+
+  // Get the last membership number for this prefix
+  const [lastMembership] = await promisePool.query(
+    `SELECT membership_no FROM users 
+     WHERE membership_no LIKE ? 
+     ORDER BY membership_no DESC LIMIT 1`,
+    [`${prefix}%`]
+  );
+
+  let serial = 1;
+  if (lastMembership.length > 0) {
+    // Extract serial number from last membership (format: PREFIX001)
+    const lastNo = lastMembership[0].membership_no;
+    const numPart = lastNo.replace(prefix, '');
+    const lastSerial = parseInt(numPart);
+    if (!isNaN(lastSerial)) {
+      serial = lastSerial + 1;
+    }
+  }
+
+  return `${prefix}${serial.toString().padStart(3, '0')}`;
+}
+
 // Handle preflight requests
 router.options('/create-order', (req, res) => {
   logToFile('OPTIONS request received for /create-order');
@@ -462,12 +512,41 @@ async function processMembershipRegistration(membershipData, paymentInfo) {
       throw new Error(`You have already submitted a membership application. Only one application per email is allowed.`);
     }
 
+    // Calculate valid_from and valid_until based on membership type
+    const validFrom = new Date();
+    let validUntil = null;
+    
+    const membershipType = membershipData.membership_type.toLowerCase();
+    
+    if (membershipType.includes('lifetime') || membershipType.includes('life')) {
+      // Lifetime membership - no expiry
+      validUntil = null;
+    } else if (membershipType.includes('5-yearly') || membershipType.includes('5 yearly')) {
+      // 5 year membership
+      validUntil = new Date();
+      validUntil.setFullYear(validUntil.getFullYear() + 5);
+    } else if (membershipType.includes('yearly') || membershipType.includes('annual')) {
+      // 1 year membership
+      validUntil = new Date();
+      validUntil.setFullYear(validUntil.getFullYear() + 1);
+    } else {
+      // Default to 1 year if type is unclear
+      validUntil = new Date();
+      validUntil.setFullYear(validUntil.getFullYear() + 1);
+    }
+
+    logToFile(`Calculated validity: From ${validFrom.toISOString()}, Until ${validUntil ? validUntil.toISOString() : 'Lifetime'}`);
+
+    // Generate membership number based on membership type
+    const membershipNo = await generateMembershipNo(membershipData.membership_type);
+    logToFile(`Generated membership number: ${membershipNo}`);
+
     const [result] = await promisePool.query(
       `INSERT INTO membership_registrations 
        (name, father_name, qualification, year_passing, dob, institution, working_place, 
-        sex, age, address, mobile, email, membership_type, transaction_id, payment_status, 
-        payment_method, payment_date, razorpay_order_id, razorpay_payment_id, amount)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
+        sex, age, address, mobile, email, membership_type, payment_type, transaction_id, payment_status, 
+        payment_method, payment_date, razorpay_order_id, razorpay_payment_id, amount, valid_from, valid_until)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
       [
         membershipData.name,
         membershipData.father_name,
@@ -482,16 +561,35 @@ async function processMembershipRegistration(membershipData, paymentInfo) {
         membershipData.mobile,
         membershipData.email,
         membershipData.membership_type,
+        membershipData.payment_type || null,
         paymentInfo.payment_id,
         'completed',
         'razorpay',
         paymentInfo.order_id,
         paymentInfo.payment_id,
-        paymentInfo.amount
+        paymentInfo.amount,
+        validFrom,
+        validUntil
       ]
     );
 
     logToFile(`Membership registration inserted with ID: ${result.insertId}`);
+
+    // Update user's membership number if user exists
+    const [existingUser] = await promisePool.query(
+      'SELECT id FROM users WHERE email = ?',
+      [membershipData.email]
+    );
+
+    if (existingUser.length > 0) {
+      await promisePool.query(
+        'UPDATE users SET membership_no = ?, is_boa_member = TRUE WHERE email = ?',
+        [membershipNo, membershipData.email]
+      );
+      logToFile(`Updated user membership number: ${membershipNo} for ${membershipData.email}`);
+    } else {
+      logToFile(`User not found for email: ${membershipData.email}, membership number not assigned to user table`);
+    }
 
     // Send confirmation email to user
     try {

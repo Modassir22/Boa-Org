@@ -69,6 +69,8 @@ export default function Dashboard() {
       // Load membership details
       try {
         const membershipResponse = await userAPI.getMembershipDetails();
+        console.log('Membership response:', membershipResponse);
+        console.log('Membership type:', membershipResponse.membership?.membership_type);
         setMembershipData(membershipResponse.membership);
       } catch (error) {
         console.error('No membership data found',error);
@@ -461,59 +463,67 @@ export default function Dashboard() {
   const totalPaid = registrations.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
+      <div className="min-h-[calc(100vh-4rem)] py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          {/* Header - Responsive */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 Welcome, {getDisplayTitle(user.title)} {user.first_name}!
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
                 Manage your registrations and profile
               </p>
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Sidebar */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Profile Card */}
-              <div className="bg-card rounded-2xl border border-border p-6 shadow-card">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="h-16 w-16 rounded-full gradient-primary flex items-center justify-center">
-                    <User className="h-8 w-8 text-primary-foreground" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            {/* Sidebar - Full width on mobile */}
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6">
+              {/* Profile Card - Responsive */}
+              <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 shadow-card">
+                <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full gradient-primary flex items-center justify-center flex-shrink-0">
+                    <User className="h-7 w-7 sm:h-8 sm:w-8 text-primary-foreground" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
                       {getDisplayTitle(user.title)} {user.first_name} {user.surname}
                     </h3>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                    {user.membership_no && (
-                      <Badge className="mt-1 bg-yellow-400 text-black border-0 hover:bg-yellow-500">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
+                    {user.membership_no && membershipData?.membership_type && (
+                      <Badge className="mt-1 bg-yellow-400 text-black border-0 hover:bg-yellow-500 text-xs">
                         {user.membership_no}
                       </Badge>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Email</span>
-                    <span className="text-foreground">{user.email}</span>
+                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-muted-foreground flex-shrink-0">Email</span>
+                    <span className="text-foreground text-right break-all">{user.email}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Mobile</span>
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-muted-foreground flex-shrink-0">Mobile</span>
                     <span className="text-foreground">{user.mobile}</span>
                   </div>
                   {membershipData?.membership_type && membershipData?.status === 'active' ? (
                     <>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Membership Type</span>
-                        <Badge variant="outline" className="capitalize">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-muted-foreground flex-shrink-0">Membership Type</span>
+                        <Badge variant="outline" className="capitalize text-xs">
                           {membershipData.membership_type}
                         </Badge>
                       </div>
+                      {membershipData?.payment_type && (
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-muted-foreground">Payment Type</span>
+                          <Badge variant="outline" className="capitalize">
+                            {membershipData.payment_type}
+                          </Badge>
+                        </div>
+                      )}
                       {membershipData?.payment_status && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Payment Status</span>
@@ -593,7 +603,17 @@ export default function Dashboard() {
                                 </div>
                               </div>
                             )}
-                            {user.membership_no && (
+                            {membershipData?.payment_type && (
+                              <div>
+                                <Label className="text-muted-foreground">Payment Type</Label>
+                                <div className="mt-1 p-2 bg-muted rounded border">
+                                  <Badge variant="outline" className="capitalize">
+                                    {membershipData.payment_type}
+                                  </Badge>
+                                </div>
+                              </div>
+                            )}
+                            {user.membership_no && membershipData?.membership_type && (
                               <div>
                                 <Label className="text-muted-foreground">Membership Number</Label>
                                 <div className="mt-1 p-2 bg-muted rounded border">
@@ -635,7 +655,7 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>First Name</Label>
                             <Input value={editFormData.first_name} onChange={(e) => setEditFormData({ ...editFormData, first_name: e.target.value })} required />
@@ -651,7 +671,7 @@ export default function Dashboard() {
                           <Input value={editFormData.mobile} onChange={(e) => setEditFormData({ ...editFormData, mobile: e.target.value })} required />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>City</Label>
                             <Input value={editFormData.city} onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })} />
@@ -669,11 +689,11 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2 justify-end">
-                          <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                        <div className="flex flex-col sm:flex-row gap-2 justify-end">
+                          <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
                             Cancel
                           </Button>
-                          <Button type="submit" className="gradient-primary text-primary-foreground" disabled={isUpdating}>
+                          <Button type="submit" className="gradient-primary text-primary-foreground w-full sm:w-auto" disabled={isUpdating}>
                             {isUpdating ? 'Updating...' : 'Update Profile'}
                           </Button>
                         </div>

@@ -106,6 +106,7 @@ export default function MembershipDetails() {
         ['Email:', membershipData.email],
         ['Mobile:', membershipData.mobile],
         ['Membership Type:', membershipData.membership_type || 'Standard'],
+        ['Payment Type:', membershipData.payment_type || 'N/A'],
         ['Status:', membershipData.status || 'Active'],
         ['Valid From:', membershipData.valid_from ? new Date(membershipData.valid_from).toLocaleDateString() : 'N/A'],
         ['Valid Until:', membershipData.valid_until ? new Date(membershipData.valid_until).toLocaleDateString() : 'Lifetime'],
@@ -230,6 +231,7 @@ export default function MembershipDetails() {
       ['Email:', membershipData.email],
       ['Mobile:', membershipData.mobile],
       ['Membership Type:', membershipData.membership_type || 'Standard'],
+      ['Payment Type:', membershipData.payment_type || 'N/A'],
       ['Status:', membershipData.status || 'Active'],
       ['Valid From:', membershipData.valid_from ? new Date(membershipData.valid_from).toLocaleDateString() : 'N/A'],
       ['Valid Until:', membershipData.valid_until ? new Date(membershipData.valid_until).toLocaleDateString() : 'Lifetime'],
@@ -322,7 +324,7 @@ export default function MembershipDetails() {
     );
   }
 
-  if (!membershipData || !membershipData.membership_no) {
+  if (!membershipData || !membershipData.membership_type) {
     return (
       <Layout>
         <div className="min-h-[calc(100vh-4rem)] py-12 px-4">
@@ -340,7 +342,7 @@ export default function MembershipDetails() {
             <div className="flex items-center justify-center min-h-[300px]">
               <div className="text-center">
                 <h2 className="text-xl text-muted-foreground">
-                  No Membership Plan Available
+                  No Membership Available
                 </h2>
               </div>
             </div>
@@ -447,6 +449,20 @@ export default function MembershipDetails() {
                           </div>
                         </div>
                       </div>
+
+                      {membershipData.payment_type && (
+                        <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/30 transition-colors">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <CreditCard className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-muted-foreground mb-1">Payment Type</div>
+                            <div className="font-semibold text-foreground capitalize">
+                              {membershipData.payment_type}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/30 transition-colors">
                         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">

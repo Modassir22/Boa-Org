@@ -414,6 +414,12 @@ export const adminAPI = {
     return response.data;
   },
 
+  // Membership Categories
+  getMembershipCategories: async () => {
+    const response = await adminApi.get('/admin/membership-categories');
+    return response.data;
+  },
+
   // Certificate Management
   uploadCertificate: async (formData: FormData) => {
     const response = await adminApi.post('/admin/certificates/upload', formData, {

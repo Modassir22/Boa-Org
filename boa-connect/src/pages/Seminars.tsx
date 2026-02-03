@@ -54,23 +54,23 @@ export default function Seminars() {
   }
   return (
     <Layout>
-      <div className="py-8 sm:py-12 px-4 sm:px-6">
-        <div className="container">
+      <div className="py-6 sm:py-8 lg:py-12 px-0.5 sm:px-4 lg:px-6">
+        <div className="container mx-auto max-w-7xl">
           {/* Header */}
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+          <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 lg:mb-12">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2 sm:mb-3 lg:mb-4">
               Seminars & Conferences
             </h1>
-            <p className="text-base sm:text-lg text-muted-foreground">
+            <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
               Explore our upcoming events and register for conferences that advance your ophthalmic practice.
             </p>
           </div>
 
           {/* Upcoming Seminars Section */}
-          <div className="mb-12 sm:mb-16">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6 sm:mb-8">
+          <div className="mb-8 sm:mb-12 lg:mb-16">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6 lg:mb-8">
               <div className="h-1 w-12 bg-blue-600"></div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Upcoming Events</h2>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Upcoming Events</h2>
               {upcomingSeminars.length > 0 && (
                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 self-start sm:self-auto">
                   {upcomingSeminars.length}
@@ -89,11 +89,11 @@ export default function Seminars() {
                 </p>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-6">
                 {upcomingSeminars.map((seminar) => (
                   <div
                     key={seminar.id}
-                    className="relative bg-card rounded-2xl border border-border overflow-hidden shadow-sm"
+                    className="relative bg-card rounded-md sm:rounded-2xl border border-border overflow-hidden shadow-sm w-full"
                   >
                     {/* Status Badge */}
                     {seminar.is_active && (
@@ -193,11 +193,11 @@ export default function Seminars() {
                 </Badge>
               </div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-6">
                 {previousSeminars.map((seminar) => (
                   <div
                     key={seminar.id}
-                    className="relative bg-card rounded-2xl border border-border overflow-hidden shadow-sm opacity-75"
+                    className="relative bg-card rounded-md sm:rounded-2xl border border-border overflow-hidden shadow-sm opacity-75 w-full"
                   >
                     {/* Status Badge */}
                     <div className="absolute top-3 right-3 z-10">
@@ -276,8 +276,17 @@ export default function Seminars() {
           )}
 
           {/* CTA */}
-          <div className="mt-12 sm:mt-16 text-center">
-            <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 rounded-full bg-accent text-accent-foreground">
+          <div className="mt-12 sm:mt-16 text-center px-2 sm:px-0">
+            {/* Mobile View - Simple Contact Button */}
+            <Link to="/contact" className="sm:hidden">
+              <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-accent-foreground hover:bg-accent/80 transition-colors">
+                <Users className="h-4 w-4" />
+                <span className="font-semibold text-sm">Contact us</span>
+              </button>
+            </Link>
+            
+            {/* Desktop View - Full Text */}
+            <div className="hidden sm:inline-flex flex-row items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-accent text-accent-foreground">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="font-medium text-sm sm:text-base">Want to host an event with BOA?</span>
