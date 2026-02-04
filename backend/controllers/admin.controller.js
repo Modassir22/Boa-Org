@@ -992,7 +992,7 @@ exports.updateMembershipDetails = async (req, res) => {
     const { id } = req.params;
     const { membership_no, membership_type, status, valid_from, valid_until, notes } = req.body;
 
-    
+  
 
     let membershipId;
     let userEmail;
@@ -1051,6 +1051,7 @@ exports.updateMembershipDetails = async (req, res) => {
       'UPDATE users SET membership_no = ? WHERE email = ?',
       [membership_no || null, userEmail]
     );
+
 
     // Update membership registration
     const [existingMembership] = await promisePool.query(

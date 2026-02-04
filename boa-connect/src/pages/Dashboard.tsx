@@ -28,10 +28,15 @@ export default function Dashboard() {
     title: '',
     first_name: '',
     surname: '',
+    email: '',
     mobile: '',
     gender: '',
+    house: '',
+    street: '',
+    landmark: '',
     city: '',
-    state: ''
+    state: '',
+    pin_code: ''
   });
   const [passwordFormData, setPasswordFormData] = useState({
     current_password: '',
@@ -125,10 +130,15 @@ export default function Dashboard() {
       title: user.title || '',
       first_name: user.first_name || '',
       surname: user.surname || '',
+      email: user.email || '',
       mobile: user.mobile || '',
       gender: user.gender || '',
+      house: user.house || '',
+      street: user.street || '',
+      landmark: user.landmark || '',
       city: user.city || '',
-      state: user.state || ''
+      state: user.state || '',
+      pin_code: user.pin_code || ''
     });
     setIsEditDialogOpen(true);
   };
@@ -143,17 +153,18 @@ export default function Dashboard() {
         title: editFormData.title,
         first_name: editFormData.first_name,
         surname: editFormData.surname,
+        email: editFormData.email,
         mobile: editFormData.mobile,
         phone: user.phone || '',
         gender: editFormData.gender,
         dob: user.dob || null,
-        house: user.house || '',
-        street: user.street || '',
-        landmark: user.landmark || '',
+        house: editFormData.house,
+        street: editFormData.street,
+        landmark: editFormData.landmark,
         city: editFormData.city,
         state: editFormData.state,
         country: user.country || 'India',
-        pin_code: user.pin_code || ''
+        pin_code: editFormData.pin_code
       };
 
       await userAPI.updateProfile(updateData);
@@ -581,12 +592,6 @@ export default function Dashboard() {
                             These details are managed by BOA administrators and cannot be changed by users.
                           </p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <Label className="text-muted-foreground">Email Address</Label>
-                              <div className="mt-1 p-2 bg-muted rounded border text-foreground">
-                                {user.email}
-                              </div>
-                            </div>
                             {membershipData?.membership_type && (
                               <div>
                                 <Label className="text-muted-foreground">Membership Type</Label>
@@ -624,6 +629,17 @@ export default function Dashboard() {
                         <div>
                           <h3 className="font-semibold mb-3 text-foreground">Personal Information (Editable)</h3>
                         </div>
+                        
+                        <div className="space-y-2">
+                          <Label>Email Address</Label>
+                          <Input 
+                            type="email" 
+                            value={editFormData.email} 
+                            onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })} 
+                            required 
+                          />
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Title</Label>
@@ -665,22 +681,48 @@ export default function Dashboard() {
                           <Input value={editFormData.mobile} onChange={(e) => setEditFormData({ ...editFormData, mobile: e.target.value })} required />
                         </div>
 
+                        {/* Address Section */}
+                        <div className="pt-4 border-t">
+                          <h3 className="font-semibold mb-3 text-foreground">Address Information</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>House/Flat No.</Label>
+                            <Input value={editFormData.house} onChange={(e) => setEditFormData({ ...editFormData, house: e.target.value })} placeholder="House/Flat No." />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Street/Area</Label>
+                            <Input value={editFormData.street} onChange={(e) => setEditFormData({ ...editFormData, street: e.target.value })} placeholder="Street/Area" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Landmark</Label>
+                          <Input value={editFormData.landmark} onChange={(e) => setEditFormData({ ...editFormData, landmark: e.target.value })} placeholder="Nearby landmark" />
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>City</Label>
                             <Input value={editFormData.city} onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })} />
                           </div>
                           <div className="space-y-2">
-                            <Label>State</Label>
-                            <Select value={editFormData.state} onValueChange={(v) => setEditFormData({ ...editFormData, state: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                              <SelectContent>
-                                {indianStates.map(state => (
-                                  <SelectItem key={state} value={state}>{state}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Label>PIN Code</Label>
+                            <Input value={editFormData.pin_code} onChange={(e) => setEditFormData({ ...editFormData, pin_code: e.target.value })} placeholder="6-digit PIN" maxLength={6} />
                           </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>State</Label>
+                          <Select value={editFormData.state} onValueChange={(v) => setEditFormData({ ...editFormData, state: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                            <SelectContent>
+                              {indianStates.map(state => (
+                                <SelectItem key={state} value={state}>{state}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-2 justify-end">

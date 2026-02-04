@@ -7,10 +7,11 @@ exports.getProfile = async (req, res) => {
 
     const [users] = await promisePool.query(
       `SELECT u.*, a.house, a.street, a.landmark, a.city, a.state, a.country, a.pin_code,
+       mr.membership_no, mr.membership_type,
        CASE WHEN mr.membership_type IS NOT NULL THEN 1 ELSE 0 END as has_active_membership
        FROM users u
        LEFT JOIN addresses a ON u.id = a.user_id
-       LEFT JOIN membership_registrations mr ON u.email = mr.email
+       LEFT JOIN membership_registrations mr ON u.email = mr.email AND mr.payment_status IN ('active', 'paid', 'completed')
        WHERE u.id = ?`,
       [userId]
     );
@@ -49,23 +50,54 @@ exports.updateProfile = async (req, res) => {
     
     const userId = req.user.id;
     const {
-      title, first_name, surname, mobile, phone, gender, dob,
+      title, first_name, surname, email, mobile, phone, gender, dob,
       house, street, landmark, city, state, country, pin_code
     } = req.body;
+
+
+    // Format DOB to MySQL DATE format (YYYY-MM-DD)
+    let formattedDob = dob;
+    if (dob) {
+      const dobDate = new Date(dob);
+      if (!isNaN(dobDate.getTime())) {
+        formattedDob = dobDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      } else {
+        formattedDob = null;
+      }
+    }
+
+    // Get current email before update (to update membership_registrations if email changes)
+    const [currentUser] = await connection.query(
+      'SELECT email FROM users WHERE id = ?',
+      [userId]
+    );
+    const oldEmail = currentUser[0]?.email;
 
     // Update user
     await connection.query(
       `UPDATE users SET 
        title = COALESCE(?, title), 
        first_name = COALESCE(?, first_name), 
-       surname = COALESCE(?, surname), 
+       surname = COALESCE(?, surname),
+       email = COALESCE(?, email), 
        mobile = COALESCE(?, mobile), 
        phone = ?, 
        gender = COALESCE(?, gender), 
        dob = ?
        WHERE id = ?`,
-      [title, first_name, surname, mobile, phone, gender, dob, userId]
+      [title, first_name, surname, email, mobile, phone, gender, formattedDob, userId]
     );
+
+    
+
+    // If email changed, update membership_registrations table as well
+    if (email && oldEmail && email !== oldEmail) {
+      await connection.query(
+        'UPDATE membership_registrations SET email = ? WHERE email = ?',
+        [email, oldEmail]
+      );
+      
+    }
 
     // Check if address exists
     const [existingAddress] = await connection.query(
@@ -204,7 +236,7 @@ exports.getMembershipDetails = async (req, res) => {
     // Get user details with membership information and payment details
     const [user] = await promisePool.query(`
       SELECT u.*, 
-             mr.membership_type, mr.payment_type, mr.payment_status as status, mr.valid_from, mr.valid_until, mr.notes,
+             mr.membership_no, mr.membership_type, mr.payment_type, mr.payment_status as status, mr.valid_from, mr.valid_until, mr.notes,
              mr.amount, mr.payment_status, mr.payment_method, mr.transaction_id,
              mr.razorpay_payment_id, mr.payment_date, mr.qualification, mr.year_passing,
              mr.institution, mr.working_place,
