@@ -548,39 +548,6 @@ try {
     }
   });
 
-  // Public stats route
-  app.get('/api/stats', async (req, res) => {
-    try {
-      const { promisePool } = require('./config/database');
-      
-      // Get total members count (all users except admin)
-      const [memberCount] = await promisePool.query('SELECT COUNT(*) as count FROM users WHERE role = "user"');
-      
-      // Get seminars count
-      const [seminarCount] = await promisePool.query('SELECT COUNT(*) as count FROM seminars');
-      
-      // Calculate years of service (assuming founded in 2021)
-      const foundedYear = 2021;
-      const currentYear = new Date().getFullYear();
-      const yearsOfService = currentYear - foundedYear;
-      
-      // Bihar has 38 districts
-      const districtsCovered = 38;
-      
-      res.json({ 
-        success: true, 
-        stats: {
-          total_members: memberCount[0].count,
-          years_of_service: yearsOfService,
-          seminars_conducted: seminarCount[0].count,
-          districts_covered: districtsCovered
-        }
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Failed to fetch stats' });
-    }
-  });
-
   // Admin membership categories management routes
   const adminAuthMiddleware = require('./middleware/admin-auth.middleware');
   

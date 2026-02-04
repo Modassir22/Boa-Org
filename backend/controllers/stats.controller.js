@@ -1,8 +1,11 @@
 const { promisePool } = require('../config/database');
 
+// Force reload - Updated: 2026-02-04
+
 // Get all active stats (public endpoint)
 exports.getAllStats = async (req, res) => {
   try {
+    
     const [stats] = await promisePool.query(
       `SELECT stat_key, stat_value, stat_label, stat_icon, display_order 
        FROM stats 
@@ -10,12 +13,12 @@ exports.getAllStats = async (req, res) => {
        ORDER BY display_order ASC`
     );
 
-    // Update active members count dynamically from paid memberships
+
+    // Get total members count from membership_registrations (same as admin panel)
     const [memberCount] = await promisePool.query(
-      `SELECT COUNT(*) as count 
-       FROM membership_registrations 
-       WHERE payment_status = 'completed'`
+      'SELECT COUNT(*) as count FROM membership_registrations'
     );
+
 
     // Update the total_members stat with real count
     const updatedStats = stats.map(stat => {
@@ -28,6 +31,14 @@ exports.getAllStats = async (req, res) => {
       return stat;
     });
 
+    
+    // Add no-cache headers
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     res.json({
       success: true,
       stats: updatedStats
