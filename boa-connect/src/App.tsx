@@ -33,6 +33,7 @@ import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import MembershipForm from "./pages/MembershipForm";
+import ElectionSubmission from "./pages/ElectionSubmission";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,11 @@ const App = () => (
           <Route path="/news" element={<News />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/elections/:id/submit" element={
+            <ProtectedRoute>
+              <ElectionSubmission />
+            </ProtectedRoute>
+          } />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

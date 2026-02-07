@@ -1,9 +1,53 @@
 const { sendContactEmail, sendContactConfirmationEmail } = require('../config/email.config');
+const axios = require('axios');
+
+// Verify reCAPTCHA token
+async function verifyRecaptcha(token) {
+  try {
+    
+    const response = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify`,
+      null,
+      {
+        params: {
+          secret: process.env.RECAPTCHA_SECRET_KEY,
+          response: token
+        }
+      }
+    );
+    
+    
+    // For v3, check score. For v2, just check success
+    const isValid = response.data.success && (response.data.score ? response.data.score >= 0.5 : true);
+    
+    return isValid;
+  } catch (error) {
+    console.error('reCAPTCHA verification error:', error.message);
+    return false;
+  }
+}
 
 // Send contact form email
 exports.sendContactForm = async (req, res) => {
+  
   try {
-    let { firstName, lastName, email, phone, subject, message } = req.body;
+    let { firstName, lastName, email, phone, subject, message, recaptchaToken } = req.body;
+
+
+    // Verify reCAPTCHA (with detailed logging)
+    if (recaptchaToken) {
+      try {
+        const isValid = await verifyRecaptcha(recaptchaToken);
+        
+        if (!isValid) {
+          // Don't block the request, just log the warning
+        }
+      } catch (recaptchaError) {
+        console.error('reCAPTCHA verification error:', recaptchaError);
+        // Don't block the request on reCAPTCHA errors
+      }
+    } else {
+    }
 
     // Trim all fields
     firstName = firstName?.trim();

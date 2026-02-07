@@ -6,17 +6,25 @@ const nodemailer = require('nodemailer');
 // Create transporter with Hostinger SMTP settings
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+  port: parseInt(process.env.EMAIL_PORT) || 465,
+  secure: process.env.EMAIL_SECURE === 'true', // true for 465 (SSL), false for 587 (TLS)
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
   },
-  pool: true, // Use pooled connections for faster delivery
-  maxConnections: 5, // Max simultaneous connections
-  maxMessages: 100, // Max messages per connection
+  pool: true, // Use pooled connections
+  maxConnections: 1, // Limit to 1 connection to avoid spam detection
+  maxMessages: 10, // Max 10 messages per connection
+  rateDelta: 1000, // 1 second between messages
+  rateLimit: 1, // Max 1 message per rateDelta
   tls: {
-    rejectUnauthorized: false // Accept self-signed certificates
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
+  },
+  // Add proper headers to avoid spam
+  headers: {
+    'X-Mailer': 'BOA Bihar Mailer',
+    'X-Priority': '3'
   }
 });
 
@@ -1406,6 +1414,40 @@ const sendPDFReceiptEmail = async (paymentData, pdfBuffer) => {
   }
 };
 
+// Simple test email function (plain text, no spam triggers)
+const sendSimpleTestEmail = async (toEmail) => {
+  const mailOptions = {
+    from: {
+      name: 'BOA Bihar',
+      address: process.env.EMAIL_USER || 'info@boabihar.org'
+    },
+    to: toEmail,
+    subject: 'Test Email from BOA Bihar',
+    text: `Hello,
+
+This is a simple test email from Ophthalmic Association Of Bihar.
+
+If you received this email, the email configuration is working correctly.
+
+Best regards,
+BOA Bihar Team`,
+    html: `
+      <p>Hello,</p>
+      <p>This is a simple test email from Ophthalmic Association Of Bihar.</p>
+      <p>If you received this email, the email configuration is working correctly.</p>
+      <p>Best regards,<br>BOA Bihar Team</p>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Test email error:', error.message);
+    throw error;
+  }
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendContactEmail,
@@ -1415,5 +1457,6 @@ module.exports = {
   sendMembershipAdminNotification,
   sendSeminarAdminNotification,
   sendPDFReceiptEmail,
-  testEmailConfig
+  testEmailConfig,
+  sendSimpleTestEmail
 };

@@ -148,6 +148,9 @@ router.put('/gallery-images/:id', adminAuth, upload.single('image'), adminContro
 router.delete('/gallery-images/:id', adminAuth, adminController.deleteGalleryImage);
 router.put('/gallery-images/:id/toggle-status', adminAuth, adminController.toggleGalleryImageStatus);
 
+// Direct Image Upload (for elections, etc. - doesn't save to gallery)
+router.post('/upload-image', adminAuth, upload.single('image'), adminController.uploadImageOnly);
+
 // Stats Management
 const statsController = require('../controllers/stats.controller');
 router.get('/stats', adminAuth, statsController.getAdminStats);

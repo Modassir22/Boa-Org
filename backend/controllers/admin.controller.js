@@ -4598,6 +4598,36 @@ exports.toggleGalleryImageStatus = async (req, res) => {
   }
 };
 
+// Upload image only (doesn't save to gallery - for elections, etc.)
+exports.uploadImageOnly = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image file is required'
+      });
+    }
+
+    const cloudinary = require('../config/cloudinary');
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'boa-elections',
+      resource_type: 'image'
+    });
+
+    res.json({
+      success: true,
+      message: 'Image uploaded successfully',
+      imageUrl: result.secure_url
+    });
+  } catch (error) {
+    console.error('Upload image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload image'
+    });
+  }
+};
+
 // ============ MEMBERSHIP-SPECIFIC OPERATIONS ============
 
 // Delete membership only (not the user account)

@@ -27,6 +27,7 @@ import TestimonialsTab from './tabs/TestimonialsTab';
 import NewsTab from './tabs/NewsTab';
 import GalleryManagementTab from './tabs/GalleryManagementTab';
 import StatsTab from './tabs/StatsTab';
+import ElectionsTab from './tabs/ElectionsTab';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -117,6 +118,7 @@ export default function AdminPanel() {
         {activeTab === 'committee' && <CommitteeMembersTab />}
         {activeTab === 'certification' && <CertificationTab />}
         {activeTab === 'upcoming' && <UpcomingEventsTab />}
+        {activeTab === 'elections' && <ElectionsTab />}
         {activeTab === 'gallery' && <GalleryTab />}
         {activeTab === 'gallery-management' && <GalleryManagementTab />}
         {activeTab === 'news' && <NewsTab />}

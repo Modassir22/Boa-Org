@@ -191,6 +191,29 @@ export default function MembershipForm() {
     setLoading(true);
 
     try {
+      // Check for duplicate membership before payment
+      const checkResponse = await fetch(
+        `${API_BASE_URL}/api/registrations/check-duplicate?email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const checkData = await checkResponse.json();
+
+      if (checkData.exists) {
+        setLoading(false);
+        toast.error(
+          `A membership already exists with this ${checkData.users[0].email === formData.email ? 'email' : 'name'}. ` +
+          `Membership No: ${checkData.users[0].membership_no || 'Pending'}`
+        );
+        return;
+      }
+
+      // Continue with payment if no duplicate found
       let selectedCategory = null;
       let selectedPrice = 0;
       

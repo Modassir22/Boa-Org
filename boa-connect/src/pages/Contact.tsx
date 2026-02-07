@@ -8,9 +8,9 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/utils';
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
-export default function Contact() {
-  const [contactInfo, setContactInfo] = useState<any>(null);
+function ContactForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -21,21 +21,7 @@ export default function Contact() {
     message: ''
   });
   const { toast } = useToast();
-
-  useEffect(() => {
-    loadContactInfo();
-  }, []);
-
-  const loadContactInfo = async () => {
-    try {
-      const response = await api.get('/contact-info');
-      if (response.data.success && response.data.contactInfo) {
-        setContactInfo(response.data.contactInfo);
-      }
-    } catch (error) {
-      console.error('Failed to load contact info:', error);
-    }
-  };
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -104,9 +90,26 @@ export default function Contact() {
       return;
     }
 
+    if (!executeRecaptcha) {
+      console.log('reCAPTCHA not loaded, continuing without it...');
+      // Continue without reCAPTCHA if not loaded
+    }
+
     setIsLoading(true);
 
     try {
+      // Get reCAPTCHA token (optional)
+      let recaptchaToken = null;
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha('contact_form');
+          console.log('reCAPTCHA token generated');
+        } catch (recaptchaError) {
+          console.error('reCAPTCHA error:', recaptchaError);
+          // Continue without reCAPTCHA
+        }
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/contact/send`, {
         method: 'POST',
         headers: {
@@ -118,13 +121,16 @@ export default function Contact() {
           email: formData.email.trim(),
           phone: formData.phone.trim(),
           subject: formData.subject.trim(),
-          message: formData.message.trim()
+          message: formData.message.trim(),
+          recaptchaToken
         }),
       });
 
       const data = await response.json();
+      console.log('Response:', data);
+      console.log('Response status:', response.status);
 
-      if (data.success) {
+      if (response.ok && data.success) {
         toast({
           title: 'Success',
           description: data.message,
@@ -139,6 +145,7 @@ export default function Contact() {
           message: ''
         });
       } else {
+        console.error('Error response:', data);
         toast({
           title: 'Error',
           description: data.message || 'Failed to send message',
@@ -158,7 +165,139 @@ export default function Contact() {
   };
 
   return (
-    <Layout>
+    <div className="bg-card rounded-xl sm:rounded-2xl border border-border p-2.5 sm:p-6 lg:p-8 shadow-card lg:col-span-1">
+      <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Send us a message</h2>
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6" noValidate>
+        <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="space-y-1 sm:space-y-2">
+            <Label htmlFor="firstName" className="text-xs sm:text-sm">First Name</Label>
+            <Input 
+              id="firstName" 
+              placeholder="John" 
+              value={formData.firstName}
+              onChange={handleChange}
+              required 
+              disabled={isLoading}
+              className="h-9 sm:h-10 text-sm"
+            />
+          </div>
+          <div className="space-y-1 sm:space-y-2">
+            <Label htmlFor="lastName" className="text-xs sm:text-sm">Last Name</Label>
+            <Input 
+              id="lastName" 
+              placeholder="Doe" 
+              value={formData.lastName}
+              onChange={handleChange}
+              required 
+              disabled={isLoading}
+              className="h-9 sm:h-10 text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1 sm:space-y-2">
+          <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="john@example.com" 
+            value={formData.email}
+            onChange={handleChange}
+            required 
+            disabled={isLoading}
+            className="h-9 sm:h-10 text-sm"
+          />
+        </div>
+
+        <div className="space-y-1 sm:space-y-2">
+          <Label htmlFor="phone" className="text-xs sm:text-sm">Phone (Optional)</Label>
+          <Input 
+            id="phone" 
+            type="tel" 
+            placeholder="+91 XXXXX XXXXX" 
+            value={formData.phone}
+            onChange={handleChange}
+            disabled={isLoading}
+            className="h-9 sm:h-10 text-sm"
+          />
+        </div>
+
+        <div className="space-y-1 sm:space-y-2">
+          <Label htmlFor="subject" className="text-xs sm:text-sm">Subject</Label>
+          <Input 
+            id="subject" 
+            placeholder="How can we help?" 
+            value={formData.subject}
+            onChange={handleChange}
+            required 
+            disabled={isLoading}
+            className="h-9 sm:h-10 text-sm"
+          />
+        </div>
+
+        <div className="space-y-1 sm:space-y-2">
+          <Label htmlFor="message" className="text-xs sm:text-sm">Message</Label>
+          <Textarea 
+            id="message" 
+            placeholder="Your message..." 
+            rows={4}
+            value={formData.message}
+            onChange={handleChange}
+            required 
+            disabled={isLoading}
+            className="text-sm"
+          />
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full gradient-primary text-primary-foreground text-sm sm:text-base h-10 sm:h-11" 
+          size="lg"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2" />
+              Sending...
+            </>
+          ) : (
+            <>
+              Send Message
+              <Send className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+            </>
+          )}
+        </Button>
+        <p className="text-xs text-center text-muted-foreground mt-2">
+          Protected by reCAPTCHA
+        </p>
+      </form>
+    </div>
+  );
+}
+
+export default function Contact() {
+  const [contactInfo, setContactInfo] = useState<any>(null);
+
+  useEffect(() => {
+    loadContactInfo();
+  }, []);
+
+  const loadContactInfo = async () => {
+    try {
+      const response = await api.get('/contact-info');
+      if (response.data.success && response.data.contactInfo) {
+        setContactInfo(response.data.contactInfo);
+      }
+    } catch (error) {
+      console.error('Failed to load contact info:', error);
+    }
+  };
+
+  const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey}>
+      <Layout>
       <div className="py-12 sm:py-16 lg:py-20 px-1 sm:px-6">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 px-2 sm:px-0">
@@ -169,111 +308,7 @@ export default function Contact() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-4 sm:gap-12 max-w-6xl mx-auto">
-            {/* Contact Form */}
-            <div className="bg-card rounded-xl sm:rounded-2xl border border-border p-2.5 sm:p-6 lg:p-8 shadow-card lg:col-span-1">
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Send us a message</h2>
-              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6" noValidate>
-                <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="space-y-1 sm:space-y-2">
-                    <Label htmlFor="firstName" className="text-xs sm:text-sm">First Name</Label>
-                    <Input 
-                      id="firstName" 
-                      placeholder="John" 
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      required 
-                      disabled={isLoading}
-                      className="h-9 sm:h-10 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1 sm:space-y-2">
-                    <Label htmlFor="lastName" className="text-xs sm:text-sm">Last Name</Label>
-                    <Input 
-                      id="lastName" 
-                      placeholder="Doe" 
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      required 
-                      disabled={isLoading}
-                      className="h-9 sm:h-10 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1 sm:space-y-2">
-                  <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="john@example.com" 
-                    value={formData.email}
-                    onChange={handleChange}
-                    required 
-                    disabled={isLoading}
-                    className="h-9 sm:h-10 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1 sm:space-y-2">
-                  <Label htmlFor="phone" className="text-xs sm:text-sm">Phone (Optional)</Label>
-                  <Input 
-                    id="phone" 
-                    type="tel" 
-                    placeholder="+91 XXXXX XXXXX" 
-                    value={formData.phone}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    className="h-9 sm:h-10 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1 sm:space-y-2">
-                  <Label htmlFor="subject" className="text-xs sm:text-sm">Subject</Label>
-                  <Input 
-                    id="subject" 
-                    placeholder="How can we help?" 
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required 
-                    disabled={isLoading}
-                    className="h-9 sm:h-10 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1 sm:space-y-2">
-                  <Label htmlFor="message" className="text-xs sm:text-sm">Message</Label>
-                  <Textarea 
-                    id="message" 
-                    placeholder="Your message..." 
-                    rows={4}
-                    value={formData.message}
-                    onChange={handleChange}
-                    required 
-                    disabled={isLoading}
-                    className="text-sm"
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full gradient-primary text-primary-foreground text-sm sm:text-base h-10 sm:h-11" 
-                  size="lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      Send Message
-                      <Send className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </div>
+            <ContactForm />
 
             {/* Contact Info */}
             <div className="space-y-6 sm:space-y-8">
@@ -374,5 +409,6 @@ export default function Contact() {
         </div>
       </div>
     </Layout>
+    </GoogleReCaptchaProvider>
   );
 }

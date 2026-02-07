@@ -20,7 +20,8 @@ import {
   Phone,
   Settings,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Vote
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -198,6 +199,7 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
       items: [
         { id: 'news', label: 'News', icon: FileText },
         { id: 'upcoming', label: 'Upcoming Events', icon: Image },
+        { id: 'elections', label: 'Elections', icon: Vote },
         { id: 'gallery', label: 'Gallery', icon: Image },
         { id: 'gallery-management', label: 'Gallery Management', icon: Image },
         { id: 'testimonials', label: 'Testimonials', icon: Award },

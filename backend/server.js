@@ -60,6 +60,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Test route
 app.get('/', (req, res) => {
   res.json({ 
@@ -142,6 +145,10 @@ try {
   // Stats routes
   const statsRoutes = require('./routes/stats.routes');
   app.use('/api/stats', statsRoutes);
+
+  // Election routes
+  const electionRoutes = require('./routes/election.routes');
+  app.use('/api/elections', electionRoutes);
 
   // Public committee members route
   app.get('/api/committee-members', async (req, res) => {

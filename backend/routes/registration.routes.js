@@ -28,6 +28,11 @@ router.post('/test-post', (req, res) => {
   res.json({ success: true, message: 'POST test working', user_id: req.user?.id });
 });
 
+// Check duplicate membership (no auth required)
+router.get('/check-duplicate', (req, res, next) => {
+  next();
+}, registrationController.checkDuplicateMembership);
+
 // Create registration (requires auth)
 router.post('/', auth, registrationController.createRegistration);
 

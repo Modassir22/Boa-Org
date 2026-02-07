@@ -31,6 +31,20 @@ export default function Notifications() {
       if (data.success) {
         // Filter only active notifications
         const activeNotifs = (data.notifications || []).filter((n: any) => n.is_active);
+        
+        // Debug logging for election notifications
+        activeNotifs.forEach((n: any) => {
+          if (n.type === 'election') {
+            console.log('Election notification:', {
+              id: n.id,
+              title: n.title,
+              election_title: n.election_title,
+              election_id: n.election_id,
+              display_title: n.election_title || n.title
+            });
+          }
+        });
+        
         setNotifications(activeNotifs);
       }
     } catch (error) {
@@ -210,7 +224,7 @@ export default function Notifications() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {notification.seminar_name || notification.title}
+                            {notification.seminar_name || notification.election_title || notification.title}
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Clock className="h-4 w-4" />
@@ -272,6 +286,67 @@ export default function Notifications() {
                             Login to Download
                           </Button>
                         )}
+                      </div>
+                    )}
+                    
+                    {/* Election Actions */}
+                    {notification.type === 'election' && (
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button 
+                          variant="outline"
+                          className="w-full sm:w-auto h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5"
+                          onClick={async () => {
+                            if (!notification.election_id) {
+                              toast.error('Election information not available');
+                              return;
+                            }
+
+                            try {
+                              // Generate PDF on-demand (same as seminar)
+                              const response = await fetch(`${API_BASE_URL}/api/elections/generate-pdf/${notification.election_id}`);
+                              
+                              if (!response.ok) {
+                                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                              }
+
+                              // Download the PDF
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = `${notification.title.replace(/[^a-zA-Z0-9]/g, '_')}_Nomination_Form.pdf`;
+                              document.body.appendChild(link);
+                              link.click();
+                              
+                              // Clean up
+                              setTimeout(() => {
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                              }, 100);
+                              
+                              setTimeout(() => {
+                                toast.success('Form downloaded successfully!');
+                              }, 200);
+                            } catch (error) {
+                              console.error('Failed to download form:', error);
+                              setTimeout(() => {
+                                toast.error('Failed to download form. Please try again.');
+                              }, 100);
+                            }
+                          }}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Form
+                        </Button>
+                        <Link to={`/elections/${notification.election_id || notification.link?.split('/').pop()}/submit`}>
+                          <Button 
+                            className="w-full sm:w-auto h-12 text-base px-6 sm:h-11 sm:text-sm sm:px-5 bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <ArrowRight className="mr-2 h-4 w-4" />
+                            Submit Nomination
+                          </Button>
+                        </Link>
                       </div>
                     )}
                   </div>

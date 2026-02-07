@@ -416,6 +416,149 @@ class HtmlToPdfService {
     }
   }
 
+  async generateElectionFormPdf(htmlTemplate, electionData = {}) {
+    try {
+      let processedHtml = htmlTemplate;
+
+      // Parse positions if it's a JSON string
+      let positions = [];
+      if (electionData.positions) {
+        try {
+          positions = typeof electionData.positions === 'string' 
+            ? JSON.parse(electionData.positions) 
+            : electionData.positions;
+        } catch (e) {
+          positions = [];
+        }
+      }
+
+      // Replace election-specific placeholders
+      const placeholders = {
+        '{{ELECTION_TITLE}}': electionData.title || 'BOA Election',
+        '{{ELECTION_DESCRIPTION}}': electionData.description || '',
+        '{{ELIGIBLE_MEMBERS}}': electionData.eligible_members || 'Life Member',
+        '{{DEADLINE}}': electionData.deadline ? new Date(electionData.deadline).toLocaleDateString('en-IN') : '',
+        '{{VOTING_DATE}}': electionData.voting_date ? new Date(electionData.voting_date).toLocaleDateString('en-IN') : '',
+        '{{VOTING_TIME}}': electionData.voting_time || '',
+        '{{VOTING_VENUE}}': electionData.voting_venue || '',
+        '{{CONTACT_MOBILE}}': electionData.contact_mobile || '',
+        '{{POSITIONS}}': positions.join(', ') || 'President, Vice President, Secretary, Treasurer',
+        '{{FORM_TYPE}}': electionData.form_type || 'Nomination Form',
+        '{{CURRENT_DATE}}': new Date().toLocaleDateString('en-IN'),
+        '{{CURRENT_YEAR}}': new Date().getFullYear(),
+        '{{BOA_NAME}}': 'Ophthalmic Association Of Bihar',
+        '{{BOA_EMAIL}}': 'info@boabihar.org',
+        '{{BOA_WEBSITE}}': 'www.boabihar.org'
+      };
+
+      // Replace placeholders
+      Object.keys(placeholders).forEach(placeholder => {
+        const regex = new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g');
+        processedHtml = processedHtml.replace(regex, placeholders[placeholder]);
+      });
+
+      // Add BOA styling if not present
+      if (!processedHtml.includes('<style>') && !processedHtml.includes('stylesheet')) {
+        const boaStyles = `
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              line-height: 1.6; 
+              color: #333; 
+              max-width: 800px; 
+              margin: 0 auto; 
+              padding: 20px; 
+            }
+            .boa-header { 
+              background: #0B3C5D; 
+              color: white; 
+              padding: 20px; 
+              text-align: center; 
+              margin-bottom: 30px; 
+            }
+            .election-title { 
+              font-size: 24px; 
+              font-weight: bold; 
+              margin-bottom: 5px; 
+            }
+            .election-details { 
+              font-size: 14px; 
+              opacity: 0.9; 
+            }
+            .form-section { 
+              margin-bottom: 25px; 
+              padding: 15px; 
+              border: 1px solid #ddd; 
+            }
+            .section-title { 
+              font-size: 16px; 
+              font-weight: bold; 
+              color: #0B3C5D; 
+              margin-bottom: 15px; 
+              border-bottom: 2px solid #C9A227; 
+              padding-bottom: 5px; 
+            }
+            .form-field { 
+              margin-bottom: 15px; 
+            }
+            .field-label { 
+              font-weight: bold; 
+              margin-bottom: 5px; 
+            }
+            .field-line { 
+              border-bottom: 1px solid #333; 
+              min-height: 20px; 
+              display: inline-block; 
+              min-width: 200px; 
+            }
+            .positions-list { 
+              background: #f8f9fa; 
+              padding: 15px; 
+              border: 1px solid #dee2e6; 
+              margin: 15px 0; 
+            }
+            .declaration { 
+              background: #f9f9f9; 
+              padding: 15px; 
+              border-left: 4px solid #C9A227; 
+              margin: 20px 0; 
+            }
+            .signature-section { 
+              display: flex; 
+              justify-content: space-between; 
+              margin-top: 40px; 
+            }
+            @media print { 
+              body { margin: 0; padding: 10px; } 
+              .boa-header { margin-bottom: 20px; } 
+            }
+          </style>
+        `;
+
+        if (processedHtml.includes('<head>')) {
+          processedHtml = processedHtml.replace('</head>', `${boaStyles}</head>`);
+        } else {
+          processedHtml = `<head>${boaStyles}</head>${processedHtml}`;
+        }
+      }
+
+      // Ensure proper HTML structure
+      if (!processedHtml.includes('<!DOCTYPE')) {
+        processedHtml = `<!DOCTYPE html><html lang="en">${processedHtml}</html>`;
+      }
+
+      return await this.convertHtmlToPdf(processedHtml, {
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+        preferCSSPageSize: true,
+        displayHeaderFooter: false
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async closeBrowser() {
     if (this.browser) {
       await this.browser.close();

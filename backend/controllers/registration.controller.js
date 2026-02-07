@@ -2,6 +2,65 @@ const { promisePool } = require('../config/database');
 const { ACTIVITY_TYPES, createActivityNotification } = require('../utils/activity-logger');
 const { sendSeminarRegistrationConfirmation } = require('../config/email.config');
 
+// Check if user already exists with same email or name
+exports.checkDuplicateMembership = async (req, res) => {
+  try {
+    const { email, name } = req.query;
+
+    if (!email && !name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email or name is required'
+      });
+    }
+
+    let query = 'SELECT id, name, email, membership_no FROM membership_registrations WHERE ';
+    const params = [];
+    const conditions = [];
+
+    if (email) {
+      conditions.push('email = ?');
+      params.push(email);
+    }
+
+    if (name) {
+      conditions.push('name = ?');
+      params.push(name);
+    }
+
+    query += conditions.join(' OR ');
+
+    const [existingUsers] = await promisePool.query(query, params);
+
+    if (existingUsers.length > 0) {
+      return res.json({
+        success: true,
+        exists: true,
+        message: 'A membership application already exists with this email or name',
+        users: existingUsers.map(user => ({
+          name: user.name,
+          email: user.email,
+          membership_no: user.membership_no
+        }))
+      });
+    }
+
+    res.json({
+      success: true,
+      exists: false,
+      message: 'No existing membership found'
+    });
+
+  } catch (error) {
+    console.error('Error checking duplicate membership:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check duplicate membership',
+      error: error.message
+    });
+  }
+};
+
 // Generate registration number
 const generateRegistrationNo = () => {
   const year = new Date().getFullYear();
@@ -265,7 +324,6 @@ exports.getUserRegistrations = async (req, res) => {
     
     // Check if user is authenticated
     if (!req.user || !req.user.id) {
-      console.log('ERROR: No user authentication found');
       return res.status(401).json({ 
         success: false, 
         message: 'Authentication required',
@@ -282,7 +340,6 @@ exports.getUserRegistrations = async (req, res) => {
     );
 
     if (userCheck.length === 0) {
-      console.log('ERROR: User not found in database');
       return res.status(404).json({
         success: false,
         message: 'User not found',

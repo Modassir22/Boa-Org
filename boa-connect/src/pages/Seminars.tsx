@@ -1,20 +1,38 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, ArrowRight, Users, History } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Users, History, Vote } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { seminarAPI } from '@/lib/api';
+import api from '@/lib/api';
 
 export default function Seminars() {
   const [seminars, setSeminars] = useState<any[]>([]);
+  const [elections, setElections] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [upcomingSeminars, setUpcomingSeminars] = useState<any[]>([]);
   const [previousSeminars, setPreviousSeminars] = useState<any[]>([]);
+  const [activeElections, setActiveElections] = useState<any[]>([]);
 
   useEffect(() => {
     loadSeminars();
+    loadElections();
   }, []);
+
+  const loadElections = async () => {
+    try {
+      const response = await api.get('/elections');
+      const allElections = response.data.elections || [];
+      setElections(allElections);
+      
+      // Filter active elections
+      const active = allElections.filter((e: any) => e.status === 'active');
+      setActiveElections(active);
+    } catch (error) {
+      console.error('Failed to load elections:', error);
+    }
+  };
 
   const loadSeminars = async () => {
     try {
@@ -71,14 +89,14 @@ export default function Seminars() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6 lg:mb-8">
               <div className="h-1 w-12 bg-blue-600"></div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Upcoming Events</h2>
-              {upcomingSeminars.length > 0 && (
+              {(upcomingSeminars.length + activeElections.length) > 0 && (
                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 self-start sm:self-auto">
-                  {upcomingSeminars.length}
+                  {upcomingSeminars.length + activeElections.length}
                 </Badge>
               )}
             </div>
 
-            {upcomingSeminars.length === 0 ? (
+            {(upcomingSeminars.length === 0 && activeElections.length === 0) ? (
               <div className="text-center py-12 sm:py-16 bg-card rounded-2xl border border-border">
                 <div className="h-12 w-12 sm:h-16 sm:w-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                   <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
@@ -90,6 +108,94 @@ export default function Seminars() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-6">
+                {/* Elections */}
+                {activeElections.map((election) => (
+                  <div
+                    key={`election-${election.id}`}
+                    className="relative bg-card rounded-md sm:rounded-2xl border border-border overflow-hidden shadow-sm w-full"
+                  >
+                    {/* Status Badge */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs">
+                        <Vote className="w-3 h-3 mr-1" />
+                        Election
+                      </Badge>
+                    </div>
+
+                    {/* Image Header */}
+                    <div className="h-40 sm:h-48 relative overflow-hidden">
+                      {election.image_url ? (
+                        <>
+                          <img 
+                            src={election.image_url} 
+                            alt={election.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                          <div className="hidden absolute inset-0 bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center">
+                            <Vote className="h-16 w-16 sm:h-20 sm:w-20 text-white/20" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center">
+                          <Vote className="h-16 w-16 sm:h-20 sm:w-20 text-white/20" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                      <h3 className="text-lg sm:text-xl font-semibold text-foreground line-clamp-2">
+                        {election.title}
+                      </h3>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600 flex-shrink-0" />
+                          <span className="truncate">{election.voting_venue || 'Venue TBA'}</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                          <span className="leading-tight">
+                            Voting: {new Date(election.voting_date).toLocaleDateString('en-IN', { 
+                              day: 'numeric', 
+                              month: 'long', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                          <span className="leading-tight">
+                            Deadline: {new Date(election.deadline).toLocaleDateString('en-IN', { 
+                              day: 'numeric', 
+                              month: 'long', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">
+                        {election.description || `Submit your nomination for ${election.title}. Open to ${election.eligible_members}.`}
+                      </p>
+
+                      <div className="pt-3 sm:pt-4 border-t border-border">
+                        <Link to={`/elections/${election.id}/submit`} className="w-full">
+                          <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white text-sm h-9">
+                            Submit Nomination
+                            <ArrowRight className="ml-2 h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Seminars */}
                 {upcomingSeminars.map((seminar) => (
                   <div
                     key={seminar.id}
