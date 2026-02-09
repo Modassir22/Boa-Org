@@ -197,6 +197,7 @@ try {
       // Get upcoming seminars (future seminars only)
       const [seminars] = await promisePool.query(
         `SELECT id, name as title, description, location, start_date, end_date, 
+                registration_start, registration_end,
                 image_url, "seminar" as event_type, id as seminar_id
          FROM seminars 
          WHERE start_date >= CURDATE() 
@@ -206,7 +207,8 @@ try {
       
       // Get active elections (where deadline hasn't passed)
       const [elections] = await promisePool.query(
-        `SELECT id, title, description, deadline as start_date, voting_date as end_date,
+        `SELECT id, title, description, deadline, voting_date, 
+                voting_date as start_date, deadline as end_date,
                 image_url, "election" as event_type, id as election_id
          FROM elections 
          WHERE deadline >= CURDATE() 

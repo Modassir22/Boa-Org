@@ -313,12 +313,34 @@ export function UpcomingEventsCarousel() {
                             {event.start_date && (
                               <div className="flex items-center gap-2 text-gray-700">
                                 <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                <span className="font-medium">Date:</span>
+                                <span className="font-medium">
+                                  {event.event_type === 'election' ? 'Voting Date:' : 'Date:'}
+                                </span>
                                 <span>
                                   {formatDate(event.start_date)}
-                                  {event.end_date && event.end_date !== event.start_date &&
+                                  {event.event_type !== 'election' && event.end_date && event.end_date !== event.start_date &&
                                     ` - ${formatDate(event.end_date)}`
                                   }
+                                </span>
+                              </div>
+                            )}
+
+                            {event.event_type === 'election' && event.deadline && (
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <Clock className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                <span className="font-medium">Deadline:</span>
+                                <span className="text-red-600 font-medium">{formatDate(event.deadline)}</span>
+                              </div>
+                            )}
+
+                            {event.event_type === 'seminar' && (event.registration_start || event.registration_end) && (
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <Clock className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                <span className="font-medium">Registration:</span>
+                                <span className="text-green-600 font-medium">
+                                  {event.registration_start && formatDate(event.registration_start)}
+                                  {event.registration_start && event.registration_end && ' - '}
+                                  {event.registration_end && formatDate(event.registration_end)}
                                 </span>
                               </div>
                             )}
