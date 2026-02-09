@@ -189,11 +189,6 @@ try {
     try {
       const { promisePool } = require('./config/database');
       
-      // Get upcoming events from upcoming_events table
-      const [upcomingEvents] = await promisePool.query(
-        'SELECT *, "event" as event_type FROM upcoming_events WHERE is_active = TRUE ORDER BY display_order, id'
-      );
-      
       // Get upcoming seminars (future seminars only)
       const [seminars] = await promisePool.query(
         `SELECT id, name as title, description, location, start_date, end_date, 
@@ -214,8 +209,8 @@ try {
          LIMIT 5`
       );
       
-      // Combine all events
-      const allEvents = [...upcomingEvents, ...seminars, ...elections];
+      // Combine seminars and elections only (no upcoming_events table)
+      const allEvents = [...seminars, ...elections];
       
       // Sort by start_date
       allEvents.sort((a, b) => {

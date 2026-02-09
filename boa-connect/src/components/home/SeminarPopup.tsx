@@ -55,25 +55,23 @@ export function SeminarPopup() {
       // Clear flag immediately
       sessionStorage.removeItem('pageReloaded');
 
-      // Load upcoming events
+      // Load upcoming seminars only (not all events)
       try {
-        const response = await fetch(`${API_BASE_URL}/api/upcoming-events`);
-        const data = await response.json();
+        const response = await seminarAPI.getActive();
 
-        if (data.success && data.events && data.events.length > 0) {
-          const upcoming = data.events.find((e: any) => {
-            const now = new Date();
-            const start = new Date(e.start_date);
-            return now < start;
-          });
-
-          if (upcoming) {
-            setUpcomingEvent(upcoming);
+        if (response.success && response.seminar && response.seminar.is_active) {
+          const seminar = response.seminar;
+          const now = new Date();
+          const start = new Date(seminar.start_date);
+          
+          // Only show if seminar is upcoming
+          if (now < start) {
+            setUpcomingEvent(seminar);
             setShowReloadPopup(true);
           }
         }
       } catch (error) {
-        console.error('Failed to load events for popup:', error);
+        console.error('Failed to load seminar for popup:', error);
       }
     }
   };
