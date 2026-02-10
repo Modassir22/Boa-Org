@@ -29,6 +29,7 @@ const adminApi = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 120000, // 2 minutes timeout for admin operations (file uploads can take time)
 });
 
 // Add user token to requests
@@ -435,6 +436,9 @@ export const adminAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 60000, // 60 seconds timeout for large files
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
     return response.data;
   },

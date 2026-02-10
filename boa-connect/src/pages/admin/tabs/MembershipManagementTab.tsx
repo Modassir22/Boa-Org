@@ -423,12 +423,32 @@ export default function MembershipManagementTab() {
       
     } catch (error: any) {
       console.error('Certificate upload error:', error);
-      console.error('Error response:', error.response?.data);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        code: error.code
+      });
+      
+      let errorMessage = 'Failed to upload certificate';
+      
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Upload timeout - File may be too large or connection is slow. Please try with a smaller file or check your internet connection.';
+      } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        errorMessage = 'Network error - Please check your internet connection and try again.';
+      } else if (error.response?.status === 413) {
+        errorMessage = 'File is too large. Maximum size is 10MB.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || error.message || 'Failed to upload certificate',
+        title: 'Upload Failed',
+        description: errorMessage,
         variant: 'destructive',
+        duration: 5000,
       });
     } finally {
       setIsUploadingCertificate(false);
