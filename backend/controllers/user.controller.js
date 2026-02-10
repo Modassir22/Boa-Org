@@ -277,8 +277,7 @@ exports.verifyMembership = async (req, res) => {
   try {
     const { membershipNo } = req.body;
 
-    console.log('=== VERIFY MEMBERSHIP REQUEST ===');
-    console.log('Membership No:', membershipNo);
+    
 
     if (!membershipNo) {
       return res.status(400).json({
@@ -296,11 +295,9 @@ exports.verifyMembership = async (req, res) => {
       [membershipNo]
     );
 
-    console.log('Query result:', memberships);
-    console.log('Found memberships:', memberships.length);
+    
 
     if (memberships.length === 0) {
-      console.log('No active membership found for:', membershipNo);
       return res.status(404).json({
         success: false,
         message: 'Invalid membership number or membership is not active',
@@ -309,14 +306,12 @@ exports.verifyMembership = async (req, res) => {
     }
 
     const membership = memberships[0];
-    console.log('Membership found:', membership);
 
     // Check if membership is expired (if valid_until is set)
     if (membership.valid_until) {
       const validUntil = new Date(membership.valid_until);
       const today = new Date();
       
-      console.log('Checking expiry - Valid until:', validUntil, 'Today:', today);
       
       if (today > validUntil) {
         console.log('Membership expired');

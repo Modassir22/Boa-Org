@@ -248,13 +248,7 @@ exports.uploadMemberCertificate = async (req, res) => {
       }
     }
 
-    // Upload to Cloudinary
-    console.log('Starting Cloudinary upload...', {
-      filePath: req.file.path,
-      fileSize: req.file.size,
-      fileName: req.file.originalname,
-      mimeType: req.file.mimetype
-    });
+    
     
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'boa-certificates',
@@ -262,10 +256,7 @@ exports.uploadMemberCertificate = async (req, res) => {
       timeout: 60000 // 60 seconds
     });
     
-    console.log('Cloudinary upload successful:', {
-      url: result.secure_url,
-      publicId: result.public_id
-    });
+   
 
     // Insert certificate record
     const [insertResult] = await promisePool.query(

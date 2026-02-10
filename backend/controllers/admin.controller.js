@@ -633,9 +633,11 @@ exports.getAllRegistrations = async (req, res) => {
       SELECT r.*, 
         u.title, u.first_name, u.surname, u.email, u.mobile, u.gender,
         s.name as seminar_name, s.location as seminar_location,
-        fc.name as category_name, fs.label as slab_label
+        fc.name as category_name, fs.label as slab_label,
+        mr.membership_no
       FROM registrations r
       LEFT JOIN users u ON r.user_id = u.id
+      LEFT JOIN membership_registrations mr ON u.email = mr.email AND mr.status = 'active'
       JOIN seminars s ON r.seminar_id = s.id
       JOIN fee_categories fc ON r.category_id = fc.id
       JOIN fee_slabs fs ON r.slab_id = fs.id
