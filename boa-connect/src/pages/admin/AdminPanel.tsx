@@ -22,7 +22,6 @@ import { GalleryTab } from './tabs/GalleryTab';
 import MembershipCategoriesTab from './tabs/MembershipCategoriesTab';
 import MembershipManagementTab from './tabs/MembershipManagementTab';
 import ResourcesTab from './tabs/ResourcesTab';
-import AllPaymentsTab from './tabs/AllPaymentsTab';
 import TestimonialsTab from './tabs/TestimonialsTab';
 import NewsTab from './tabs/NewsTab';
 import GalleryManagementTab from './tabs/GalleryManagementTab';
@@ -114,7 +113,6 @@ export default function AdminPanel() {
         {activeTab === 'users' && <UsersTab />}
         {activeTab === 'offline-users' && <OfflineUsersTab />}
         {activeTab === 'membership-management' && <MembershipManagementTab />}
-        {activeTab === 'all-payments' && <AllPaymentsTab />}
         {activeTab === 'committee' && <CommitteeMembersTab />}
         {activeTab === 'certification' && <CertificationTab />}
         {activeTab === 'upcoming' && <UpcomingEventsTab />}

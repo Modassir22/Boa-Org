@@ -672,6 +672,14 @@ exports.getAllRegistrations = async (req, res) => {
         [reg.id]
       );
       reg.additional_persons = persons;
+      
+      // Calculate actual delegate amount by subtracting additional persons amount from total
+      if (persons.length > 0) {
+        const additionalTotal = persons.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        reg.delegate_amount = parseFloat(reg.amount) - additionalTotal;
+      } else {
+        reg.delegate_amount = parseFloat(reg.amount);
+      }
     }
 
     res.json({

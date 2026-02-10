@@ -189,12 +189,6 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
       ]
     },
     {
-      title: 'Financial',
-      items: [
-        { id: 'all-payments', label: 'All Payments', icon: DollarSign },
-      ]
-    },
-    {
       title: 'Content Management',
       items: [
         { id: 'news', label: 'News', icon: FileText },

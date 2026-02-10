@@ -54,12 +54,20 @@ exports.sendResetLink = async (req, res) => {
 
     // Send reset link via email
     try {
-      await sendPasswordResetEmail(email, resetLink, userName);
+      const emailResult = await sendPasswordResetEmail(email, resetLink, userName);
       
-      res.json({
-        success: true,
-        message: 'Password reset link sent to your email. Please check your inbox.'
-      });
+      if (emailResult.success) {
+        res.json({
+          success: true,
+          message: 'Password reset link sent to your email. Please check your inbox.'
+        });
+      } else {
+        console.error('Failed to send password reset email:', emailResult.error);
+        res.status(500).json({
+          success: false,
+          message: 'Failed to send reset email. Please try again or contact support.'
+        });
+      }
     } catch (emailError) {
       console.error('Failed to send email:', emailError);
       

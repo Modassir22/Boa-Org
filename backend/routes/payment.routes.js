@@ -458,8 +458,17 @@ async function processSeminarRegistration(registrationData, paymentInfo) {
             amount: paymentInfo.amount
           };
 
-          await sendSeminarRegistrationConfirmation(registrationEmailData, seminarDetails[0]);
-          logToFile(`Seminar registration confirmation email sent to: ${user_info.email}`);
+          try {
+            const emailResult = await sendSeminarRegistrationConfirmation(registrationEmailData, seminarDetails[0]);
+            if (emailResult.success) {
+              logToFile(`Seminar registration confirmation email sent to: ${user_info.email}`);
+            } else {
+              logToFile(`Failed to send seminar confirmation email: ${emailResult.error}`);
+            }
+          } catch (emailError) {
+            logToFile(`Email error: ${emailError.message}`);
+            // Don't fail the payment if email fails
+          }
           
           // Generate and send PDF receipt via email
           try {
@@ -602,8 +611,17 @@ async function processMembershipRegistration(membershipData, paymentInfo) {
         amount: paymentInfo.amount
       };
 
-      await sendMembershipConfirmation(membershipConfirmationData);
-      logToFile(`Membership confirmation email sent to: ${membershipData.email}`);
+      try {
+        const emailResult = await sendMembershipConfirmation(membershipConfirmationData);
+        if (emailResult.success) {
+          logToFile(`Membership confirmation email sent to: ${membershipData.email}`);
+        } else {
+          logToFile(`Failed to send membership confirmation email: ${emailResult.error}`);
+        }
+      } catch (emailError) {
+        logToFile(`Email error: ${emailError.message}`);
+        // Don't fail the payment if email fails
+      }
       
       // Generate and send PDF receipt via email
       try {
@@ -787,8 +805,12 @@ router.post('/check-payment', async (req, res) => {
         };
 
         // Send user confirmation
-        await sendMembershipConfirmation(membershipConfirmationData);
-        logToFile(`Membership confirmation email sent to: ${userData.email}`);
+        const emailResult = await sendMembershipConfirmation(membershipConfirmationData);
+        if (emailResult.success) {
+          logToFile(`Membership confirmation email sent to: ${userData.email}`);
+        } else {
+          logToFile(`Failed to send membership confirmation email: ${emailResult.error}`);
+        }
         
         // Generate and send PDF receipt via email
         try {

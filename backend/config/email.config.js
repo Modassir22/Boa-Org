@@ -48,6 +48,7 @@ async function sendEmailWithFallback(mailOptions) {
     // Try primary transporter first
     console.log('Attempting to send email with primary transporter...');
     const info = await transporter.sendMail(mailOptions);
+    console.log('✓ Email sent successfully via primary transporter');
     return { success: true, messageId: info.messageId, transporter: 'primary' };
   } catch (primaryError) {
     console.error('Primary transporter failed:', primaryError.message);
@@ -55,6 +56,7 @@ async function sendEmailWithFallback(mailOptions) {
     // If primary fails and fallback is configured, try fallback
     if (process.env.FALLBACK_EMAIL_USER && process.env.FALLBACK_EMAIL_PASSWORD) {
       try {
+        console.log('Attempting to send email with fallback transporter...');
         // Update from address to use fallback email
         const fallbackMailOptions = {
           ...mailOptions,
@@ -65,13 +67,24 @@ async function sendEmailWithFallback(mailOptions) {
         };
         
         const info = await fallbackTransporter.sendMail(fallbackMailOptions);
+        console.log('✓ Email sent successfully via fallback transporter');
         return { success: true, messageId: info.messageId, transporter: 'fallback' };
       } catch (fallbackError) {
         console.error('Fallback transporter also failed:', fallbackError.message);
-        throw new Error(`Both email services failed. Primary: ${primaryError.message}, Fallback: ${fallbackError.message}`);
+        // Log error but don't throw - return failure status instead
+        console.error('Email sending error:', fallbackError);
+        return { 
+          success: false, 
+          error: `Both email services failed. Primary: ${primaryError.message}, Fallback: ${fallbackError.message}` 
+        };
       }
     } else {
-      throw primaryError;
+      // No fallback configured, log error but don't throw
+      console.error('Email sending error:', primaryError);
+      return { 
+        success: false, 
+        error: primaryError.message 
+      };
     }
   }
 }
@@ -256,9 +269,10 @@ const sendPasswordResetEmail = async (to, resetLink, userName) => {
 
   try {
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
-    throw error;
+    console.error('Password reset email error:', error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -426,10 +440,10 @@ This email was sent from the BOA website contact form.
   try {
     console.log('Attempting to send contact email...');
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
-    // Return a user-friendly error
-    throw new Error('Failed to send email. Please try again later or contact us directly.');
+    console.error('Contact email error:', error);
+    return { success: false, error: 'Failed to send email. Please try again later or contact us directly.' };
   }
 };
 
@@ -562,10 +576,10 @@ const sendContactConfirmationEmail = async (contactData) => {
 
   try {
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
     console.error('Contact confirmation email error:', error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 };
 
@@ -742,10 +756,10 @@ const sendSeminarRegistrationConfirmation = async (registrationData, seminarData
 
   try {
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
     console.error('Seminar confirmation email error:', error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 };
 
@@ -917,10 +931,10 @@ const sendMembershipConfirmation = async (membershipData) => {
 
   try {
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
     console.error('Membership confirmation email error:', error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 };
 
@@ -1075,10 +1089,10 @@ const sendMembershipAdminNotification = async (membershipData) => {
   try {
     console.log('Sending membership admin notification...');
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
     console.error('Membership admin notification error:', error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 };
 
@@ -1242,10 +1256,10 @@ const sendSeminarAdminNotification = async (registrationData, seminarData) => {
   try {
     console.log('Sending seminar admin notification...');
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
     console.error('Seminar admin notification error:', error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 };
 
@@ -1407,10 +1421,10 @@ const sendPDFReceiptEmail = async (paymentData, pdfBuffer) => {
 
   try {
     const info = await sendEmailWithFallback(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return info; // Return the result (success: true/false)
   } catch (error) {
     console.error('PDF receipt email error:', error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 };
 

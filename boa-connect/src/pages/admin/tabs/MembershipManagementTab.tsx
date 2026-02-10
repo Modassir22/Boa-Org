@@ -384,10 +384,21 @@ export default function MembershipManagementTab() {
     setIsUploadingCertificate(true);
 
     try {
+      // Get actual user_id from email
+      if (!selectedMember.email) {
+        throw new Error('Member email not found');
+      }
+      
+      const userResponse = await adminAPI.get(`/admin/users?email=${encodeURIComponent(selectedMember.email)}`);
+      if (!userResponse.users || userResponse.users.length === 0) {
+        throw new Error('User not found');
+      }
+      
+      const userId = userResponse.users[0].id;
 
       const formData = new FormData();
       formData.append('certificate', certificateFile);
-      formData.append('user_id', selectedMember.id.toString());
+      formData.append('user_id', userId.toString());
       formData.append('title', certificateForm.title.trim());
       formData.append('description', certificateForm.description.trim());
       formData.append('issue_date', certificateForm.issue_date);
