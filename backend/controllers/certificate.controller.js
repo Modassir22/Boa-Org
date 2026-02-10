@@ -1,5 +1,6 @@
 const { promisePool } = require('../config/database');
 const cloudinary = require('../config/cloudinary');
+const { deleteFromCloudinary } = require('../utils/cloudinary-helper');
 
 // Get user certificates (for user dashboard)
 exports.getUserCertificates = async (req, res) => {
@@ -164,13 +165,19 @@ exports.deleteCertificate = async (req, res) => {
       });
     }
 
-    // Delete from database
+    const certificateUrl = certificates[0].certificate_url;
+
+    // Delete from database first
     await promisePool.query('DELETE FROM user_certificates WHERE id = ?', [id]);
 
-    // Optionally delete from Cloudinary
-    // Extract public_id from URL and delete
-    // const publicId = certificates[0].certificate_url.split('/').slice(-2).join('/').split('.')[0];
-    // await cloudinary.uploader.destroy(publicId);
+    // Delete from Cloudinary (try both image and raw resource types for PDFs)
+    if (certificateUrl) {
+      // Determine resource type from URL
+      const resourceType = certificateUrl.includes('.pdf') ? 'raw' : 'image';
+      deleteFromCloudinary(certificateUrl, resourceType).catch(err => {
+        console.error('Cloudinary deletion error (non-critical):', err);
+      });
+    }
 
     res.json({
       success: true,
@@ -242,9 +249,22 @@ exports.uploadMemberCertificate = async (req, res) => {
     }
 
     // Upload to Cloudinary
+    console.log('Starting Cloudinary upload...', {
+      filePath: req.file.path,
+      fileSize: req.file.size,
+      fileName: req.file.originalname,
+      mimeType: req.file.mimetype
+    });
+    
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'boa-certificates',
-      resource_type: 'auto'
+      resource_type: 'auto',
+      timeout: 60000 // 60 seconds
+    });
+    
+    console.log('Cloudinary upload successful:', {
+      url: result.secure_url,
+      publicId: result.public_id
     });
 
     // Insert certificate record
@@ -286,10 +306,26 @@ exports.uploadMemberCertificate = async (req, res) => {
     });
   } catch (error) {
     console.error('Upload member certificate error:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      statusCode: error.statusCode,
+      http_code: error.http_code
+    });
+    
+    // Check if it's a Cloudinary error
+    if (error.http_code) {
+      return res.status(error.http_code).json({
+        success: false,
+        message: `Cloudinary upload failed: ${error.message}`,
+        error: error.message
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Failed to upload certificate',
+      message: 'Failed to upload certificate. Please check file size and format.',
       error: error.message
     });
   }

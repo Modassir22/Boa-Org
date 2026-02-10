@@ -1,6 +1,7 @@
 const ExcelJS = require('exceljs');
 const { promisePool } = require('../config/database');
 const { ACTIVITY_TYPES, createActivityNotification } = require('../utils/activity-logger');
+const { deleteFromCloudinary } = require('../utils/cloudinary-helper');
 
 // Helper function to format title consistently
 const formatTitle = (title) => {
@@ -2713,6 +2714,19 @@ exports.deleteGalleryItem = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Get image URL before deleting
+    const [items] = await promisePool.query(
+      'SELECT image_url FROM gallery WHERE id = ?',
+      [id]
+    );
+
+    if (items.length > 0 && items[0].image_url) {
+      // Delete from Cloudinary (non-blocking)
+      deleteFromCloudinary(items[0].image_url).catch(err => {
+        console.error('Cloudinary deletion error (non-critical):', err);
+      });
+    }
+
     await promisePool.query('DELETE FROM gallery WHERE id = ?', [id]);
 
     res.json({
@@ -4421,12 +4435,25 @@ exports.updateNews = async (req, res) => {
 
     // Handle image upload
     if (req.file) {
+      // Get old image URL before updating
+      const [oldNews] = await promisePool.query(
+        'SELECT image_url FROM news WHERE id = ?',
+        [id]
+      );
+
       const cloudinary = require('../config/cloudinary');
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: 'boa-news',
         resource_type: 'image'
       });
       image_url = result.secure_url;
+
+      // Delete old image from Cloudinary (non-blocking)
+      if (oldNews.length > 0 && oldNews[0].image_url) {
+        deleteFromCloudinary(oldNews[0].image_url).catch(err => {
+          console.error('Old image deletion error (non-critical):', err);
+        });
+      }
     }
 
     let query = 'UPDATE news SET title = ?, content = ?, status = ?';
@@ -4459,6 +4486,19 @@ exports.updateNews = async (req, res) => {
 exports.deleteNews = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Get image URL before deleting
+    const [newsItems] = await promisePool.query(
+      'SELECT image_url FROM news WHERE id = ?',
+      [id]
+    );
+
+    if (newsItems.length > 0 && newsItems[0].image_url) {
+      // Delete from Cloudinary (non-blocking)
+      deleteFromCloudinary(newsItems[0].image_url).catch(err => {
+        console.error('Cloudinary deletion error (non-critical):', err);
+      });
+    }
 
     await promisePool.query('DELETE FROM news WHERE id = ?', [id]);
 
@@ -4576,12 +4616,25 @@ exports.updateGalleryImage = async (req, res) => {
 
     // Handle image upload
     if (req.file) {
+      // Get old image URL before updating
+      const [oldImages] = await promisePool.query(
+        'SELECT image_url FROM gallery_images WHERE id = ?',
+        [id]
+      );
+
       const cloudinary = require('../config/cloudinary');
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: 'boa-gallery',
         resource_type: 'image'
       });
       image_url = result.secure_url;
+
+      // Delete old image from Cloudinary (non-blocking)
+      if (oldImages.length > 0 && oldImages[0].image_url) {
+        deleteFromCloudinary(oldImages[0].image_url).catch(err => {
+          console.error('Old image deletion error (non-critical):', err);
+        });
+      }
     }
 
     let query = 'UPDATE gallery_images SET title = ?, description = ?, status = ?';
@@ -4614,6 +4667,19 @@ exports.updateGalleryImage = async (req, res) => {
 exports.deleteGalleryImage = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Get image URL before deleting
+    const [images] = await promisePool.query(
+      'SELECT image_url FROM gallery_images WHERE id = ?',
+      [id]
+    );
+
+    if (images.length > 0 && images[0].image_url) {
+      // Delete from Cloudinary (non-blocking)
+      deleteFromCloudinary(images[0].image_url).catch(err => {
+        console.error('Cloudinary deletion error (non-critical):', err);
+      });
+    }
 
     await promisePool.query('DELETE FROM gallery_images WHERE id = ?', [id]);
 

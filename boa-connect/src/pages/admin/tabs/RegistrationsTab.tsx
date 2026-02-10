@@ -321,11 +321,11 @@ export default function RegistrationsTab() {
       let errorMessage = 'Failed to upload certificate';
       
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = 'Upload timeout - File may be too large or connection is slow. Please try with a smaller file or check your internet connection.';
+        errorMessage = 'Upload timeout - Please try with a smaller file (max 5MB recommended).';
       } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
         errorMessage = 'Network error - Please check your internet connection and try again.';
       } else if (error.response?.status === 413) {
-        errorMessage = 'File is too large. Maximum size is 10MB.';
+        errorMessage = 'File is too large. Maximum size is 5MB.';
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {

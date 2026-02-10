@@ -2,53 +2,114 @@ const cloudinary = require('../config/cloudinary');
 
 /**
  * Extract public_id from Cloudinary URL
- * Example: https://res.cloudinary.com/demo/image/upload/v1234567890/boa-certificates/abc123.jpg
- * Returns: boa-certificates/abc123
+ * @param {string} url - Cloudinary URL
+ * @returns {string|null} - Public ID or null if invalid
  */
-const getPublicIdFromUrl = (imageUrl) => {
-  if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
-    return null;
-  }
-
+const extractPublicId = (url) => {
   try {
-    const parts = imageUrl.split('/');
-    const uploadIndex = parts.indexOf('upload');
+    if (!url || typeof url !== 'string') {
+      return null;
+    }
+
+
+    // URL format: https://res.cloudinary.com/cloud_name/image/upload/v123456/folder/filename.ext
+    // OR: https://res.cloudinary.com/cloud_name/raw/upload/v123456/folder/filename.ext
+    const urlParts = url.split('/');
+    const uploadIndex = urlParts.indexOf('upload');
     
-    if (uploadIndex === -1) return null;
+    if (uploadIndex === -1 || uploadIndex >= urlParts.length - 1) {
+      return null;
+    }
+
+    // Get everything after 'upload/'
+    const pathAfterUpload = urlParts.slice(uploadIndex + 1).join('/');
     
-    // Get everything after 'upload' and version (v1234567890)
-    const pathParts = parts.slice(uploadIndex + 2); // Skip 'upload' and version
-    const fullPath = pathParts.join('/');
+    // Remove version number (v123456) if present
+    const pathWithoutVersion = pathAfterUpload.replace(/^v\d+\//, '');
     
     // Remove file extension
-    const publicId = fullPath.replace(/\.[^/.]+$/, '');
+    const publicId = pathWithoutVersion.replace(/\.[^/.]+$/, '');
     
     return publicId;
   } catch (error) {
+    console.error('Error extracting public_id:', error);
     return null;
   }
 };
 
 /**
- * Delete image from Cloudinary
+ * Delete file from Cloudinary
+ * @param {string} url - Cloudinary URL
+ * @param {string} resourceType - Resource type (image, raw, video, auto)
+ * @returns {Promise<boolean>} - Success status
  */
-const deleteImageFromCloudinary = async (imageUrl) => {
+const deleteFromCloudinary = async (url, resourceType = 'image') => {
   try {
-    const publicId = getPublicIdFromUrl(imageUrl);
+    
+    const publicId = extractPublicId(url);
     
     if (!publicId) {
-      return { success: false, message: 'Invalid image URL' };
+      console.warn('Could not extract public_id from URL:', url);
+      return false;
     }
 
-    const result = await cloudinary.uploader.destroy(publicId);
     
-    return { success: true, result };
+    // Try with specified resource type first
+    let result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    
+    // If not found, try with 'raw' resource type (for PDFs, etc.)
+    if (result.result === 'not found' && resourceType !== 'raw') {
+      result = await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+    }
+    
+    if (result.result === 'ok') {
+      return true;
+    } else if (result.result === 'not found') {
+      return true; // Consider this success since file doesn't exist
+    } else {
+      console.warn('✗ Cloudinary deletion returned unexpected result:', result);
+      return false;
+    }
   } catch (error) {
-    return { success: false, error: error.message };
+    console.error('✗ Cloudinary deletion error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      http_code: error.http_code,
+      name: error.name
+    });
+    return false;
   }
 };
 
+/**
+ * Delete multiple files from Cloudinary
+ * @param {string[]} urls - Array of Cloudinary URLs
+ * @returns {Promise<{success: number, failed: number}>} - Deletion stats
+ */
+const deleteMultipleFromCloudinary = async (urls) => {
+  const results = {
+    success: 0,
+    failed: 0
+  };
+
+  if (!Array.isArray(urls) || urls.length === 0) {
+    return results;
+  }
+
+  for (const url of urls) {
+    const deleted = await deleteFromCloudinary(url);
+    if (deleted) {
+      results.success++;
+    } else {
+      results.failed++;
+    }
+  }
+
+  return results;
+};
+
 module.exports = {
-  getPublicIdFromUrl,
-  deleteImageFromCloudinary
+  extractPublicId,
+  deleteFromCloudinary,
+  deleteMultipleFromCloudinary
 };

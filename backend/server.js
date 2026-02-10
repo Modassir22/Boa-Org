@@ -57,8 +57,9 @@ app.use(cors({
 }));
 
 // Handle preflight requests
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase body size limits for file uploads (10MB max, 5MB recommended)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -100,7 +101,6 @@ app.get('/api/server-info', (req, res) => {
 try {
   const authRoutes = require('./routes/auth.routes');
   app.use('/api/auth', authRoutes);
-  console.log('✅ Auth routes loaded');
 
   const forgotPasswordRoutes = require('./routes/forgot-password.routes');
   app.use('/api/auth/forgot-password', forgotPasswordRoutes);
@@ -122,17 +122,14 @@ try {
 
   const adminRoutes = require('./routes/admin.routes');
   app.use('/api/admin', adminRoutes);
-  console.log('✅ Admin routes loaded');
 
   // Payment routes
   const paymentRoutes = require('./routes/payment.routes');
   app.use('/api/payment', paymentRoutes);
-  console.log('✅ Payment routes loaded');
 
   // Certificate routes
   const certificateRoutes = require('./routes/certificate.routes');
   app.use('/api/certificates', certificateRoutes);
-  console.log('✅ Certificate routes loaded');
 
   // Contact routes
   const contactRoutes = require('./routes/contact.routes');
@@ -153,7 +150,6 @@ try {
   // Election routes
   const electionRoutes = require('./routes/election.routes');
   app.use('/api/elections', electionRoutes);
-  console.log('✅ All route files loaded');
 
   // Public committee members route
   app.get('/api/committee-members', async (req, res) => {
@@ -797,7 +793,6 @@ try {
     }
   });
   
-  console.log('✅ All routes loaded successfully!');
   
 } catch (error) {
   // Error loading routes - server will continue with basic functionality
@@ -839,10 +834,16 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await testConnection();
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       // Start BOA Member Sync Service
       boaSyncService.start();
     });
+    
+    // Set server timeout for file uploads (2 minutes)
+    server.timeout = 120000; // 2 minutes
+    server.keepAliveTimeout = 65000; // 65 seconds
+    server.headersTimeout = 66000; // 66 seconds (slightly more than keepAliveTimeout)
+    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
