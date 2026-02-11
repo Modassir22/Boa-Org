@@ -236,7 +236,7 @@ export default function Membership() {
     },
     {
       question: 'What documents are required?',
-      answer: 'You need to submit your medical registration certificate, qualification certificates, and a recent passport-size photograph.'
+      answer: 'You need to submit your original certificate photocopy, qualification certificates, and a recent passport-size photograph.'
     }
   ];
 
