@@ -541,8 +541,8 @@ export default function SeminarRegistration() {
         if (!nameMatches) {
           setIsMembershipVerified(false);
           toast({
-            title: 'Name Mismatch',
-            description: `This membership belongs to "${data.membership.name}". Please enter the correct name or use your own membership number.`,
+            title: 'Verification Failed',
+            description: 'This membership number is already registered with another user.',
             variant: 'destructive',
           });
           return;
@@ -551,7 +551,7 @@ export default function SeminarRegistration() {
         setIsMembershipVerified(true);
         toast({
           title: 'Verified!',
-          description: `Membership verified for ${data.membership.name}`,
+          description: 'Membership verified successfully',
         });
       } else {
         setIsMembershipVerified(false);

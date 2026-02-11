@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Eye, Filter } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Search, Download, Eye, Filter, X, User, Mail, Phone, Calendar, CreditCard, MapPin } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -11,6 +12,8 @@ export default function OnlineMembershipsTab() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedMembership, setSelectedMembership] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     loadOnlineMemberships();
@@ -57,7 +60,7 @@ export default function OnlineMembershipsTab() {
       m.name,
       m.email,
       m.mobile,
-      m.category_name,
+      m.category_name || m.membership_type,
       m.payment_status,
       m.amount,
       new Date(m.created_at).toLocaleDateString()
@@ -75,6 +78,11 @@ export default function OnlineMembershipsTab() {
     a.download = `online-memberships-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const handleViewDetails = (membership: any) => {
+    setSelectedMembership(membership);
+    setIsDetailsOpen(true);
   };
 
   if (loading) {
@@ -196,7 +204,7 @@ export default function OnlineMembershipsTab() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant="outline">{membership.category_name}</Badge>
+                      <Badge variant="outline">{membership.category_name || membership.membership_type || 'N/A'}</Badge>
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-semibold">₹{membership.amount}</span>
@@ -221,10 +229,8 @@ export default function OnlineMembershipsTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          // View details logic
-                          toast.info('View details coming soon');
-                        }}
+                        onClick={() => handleViewDetails(membership)}
+                        title="View Details"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -236,6 +242,166 @@ export default function OnlineMembershipsTab() {
           </table>
         </div>
       </div>
+
+      {/* View Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Membership Details</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDetailsOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedMembership && (
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Personal Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Full Name</p>
+                    <p className="font-medium">{selectedMembership.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Father's Name</p>
+                    <p className="font-medium">{selectedMembership.father_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Date of Birth</p>
+                    <p className="font-medium">
+                      {selectedMembership.dob ? new Date(selectedMembership.dob).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Gender</p>
+                    <p className="font-medium capitalize">{selectedMembership.sex || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Age</p>
+                    <p className="font-medium">{selectedMembership.age || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  Contact Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      Email
+                    </p>
+                    <p className="font-medium text-sm">{selectedMembership.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      Mobile
+                    </p>
+                    <p className="font-medium">{selectedMembership.mobile}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      Address
+                    </p>
+                    <p className="font-medium">{selectedMembership.address || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Professional Information</h3>
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Qualification</p>
+                    <p className="font-medium">{selectedMembership.qualification || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Year of Passing</p>
+                    <p className="font-medium">{selectedMembership.year_passing || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Institution</p>
+                    <p className="font-medium">{selectedMembership.institution || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Working Place</p>
+                    <p className="font-medium">{selectedMembership.working_place || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Membership & Payment Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Membership & Payment
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Membership Type</p>
+                    <Badge variant="outline" className="mt-1">
+                      {selectedMembership.category_name || selectedMembership.membership_type}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Amount Paid</p>
+                    <p className="font-bold text-lg text-green-600">₹{selectedMembership.amount}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Payment Status</p>
+                    <Badge
+                      variant={selectedMembership.payment_status === 'active' ? 'default' : 'secondary'}
+                      className="mt-1"
+                    >
+                      {selectedMembership.payment_status === 'active' ? 'Paid' : selectedMembership.payment_status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Payment Method</p>
+                    <p className="font-medium capitalize">{selectedMembership.payment_method || 'Online'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Transaction ID</p>
+                    <p className="font-mono text-sm bg-background p-2 rounded border">
+                      {selectedMembership.razorpay_payment_id || selectedMembership.transaction_id || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Registration Date
+                    </p>
+                    <p className="font-medium">
+                      {new Date(selectedMembership.created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

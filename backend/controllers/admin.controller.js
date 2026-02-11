@@ -2,6 +2,7 @@ const ExcelJS = require('exceljs');
 const { promisePool } = require('../config/database');
 const { ACTIVITY_TYPES, createActivityNotification } = require('../utils/activity-logger');
 const { deleteFromCloudinary } = require('../utils/cloudinary-helper');
+const { bulkImportMemberships, generateSampleTemplate } = require('../utils/bulk-membership-import');
 
 // Helper function to format title consistently
 const formatTitle = (title) => {
@@ -1083,7 +1084,7 @@ exports.updateMembershipDetails = async (req, res) => {
       if (existing.length > 0) {
         return res.status(400).json({
           success: false,
-          message: `Membership number ${membership_no} is already assigned to ${existing[0].name}`,
+          message: `Membership number ${membership_no} is already in use`,
           conflict: true
         });
       }
@@ -1203,11 +1204,7 @@ exports.checkMembershipAvailability = async (req, res) => {
       return res.json({
         success: false,
         available: false,
-        message: `Membership number ${membership_no} is already assigned to ${existing[0].name}`,
-        conflict: {
-          user_id: existing[0].id,
-          user_name: existing[0].name
-        }
+        message: `Membership number ${membership_no} is already in use`
       });
     }
 
@@ -4979,7 +4976,7 @@ exports.getOnlineMemberships = async (req, res) => {
         mc.title as category_name,
         mc.price as category_price
       FROM membership_registrations mr
-      LEFT JOIN membership_categories mc ON mr.membership_type = mc.id
+      LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
       WHERE mr.payment_method = 'online' OR mr.razorpay_payment_id IS NOT NULL
       ORDER BY mr.created_at DESC
     `);
@@ -4993,6 +4990,116 @@ exports.getOnlineMemberships = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch online memberships',
+      error: error.message
+    });
+  }
+};
+
+
+// Bulk import memberships from Excel
+exports.bulkImportMemberships = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload an Excel file.'
+      });
+    }
+
+    // Check file type
+    const allowedTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file type. Please upload an Excel file (.xls or .xlsx)'
+      });
+    }
+
+    // Process bulk import
+    const result = await bulkImportMemberships(req.file.buffer);
+
+    res.json({
+      success: true,
+      message: `Import completed. ${result.success} succeeded, ${result.failed} failed.`,
+      result
+    });
+
+  } catch (error) {
+    console.error('[bulkImportMemberships] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to import memberships',
+      error: error.message
+    });
+  }
+};
+
+// Download sample Excel template
+exports.downloadSampleTemplate = async (req, res) => {
+  try {
+    const buffer = generateSampleTemplate();
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=membership_import_template.xlsx');
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('[downloadSampleTemplate] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate template',
+      error: error.message
+    });
+  }
+};
+
+
+// Get last membership number for sequential generation
+exports.getLastMembershipNumber = async (req, res) => {
+  try {
+    const { prefix } = req.query;
+
+    if (!prefix) {
+      return res.status(400).json({
+        success: false,
+        message: 'Prefix is required'
+      });
+    }
+
+    // Pattern: LM001, AM001, SM001
+    const pattern = `${prefix}%`;
+
+    const [results] = await promisePool.query(`
+      SELECT membership_no 
+      FROM users 
+      WHERE membership_no LIKE ? 
+      ORDER BY CAST(SUBSTRING(membership_no, 3) AS UNSIGNED) DESC 
+      LIMIT 1
+    `, [pattern]);
+
+    let lastNumber = 0;
+
+    if (results.length > 0) {
+      // Extract number from format: LM001 -> 001
+      const numberPart = results[0].membership_no.substring(2);
+      lastNumber = parseInt(numberPart, 10) || 0;
+    }
+
+    res.json({
+      success: true,
+      lastNumber,
+      nextNumber: lastNumber + 1
+    });
+
+  } catch (error) {
+    console.error('[getLastMembershipNumber] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get last membership number',
       error: error.message
     });
   }

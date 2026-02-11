@@ -48,6 +48,10 @@ export default function MembershipManagementTab() {
   const [users, setUsers] = useState<any[]>([]);
   const [membershipCategories, setMembershipCategories] = useState<any[]>([]);
   const [selectedUserEmail, setSelectedUserEmail] = useState('');
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [bulkImportFile, setBulkImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [offlineForm, setOfflineForm] = useState({
     email: '',
@@ -213,6 +217,91 @@ export default function MembershipManagementTab() {
         description: error.response?.data?.message || 'Failed to add offline membership',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/admin/members/sample-template`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'membership_import_template.xlsx';
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Success',
+        description: 'Template downloaded successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download template',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkImport = async () => {
+    if (!bulkImportFile) {
+      toast({
+        title: 'No File Selected',
+        description: 'Please select an Excel file to import',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    setImportResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', bulkImportFile);
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/admin/members/bulk-import`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setImportResult(data.result);
+        toast({
+          title: 'Import Completed',
+          description: `${data.result.success} memberships imported successfully, ${data.result.failed} failed`,
+        });
+        loadMembers();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Import Failed',
+        description: error.message || 'Failed to import memberships',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBulkImportFile(file);
+      setImportResult(null);
     }
   };
 
@@ -509,17 +598,28 @@ export default function MembershipManagementTab() {
     }
   };
 
-  const generateMembershipNumber = () => {
-    const year = new Date().getFullYear();
-    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    return `BOA/LM/${randomNum}/${year}`;
+  const generateMembershipNumber = async () => {
+    try {
+      // Get the last membership number from database (global sequence)
+      const response = await adminAPI.get(`/admin/last-membership-number?prefix=LM`);
+      const lastNumber = response.lastNumber || 0;
+      const nextNumber = (lastNumber + 1).toString().padStart(3, '0');
+      
+      return `LM${nextNumber}`;
+    } catch (error) {
+      console.error('Error generating membership number:', error);
+      // Fallback to random if API fails
+      const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `LM${randomNum}`;
+    }
   };
 
-  const assignMembershipNumber = () => {
+  const assignMembershipNumber = async () => {
     if (!editForm.membership_no) {
+      const newNumber = await generateMembershipNumber();
       setEditForm(prev => ({
         ...prev,
-        membership_no: generateMembershipNumber()
+        membership_no: newNumber
       }));
     }
   };
@@ -637,7 +737,11 @@ export default function MembershipManagementTab() {
         <div className="flex gap-2">
           <Button onClick={() => setIsAddOfflineOpen(true)} variant="outline">
             <Upload className="mr-2 h-4 w-4" />
-            Add Offline Membership
+            Add Single
+          </Button>
+          <Button onClick={() => setIsBulkImportOpen(true)} variant="outline">
+            <FileText className="mr-2 h-4 w-4" />
+            Bulk Import
           </Button>
           <Button onClick={handleExportCSV} className="gradient-primary">
             <Download className="mr-2 h-4 w-4" />
@@ -648,6 +752,7 @@ export default function MembershipManagementTab() {
 
       {/* Membership Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Members */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Members</CardTitle>
@@ -655,13 +760,14 @@ export default function MembershipManagementTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{members.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Paid memberships</p>
+            <p className="text-xs text-muted-foreground mt-1">All paid memberships</p>
           </CardContent>
         </Card>
 
+        {/* Total Payment (Combined) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Payment</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -671,10 +777,11 @@ export default function MembershipManagementTab() {
                 .reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
                 .toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Completed payments only</p>
+            <p className="text-xs text-muted-foreground mt-1">Online + Offline</p>
           </CardContent>
         </Card>
 
+        {/* Online Payments Count */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Online Payments</CardTitle>
@@ -684,10 +791,16 @@ export default function MembershipManagementTab() {
             <div className="text-2xl font-bold text-blue-600">
               {members.filter(m => m.transaction_id).length}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">With transaction ID</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              ₹{members
+                .filter(m => m.transaction_id && ['completed', 'paid', 'active'].includes(m.status?.toLowerCase()))
+                .reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
+                .toLocaleString()} paid
+            </p>
           </CardContent>
         </Card>
 
+        {/* Offline Payments Count */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Offline Payments</CardTitle>
@@ -697,7 +810,12 @@ export default function MembershipManagementTab() {
             <div className="text-2xl font-bold text-orange-600">
               {members.filter(m => !m.transaction_id).length}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Without transaction ID</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              ₹{members
+                .filter(m => !m.transaction_id && ['completed', 'paid', 'active'].includes(m.status?.toLowerCase()))
+                .reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
+                .toLocaleString()} paid
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -1748,6 +1866,118 @@ export default function MembershipManagementTab() {
             </div>
           </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={isBulkImportOpen} onOpenChange={setIsBulkImportOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Bulk Import Memberships</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">📋 Instructions:</h4>
+              <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                <li>Download the Excel template below</li>
+                <li>Fill in the membership details (one member per row)</li>
+                <li>Make sure all users are already registered in the system</li>
+                <li>Upload the completed Excel file</li>
+              </ol>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleDownloadTemplate} variant="outline" className="flex-1">
+                <Download className="mr-2 h-4 w-4" />
+                Download Template
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Upload Excel File</Label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                disabled={isImporting}
+              />
+              {bulkImportFile && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {bulkImportFile.name}
+                </p>
+              )}
+            </div>
+
+            {importResult && (
+              <div className="border rounded-lg p-4 space-y-3">
+                <h4 className="font-semibold">Import Results:</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{importResult.total}</p>
+                    <p className="text-sm text-muted-foreground">Total</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{importResult.success}</p>
+                    <p className="text-sm text-muted-foreground">Success</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-red-600">{importResult.failed}</p>
+                    <p className="text-sm text-muted-foreground">Failed</p>
+                  </div>
+                </div>
+
+                {importResult.failedDetails && importResult.failedDetails.length > 0 && (
+                  <div className="mt-4">
+                    <h5 className="font-semibold text-sm mb-2">Failed Rows:</h5>
+                    <div className="max-h-40 overflow-y-auto space-y-2">
+                      {importResult.failedDetails.map((detail: any, index: number) => (
+                        <div key={index} className="text-sm bg-red-50 p-2 rounded">
+                          <p className="font-medium">Row {detail.row}: {detail.email}</p>
+                          <ul className="text-xs text-red-700 ml-4 list-disc">
+                            {detail.errors.map((error: string, i: number) => (
+                              <li key={i}>{error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsBulkImportOpen(false);
+                  setBulkImportFile(null);
+                  setImportResult(null);
+                }}
+                disabled={isImporting}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={handleBulkImport}
+                disabled={!bulkImportFile || isImporting}
+                className="gradient-primary"
+              >
+                {isImporting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import Memberships
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

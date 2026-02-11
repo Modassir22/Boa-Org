@@ -50,12 +50,8 @@ export default function AdminPanel() {
     const adminStr = localStorage.getItem('admin');
     
     if (!adminToken) {
-      toast({
-        title: 'Access Denied',
-        description: 'Please login as admin to access this panel',
-        variant: 'destructive',
-      });
-      navigate('/admin-login');
+      // Silently redirect to admin login - no toast needed
+      navigate('/admin-login', { replace: true });
       return;
     }
     
@@ -64,15 +60,15 @@ export default function AdminPanel() {
       if (!admin.id) {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('admin');
-        navigate('/admin-login');
+        navigate('/admin-login', { replace: true });
       } 
     } catch (error) {
       console.error('❌ Failed to parse admin data:', error);
       localStorage.removeItem('adminToken');
       localStorage.removeItem('admin');
-      navigate('/admin-login');
+      navigate('/admin-login', { replace: true });
     }
-  }, [navigate, toast]);
+  }, [navigate]);
 
   const handleReLogin = () => {
     localStorage.removeItem('adminToken');
