@@ -219,3 +219,137 @@ exports.toggleStatStatus = async (req, res) => {
     });
   }
 };
+
+// Admin: Get year-wise statistics for charts
+exports.getYearWiseStats = async (req, res) => {
+  try {
+    // Get year-wise seminar payment amounts
+    const [seminarPaymentsByYear] = await promisePool.query(
+      `SELECT 
+        YEAR(created_at) as year,
+        COUNT(*) as total_payments,
+        SUM(amount) as total_amount
+       FROM registrations
+       WHERE status = 'completed'
+       GROUP BY YEAR(created_at)
+       ORDER BY year ASC`
+    );
+
+    // Get year-wise membership payment amounts
+    const [membershipPaymentsByYear] = await promisePool.query(
+      `SELECT 
+        YEAR(created_at) as year,
+        COUNT(*) as total_payments,
+        SUM(COALESCE(amount, 0)) as total_amount
+       FROM membership_registrations
+       WHERE payment_status IN ('completed', 'paid', 'active')
+       GROUP BY YEAR(created_at)
+       ORDER BY year ASC`
+    );
+
+    // Get year-wise registrations count (all registrations)
+    const [registrationsByYear] = await promisePool.query(
+      `SELECT 
+        YEAR(created_at) as year,
+        COUNT(*) as total_registrations
+       FROM registrations
+       GROUP BY YEAR(created_at)
+       ORDER BY year ASC`
+    );
+
+    // Get year-wise membership count
+    const [membershipsByYear] = await promisePool.query(
+      `SELECT 
+        YEAR(created_at) as year,
+        COUNT(*) as total_members
+       FROM membership_registrations
+       GROUP BY YEAR(created_at)
+       ORDER BY year ASC`
+    );
+
+    // Combine all data by year
+    const yearData = {};
+    
+    // Add seminar payments
+    seminarPaymentsByYear.forEach(row => {
+      if (!yearData[row.year]) {
+        yearData[row.year] = {
+          year: row.year,
+          total_payments: 0,
+          total_amount: 0,
+          seminar_amount: 0,
+          membership_amount: 0,
+          total_registrations: 0,
+          total_members: 0
+        };
+      }
+      yearData[row.year].seminar_amount = parseFloat(row.total_amount) || 0;
+      yearData[row.year].total_payments += row.total_payments;
+      yearData[row.year].total_amount += parseFloat(row.total_amount) || 0;
+    });
+
+    // Add membership payments
+    membershipPaymentsByYear.forEach(row => {
+      if (!yearData[row.year]) {
+        yearData[row.year] = {
+          year: row.year,
+          total_payments: 0,
+          total_amount: 0,
+          seminar_amount: 0,
+          membership_amount: 0,
+          total_registrations: 0,
+          total_members: 0
+        };
+      }
+      yearData[row.year].membership_amount = parseFloat(row.total_amount) || 0;
+      yearData[row.year].total_payments += row.total_payments;
+      yearData[row.year].total_amount += parseFloat(row.total_amount) || 0;
+    });
+
+    // Add registrations count
+    registrationsByYear.forEach(row => {
+      if (!yearData[row.year]) {
+        yearData[row.year] = {
+          year: row.year,
+          total_payments: 0,
+          total_amount: 0,
+          seminar_amount: 0,
+          membership_amount: 0,
+          total_registrations: 0,
+          total_members: 0
+        };
+      }
+      yearData[row.year].total_registrations = row.total_registrations;
+    });
+
+    // Add memberships count
+    membershipsByYear.forEach(row => {
+      if (!yearData[row.year]) {
+        yearData[row.year] = {
+          year: row.year,
+          total_payments: 0,
+          total_amount: 0,
+          seminar_amount: 0,
+          membership_amount: 0,
+          total_registrations: 0,
+          total_members: 0
+        };
+      }
+      yearData[row.year].total_members = row.total_members;
+    });
+
+    // Convert to array and sort by year
+    const yearWiseData = Object.values(yearData).sort((a, b) => a.year - b.year);
+
+    res.json({
+      success: true,
+      data: yearWiseData
+    });
+  } catch (error) {
+    console.error('Get year-wise stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch year-wise statistics'
+    });
+  }
+};

@@ -153,6 +153,7 @@ router.post('/upload-image', adminAuth, upload.single('image'), adminController.
 
 // Stats Management
 const statsController = require('../controllers/stats.controller');
+router.get('/stats/year-wise', adminAuth, statsController.getYearWiseStats);
 router.get('/stats', adminAuth, statsController.getAdminStats);
 router.post('/stats', adminAuth, statsController.createStat);
 router.put('/stats/:id', adminAuth, statsController.updateStat);

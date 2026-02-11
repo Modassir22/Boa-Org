@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { adminAPI } from '@/lib/api';
-import { FileText, CheckCircle, Clock, XCircle, Download, Search, Eye, Trash2, DollarSign } from 'lucide-react';
+import { FileText, Download, Search, Eye, Trash2, DollarSign, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { exportToCSV, formatPaymentForExport } from '@/lib/exportUtils';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ interface Payment {
 
 export default function StatisticsTab() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -292,10 +294,16 @@ export default function StatisticsTab() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Statistics</h2>
-        <Button onClick={handleExportCSV} className="gap-2">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate('/admin/statistics-visuals')} variant="outline" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Show Visuals
+          </Button>
+          <Button onClick={handleExportCSV} className="gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Payment Statistics Cards */}

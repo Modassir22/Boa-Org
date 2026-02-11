@@ -29,6 +29,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPanel from "./pages/admin/AdminPanel";
 import AdminProfile from "./pages/admin/AdminProfile";
 import OfflineFormSettings from "./pages/admin/OfflineFormSettings";
+import StatisticsVisuals from "./pages/admin/StatisticsVisuals";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -123,6 +124,7 @@ const App = () => (
           <Route path="/admin/profile" element={<AdminProfile />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/offline-form" element={<OfflineFormSettings />} />
+          <Route path="/admin/statistics-visuals" element={<StatisticsVisuals />} />
           <Route path="/admin/*" element={<AdminPanel />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
