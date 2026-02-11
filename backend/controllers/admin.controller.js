@@ -3286,12 +3286,13 @@ exports.getAllPayments = async (req, res) => {
     // Sort by date
     payments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Calculate stats
+    // Calculate stats - only count completed payments for total amount
+    const completedPayments = payments.filter(p => p.status === 'completed');
     const stats = {
       total: payments.length,
-      completed: payments.filter(p => p.status === 'completed').length,
+      completed: completedPayments.length,
       pending: payments.filter(p => p.status === 'pending').length,
-      totalAmount: payments.reduce((sum, p) => sum + p.amount, 0)
+      totalAmount: completedPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
     };
 
     res.json({

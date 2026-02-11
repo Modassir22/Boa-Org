@@ -109,12 +109,13 @@ export default function StatisticsTab() {
       if (data.success) {
         setPayments(data.payments || []);
         
-        // Calculate payment breakdown
-        const seminarPayments = data.payments.filter((p: Payment) => p.payment_type === 'seminar');
-        const membershipPayments = data.payments.filter((p: Payment) => p.payment_type === 'membership');
+        // Calculate payment breakdown - only count completed payments
+        const completedPayments = data.payments.filter((p: Payment) => p.status === 'completed');
+        const seminarPayments = completedPayments.filter((p: Payment) => p.payment_type === 'seminar');
+        const membershipPayments = completedPayments.filter((p: Payment) => p.payment_type === 'membership');
         
-        const seminarAmount = seminarPayments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
-        const membershipAmount = membershipPayments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
+        const seminarAmount = seminarPayments.reduce((sum: number, p: Payment) => sum + (parseFloat(String(p.amount)) || 0), 0);
+        const membershipAmount = membershipPayments.reduce((sum: number, p: Payment) => sum + (parseFloat(String(p.amount)) || 0), 0);
         
         setPaymentStats({
           total: data.stats?.total || 0,

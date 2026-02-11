@@ -548,9 +548,12 @@ export default function RegistrationsTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ₹{registrations.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0).toLocaleString()}
+              ₹{registrations
+                .filter(r => r.status === 'completed')
+                .reduce((sum, r) => sum + parseFloat(r.amount || 0), 0)
+                .toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Total amount collected</p>
+            <p className="text-xs text-muted-foreground mt-1">Completed payments only</p>
           </CardContent>
         </Card>
       </div>

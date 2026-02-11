@@ -223,29 +223,44 @@ exports.toggleStatStatus = async (req, res) => {
 // Admin: Get year-wise statistics for charts
 exports.getYearWiseStats = async (req, res) => {
   try {
-    // Get year-wise seminar payment amounts
+    // Get year-wise seminar payment amounts with online/offline breakdown
     const [seminarPaymentsByYear] = await promisePool.query(
       `SELECT 
         YEAR(created_at) as year,
         COUNT(*) as total_payments,
-        SUM(amount) as total_amount
+        SUM(amount) as total_amount,
+        SUM(CASE WHEN transaction_id IS NOT NULL AND transaction_id != '' THEN amount ELSE 0 END) as online_amount,
+        SUM(CASE WHEN transaction_id IS NULL OR transaction_id = '' THEN amount ELSE 0 END) as offline_amount,
+        COUNT(CASE WHEN transaction_id IS NOT NULL AND transaction_id != '' THEN 1 END) as online_count,
+        COUNT(CASE WHEN transaction_id IS NULL OR transaction_id = '' THEN 1 END) as offline_count
        FROM registrations
        WHERE status = 'completed'
        GROUP BY YEAR(created_at)
        ORDER BY year ASC`
     );
 
-    // Get year-wise membership payment amounts
+    // Get year-wise membership payment amounts with online/offline breakdown
     const [membershipPaymentsByYear] = await promisePool.query(
       `SELECT 
-        YEAR(created_at) as year,
+        YEAR(mr.created_at) as year,
         COUNT(*) as total_payments,
-        SUM(COALESCE(amount, 0)) as total_amount
-       FROM membership_registrations
-       WHERE payment_status IN ('completed', 'paid', 'active')
-       GROUP BY YEAR(created_at)
+        SUM(CASE WHEN mr.amount > 1 THEN mr.amount ELSE COALESCE(mc.price, 0) END) as total_amount,
+        SUM(CASE WHEN mr.transaction_id IS NOT NULL AND mr.transaction_id != '' 
+            THEN (CASE WHEN mr.amount > 1 THEN mr.amount ELSE COALESCE(mc.price, 0) END)
+            ELSE 0 END) as online_amount,
+        SUM(CASE WHEN mr.transaction_id IS NULL OR mr.transaction_id = '' 
+            THEN (CASE WHEN mr.amount > 1 THEN mr.amount ELSE COALESCE(mc.price, 0) END)
+            ELSE 0 END) as offline_amount,
+        COUNT(CASE WHEN mr.transaction_id IS NOT NULL AND mr.transaction_id != '' THEN 1 END) as online_count,
+        COUNT(CASE WHEN mr.transaction_id IS NULL OR mr.transaction_id = '' THEN 1 END) as offline_count
+       FROM membership_registrations mr
+       LEFT JOIN membership_categories mc ON mr.membership_type = mc.title
+       WHERE mr.payment_status IN ('completed', 'paid', 'active')
+       GROUP BY YEAR(mr.created_at)
        ORDER BY year ASC`
     );
+    
+   
 
     // Get year-wise registrations count (all registrations)
     const [registrationsByYear] = await promisePool.query(
@@ -278,17 +293,30 @@ exports.getYearWiseStats = async (req, res) => {
           total_payments: 0,
           total_amount: 0,
           seminar_amount: 0,
+          seminar_online_amount: 0,
+          seminar_offline_amount: 0,
           membership_amount: 0,
+          membership_online_amount: 0,
+          membership_offline_amount: 0,
+          total_online_amount: 0,
+          total_offline_amount: 0,
+          membership_online_count: 0,
+          membership_offline_count: 0,
           total_registrations: 0,
           total_members: 0
         };
       }
       yearData[row.year].seminar_amount = parseFloat(row.total_amount) || 0;
+      yearData[row.year].seminar_online_amount = parseFloat(row.online_amount) || 0;
+      yearData[row.year].seminar_offline_amount = parseFloat(row.offline_amount) || 0;
       yearData[row.year].total_payments += row.total_payments;
       yearData[row.year].total_amount += parseFloat(row.total_amount) || 0;
+      yearData[row.year].total_online_amount += parseFloat(row.online_amount) || 0;
+      yearData[row.year].total_offline_amount += parseFloat(row.offline_amount) || 0;
+      
     });
 
-    // Add membership payments
+    // Add membership payments with online/offline breakdown
     membershipPaymentsByYear.forEach(row => {
       if (!yearData[row.year]) {
         yearData[row.year] = {
@@ -296,14 +324,29 @@ exports.getYearWiseStats = async (req, res) => {
           total_payments: 0,
           total_amount: 0,
           seminar_amount: 0,
+          seminar_online_amount: 0,
+          seminar_offline_amount: 0,
           membership_amount: 0,
+          membership_online_amount: 0,
+          membership_offline_amount: 0,
+          total_online_amount: 0,
+          total_offline_amount: 0,
+          membership_online_count: 0,
+          membership_offline_count: 0,
           total_registrations: 0,
           total_members: 0
         };
       }
       yearData[row.year].membership_amount = parseFloat(row.total_amount) || 0;
+      yearData[row.year].membership_online_amount = parseFloat(row.online_amount) || 0;
+      yearData[row.year].membership_offline_amount = parseFloat(row.offline_amount) || 0;
+      yearData[row.year].membership_online_count = row.online_count || 0;
+      yearData[row.year].membership_offline_count = row.offline_count || 0;
       yearData[row.year].total_payments += row.total_payments;
       yearData[row.year].total_amount += parseFloat(row.total_amount) || 0;
+      yearData[row.year].total_online_amount += parseFloat(row.online_amount) || 0;
+      yearData[row.year].total_offline_amount += parseFloat(row.offline_amount) || 0;
+      
     });
 
     // Add registrations count
@@ -315,6 +358,10 @@ exports.getYearWiseStats = async (req, res) => {
           total_amount: 0,
           seminar_amount: 0,
           membership_amount: 0,
+          membership_online_amount: 0,
+          membership_offline_amount: 0,
+          membership_online_count: 0,
+          membership_offline_count: 0,
           total_registrations: 0,
           total_members: 0
         };
@@ -331,6 +378,10 @@ exports.getYearWiseStats = async (req, res) => {
           total_amount: 0,
           seminar_amount: 0,
           membership_amount: 0,
+          membership_online_amount: 0,
+          membership_offline_amount: 0,
+          membership_online_count: 0,
+          membership_offline_count: 0,
           total_registrations: 0,
           total_members: 0
         };

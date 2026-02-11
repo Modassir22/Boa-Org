@@ -666,9 +666,12 @@ export default function MembershipManagementTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ₹{members.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0).toLocaleString()}
+              ₹{members
+                .filter(m => ['completed', 'paid', 'active'].includes(m.status?.toLowerCase()))
+                .reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)
+                .toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Total collected</p>
+            <p className="text-xs text-muted-foreground mt-1">Completed payments only</p>
           </CardContent>
         </Card>
 
