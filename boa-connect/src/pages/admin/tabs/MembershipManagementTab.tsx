@@ -1771,7 +1771,18 @@ export default function MembershipManagementTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Membership Type <span className="text-red-500">*</span></Label>
-                  <Select value={offlineForm.membership_type} onValueChange={(value) => setOfflineForm(prev => ({ ...prev, membership_type: value }))}>
+                  <Select 
+                    value={offlineForm.membership_type} 
+                    onValueChange={(value) => {
+                      // Auto-set amount based on membership type
+                      const selectedCategory = membershipCategories.find(c => c.title === value);
+                      setOfflineForm(prev => ({ 
+                        ...prev, 
+                        membership_type: value,
+                        amount: selectedCategory ? selectedCategory.price.toString() : prev.amount
+                      }));
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
