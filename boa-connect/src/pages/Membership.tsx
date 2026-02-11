@@ -236,11 +236,7 @@ export default function Membership() {
     },
     {
       question: 'What documents are required?',
-<<<<<<< HEAD
-      answer: 'You need to submit your original certificate photocopy, qualification certificates, and a recent passport-size photograph.'
-=======
       answer: 'Medical Registration to Replace Original Certificate Photography.'
->>>>>>> dcd3247 (update admin and register route problem for nav)
     }
   ];
 
