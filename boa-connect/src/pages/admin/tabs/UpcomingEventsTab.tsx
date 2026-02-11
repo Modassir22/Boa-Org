@@ -340,6 +340,7 @@ export default function UpcomingEventsTab() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Order</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Start Date</TableHead>
@@ -352,13 +353,16 @@ export default function UpcomingEventsTab() {
           <TableBody>
             {events.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No upcoming events added yet. Click "Add Event" to create one.
                 </TableCell>
               </TableRow>
             ) : (
-              events.map((event) => (
+              events.map((event, index) => (
                 <TableRow key={event.id}>
+                  <TableCell className="font-medium text-muted-foreground">
+                    {index + 1}.
+                  </TableCell>
                   <TableCell>{event.display_order}</TableCell>
                   <TableCell className="font-medium">{event.title || '-'}</TableCell>
                   <TableCell className="text-sm">

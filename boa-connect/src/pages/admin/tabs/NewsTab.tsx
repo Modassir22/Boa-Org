@@ -384,7 +384,7 @@ export default function NewsTab() {
             </CardContent>
           </Card>
         ) : (
-          news.map((item) => (
+          news.map((item, index) => (
             <Card key={item.id} className="overflow-hidden">
               <div className="flex flex-col md:flex-row">
                 {/* Image Section - More Compact */}
@@ -408,12 +408,13 @@ export default function NewsTab() {
                 <div className="flex-1 p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-base font-semibold line-clamp-1">{item.title}</h3>
-                        <Badge variant={item.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                          {item.status}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                        <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
+                          {item.status === 'active' ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
+                      <h3 className="text-base font-semibold line-clamp-1 mb-1">{item.title}</h3>
                       
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                         {item.content}

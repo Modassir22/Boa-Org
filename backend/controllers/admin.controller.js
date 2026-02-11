@@ -4966,3 +4966,34 @@ exports.updateMembershipStatus = async (req, res) => {
     });
   }
 };
+
+
+// ============ ONLINE MEMBERSHIPS ============
+
+// Get all online memberships
+exports.getOnlineMemberships = async (req, res) => {
+  try {
+    const [memberships] = await promisePool.query(`
+      SELECT 
+        mr.*,
+        mc.title as category_name,
+        mc.price as category_price
+      FROM membership_registrations mr
+      LEFT JOIN membership_categories mc ON mr.membership_type = mc.id
+      WHERE mr.payment_method = 'online' OR mr.razorpay_payment_id IS NOT NULL
+      ORDER BY mr.created_at DESC
+    `);
+
+    res.json({
+      success: true,
+      memberships
+    });
+  } catch (error) {
+    console.error('Get online memberships error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch online memberships',
+      error: error.message
+    });
+  }
+};

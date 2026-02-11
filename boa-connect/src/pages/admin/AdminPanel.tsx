@@ -21,6 +21,7 @@ import { OfflineFormsTab } from './tabs/OfflineFormsTab';
 import { GalleryTab } from './tabs/GalleryTab';
 import MembershipCategoriesTab from './tabs/MembershipCategoriesTab';
 import MembershipManagementTab from './tabs/MembershipManagementTab';
+import OnlineMembershipsTab from './tabs/OnlineMembershipsTab';
 import ResourcesTab from './tabs/ResourcesTab';
 import TestimonialsTab from './tabs/TestimonialsTab';
 import NewsTab from './tabs/NewsTab';
@@ -113,6 +114,7 @@ export default function AdminPanel() {
         {activeTab === 'users' && <UsersTab />}
         {activeTab === 'offline-users' && <OfflineUsersTab />}
         {activeTab === 'membership-management' && <MembershipManagementTab />}
+        {activeTab === 'online-memberships' && <OnlineMembershipsTab />}
         {activeTab === 'committee' && <CommitteeMembersTab />}
         {activeTab === 'certification' && <CertificationTab />}
         {activeTab === 'upcoming' && <UpcomingEventsTab />}

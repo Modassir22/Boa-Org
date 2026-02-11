@@ -236,11 +236,14 @@ export default function TestimonialsTab() {
 
       {/* Testimonials Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {testimonials.map((testimonial) => (
+        {testimonials.map((testimonial, index) => (
           <div key={testimonial.id} className="border rounded-lg p-4 space-y-3">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h3 className="font-semibold">{testimonial.name}</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                  <h3 className="font-semibold">{testimonial.name}</h3>
+                </div>
                 <p className="text-sm text-muted-foreground">{testimonial.designation}</p>
                 {testimonial.organization && (
                   <p className="text-sm text-muted-foreground">{testimonial.organization}</p>

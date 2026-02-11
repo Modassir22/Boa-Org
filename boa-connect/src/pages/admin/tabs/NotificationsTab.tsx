@@ -144,6 +144,7 @@ export default function NotificationsTab() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Message</TableHead>
               <TableHead>Status</TableHead>
@@ -152,8 +153,11 @@ export default function NotificationsTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {notifications.map((notification) => (
+            {notifications.map((notification, index) => (
               <TableRow key={notification.id}>
+                <TableCell className="font-medium text-muted-foreground">
+                  {index + 1}.
+                </TableCell>
                 <TableCell className="font-medium">{notification.title}</TableCell>
                 <TableCell className="max-w-md truncate">{notification.message || '-'}</TableCell>
                 <TableCell>

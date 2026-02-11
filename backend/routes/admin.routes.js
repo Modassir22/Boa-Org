@@ -160,4 +160,7 @@ router.put('/stats/:id', adminAuth, statsController.updateStat);
 router.delete('/stats/:id', adminAuth, statsController.deleteStat);
 router.put('/stats/:id/toggle-status', adminAuth, statsController.toggleStatStatus);
 
+// Online Memberships
+router.get('/online-memberships', adminAuth, adminController.getOnlineMemberships);
+
 module.exports = router;

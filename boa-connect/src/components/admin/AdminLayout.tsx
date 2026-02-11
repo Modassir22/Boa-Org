@@ -186,6 +186,7 @@ export function AdminLayout({ children, activeTab = 'statistics', onTabChange }:
         { id: 'users', label: 'All Registered Users', icon: Users },
         { id: 'offline-users', label: 'Offline Users', icon: UserPlus },
         { id: 'membership-management', label: 'Paid Members Only', icon: Award },
+        { id: 'online-memberships', label: 'Online Memberships', icon: Award },
       ]
     },
     {

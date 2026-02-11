@@ -141,7 +141,7 @@ export function GalleryTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <div key={item.id} className="border rounded-lg overflow-hidden">
             <div className="relative aspect-video bg-muted">
               {item.type === 'image' ? (
@@ -151,6 +151,9 @@ export function GalleryTab() {
                   <Video className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
+              <div className="absolute top-2 left-2 bg-white/90 rounded-full px-2 py-1">
+                <span className="text-xs font-medium">#{index + 1}</span>
+              </div>
               <div className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5">
                 {item.type === 'image' ? (
                   <ImageIcon className="h-4 w-4" />

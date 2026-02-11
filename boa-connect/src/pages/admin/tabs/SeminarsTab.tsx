@@ -412,6 +412,7 @@ export default function SeminarsTab() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Dates</TableHead>
@@ -421,8 +422,11 @@ export default function SeminarsTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {seminars.map((seminar) => (
+            {seminars.map((seminar, index) => (
               <TableRow key={seminar.id}>
+                <TableCell className="font-medium text-muted-foreground">
+                  {index + 1}.
+                </TableCell>
                 <TableCell className="font-medium">{seminar.name}</TableCell>
                 <TableCell>{seminar.location}</TableCell>
                 <TableCell className="text-sm">

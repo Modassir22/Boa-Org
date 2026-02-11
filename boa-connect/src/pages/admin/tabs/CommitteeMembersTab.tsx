@@ -251,6 +251,7 @@ export default function CommitteeMembersTab() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Order</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Profession</TableHead>
@@ -260,8 +261,11 @@ export default function CommitteeMembersTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {members.map((member) => (
+            {members.map((member, index) => (
               <TableRow key={member.id}>
+                <TableCell className="font-medium text-muted-foreground">
+                  {index + 1}.
+                </TableCell>
                 <TableCell>{member.display_order}</TableCell>
                 <TableCell className="font-medium">{member.name}</TableCell>
                 <TableCell>{member.profession}</TableCell>
